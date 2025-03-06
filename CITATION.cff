@@ -1,0 +1,36 @@
+cff-version: 1.2.0
+
+message: "If this software turns out to be helpful for your research, please cite both the article from preferred-citation and the software itself."
+title: 'membraneSphere'
+version: v1.2
+date-released: '2025-03-01'
+repository-code: https://github.com/danielpeter/membraneSphere/tree/v1.2
+url: "https://github.com/danielpeter/membraneSphere"
+type: software
+identifiers:
+  - type: doi
+  - value: 10.5281/zenodo.10413988
+license: "MIT"
+
+authors:
+- family-names: Peter
+  given-names: Daniel
+
+
+preferred-citation:
+  type: article
+  authors:
+  - family-names: Peter
+    given-names: Daniel
+  - family-names: Tape 
+    given-names: Carl
+  - family-names: Boschi
+    given-names: Lapo
+  - family-names: Woodhouse
+    given-names: John
+  title: "Surface wave tomography: global membrane waves and adjoint methods"
+  journal: "Geophys. J. Int."
+  volume: 171
+  start: 1098  # First page number
+  end: 1117    # Last page number
+  year: 2007

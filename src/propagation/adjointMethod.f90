@@ -1,6 +1,6 @@
 !=====================================================================
 !
-!       m e m b r a n e S p h e r e  1 . 0
+!       m e m b r a n e S p h e r e  1 . 1
 !       --------------------------------------------------
 !
 !      Daniel Peter
@@ -45,27 +45,33 @@
 !
 ! adjoint method: information in tromp et al. (2005)
 ! finite-difference iteration: information in carl tape thesis (2003), chap 5, (5.7)
-      use propagationStartup; use cells; use phaseVelocityMap; use parallel; use displacements
+      use propagationStartup; use cells; use phaseVelocityMap
+      use parallel; use displacements
       use loop; use phaseBlockData; use griddomain; use adjointVariables;use verbosity
       implicit none
       integer:: m,kernel,ierror
+      real(WP):: window_start_org,window_end_org
       
       !-----------------------------------------------------------------------
       ! parameters      
-      ! most parameters concerning wave propagation set in file Parameter_Input (& commonModules.f90)
+      ! most parameters concerning wave propagation set in file Parameter_Input 
+      ! (& commonModules.f90)
       ! initialize parameters
-      Adjoint_Program                 =.true.   ! we calculate kernels by adjoint method
+      Adjoint_Program                 = .true.   ! we calculate kernels by adjoint method
+      Set_Antipode_Time               = .true.   ! simulation time ends at reference antipode time (overrides LASTTIME )
       !-----------------------------------------------------------------------
       ! machine memory holds for 2 GB RAM: 
-      !   level 6: numVertices=122'882, numofTimeSteps~500, double precision 8 byte -> needs ~ 500 MB per wavefield, still o.k.
-      !   level 7: numVertices=491'522, numofTimeSteps~100, dp 8 byte -> needs ~ 3.8 GB ! per wavefield, too big
+      !   level 6: numVertices=122'882, numofTimeSteps~500, 
+      !                 double precision 8 byte -> needs ~ 500 MB per wavefield, still o.k.
+      !   level 7: numVertices=491'522, numofTimeSteps~100, 
+      !                 dp 8 byte -> needs ~ 3.8 GB ! per wavefield, too big
 
       ! initialization of parameters and arrays
       call initialize()
 
       ! wait until all processes reached this point
       call MPI_Barrier( MPI_COMM_WORLD, ierror )
-      if( ierror .ne. 0) call stopProgram('abort - MPI_Barrier kernels failed    ')      
+      if( ierror .ne. 0) call stopProgram('abort - MPI_Barrier kernels failed    ') 
                                          
       ! prepare for simulation
       if( MASTER .and. VERBOSE) then
@@ -94,18 +100,30 @@
         endif
         if(MASTER .and. VERBOSE) then
           print*
-          print*,'iteration for number of kernels:',numofKernels,kernelStartDistance,kernelEndDistance
+          print*,'iteration for number of kernels:',numofKernels
+          print*,'    start/end distance :',kernelStartDistance,kernelEndDistance
           print*
         endif
+        window_start_org = WINDOW_START
+        window_end_org   = WINDOW_END
       else
         numofKernels=1
       endif
       
+      ! propagates membrane waves
       do kernel=1,numofKernels
-        if( kernelIteration) call prepareKernel(kernel)        
+        if( kernelIteration) then 
+          ! resets time integration window
+          WINDOW_START = window_start_org
+          WINDOW_END = window_end_org
+          
+          ! sets new receiver position
+          call prepareKernel(kernel)        
+        endif
         
         ! do the time iteration
         if( MASTER .and. VERBOSE) print*,'    forward simulation...'
+
         call forwardIteration()        
 
         ! save seismogram at receiver
@@ -132,26 +150,28 @@
         call backwardIteration()      
                       
         ! wait until all processes reached this point
-        call MPI_Barrier( MPI_COMM_WORLD, ierror )
-        if( ierror .ne. 0) call stopProgram('abort - MPI_Barrier iterations failed    ')      
+        !call MPI_Barrier( MPI_COMM_WORLD, ierror )
+        !if( ierror .ne. 0) call stopProgram('abort - MPI_Barrier iterations failed    ')
 
         ! compute kernel
         if( .not. ADJOINT_ONTHEFLY ) call frechetKernel()
 
         ! wait until all processes reached this point
-        call MPI_Barrier( MPI_COMM_WORLD, ierror )
-        if( ierror .ne. 0) call stopProgram('abort - MPI_Barrier kernels failed    ')      
+        !call MPI_Barrier( MPI_COMM_WORLD, ierror )
+        !if( ierror .ne. 0) call stopProgram('abort - MPI_Barrier kernels failed    ')
+        
+        ! output to kernel file
+        call storeAdjointKernel()      
 
         ! benchmark
         if( MASTER .and. VERBOSE) then
           benchAllEnd = MPI_WTIME()      
           print*
-          print*,'running time: ',int((benchAllEnd-benchAllStart)/60.0),'min ',mod((benchAllEnd-benchAllStart),60.0),'sec'
+          print*,'running time: ',int((benchAllEnd-benchAllStart)/60.0),'min ',&
+                  mod((benchAllEnd-benchAllStart),60.0),'sec'
           print*
         endif
         
-        ! output to kernel file
-        call storeAdjointKernel()      
       enddo !kernel
 
       if( MASTER ) print*,'done.'
@@ -165,52 +185,4 @@
       if( ierror .ne. 0) call stopProgram('abort - finalize failed    ')      
       
       end
-
-
-!-----------------------------------------------------------------------
-      subroutine prepareKernel(kernelIncrement)
-!-----------------------------------------------------------------------
-! prepare model for a new simulation with the setup of a new receiver location
-!
-! input:
-!     kernelIncrement     -   integer of degrees to increment the epicentraldistance
-!                                        between source and station
-!
-! returns: newly initialize station setup
-      use adjointVariables; use propagationStartup; use parallel; use cells; use verbosity
-      implicit none
-      integer:: kernelIncrement
-      character*3::kernelstr    
-      real(WP):: lat,lon,distance
-            
-      ! receivers will be placed on the equator
-      desiredReceiverLat = 0.0_WP
-      desiredReceiverLon = kernelStartDistance + kernelIncrement - 1
-      call setupStation( desiredReceiverLat, desiredReceiverLon )
-      
-      ! initialize new model      
-      if( allocated(wavefieldAdjoint) ) deallocate(wavefieldAdjoint)      
-      call initializeWorld()      
-      
-      ! build new source
-      if( allocated(forceTermPrescribed) ) deallocate(forceTermPrescribed)    
-      call initializeSource()
-      
-      ! append kernel number to name of adjoint kernel file 
-      !(originally something like 'adjointKernel.dat' should become e.g. 'adjointKernel.023.dat' for epicentral distance 23 degree )
-      write(kernelstr,'(i3.3)') int(kernelStartDistance+kernelIncrement-1)
-      if( kernelIncrement .eq. 1 ) then
-        adjointKernelName(len_trim(adjointKernelName)-2:len_trim(adjointKernelName)+4)=kernelstr//'.dat'
-      else
-        adjointKernelName(len_trim(adjointKernelName)-6:len_trim(adjointKernelName))=kernelstr//'.dat'      
-      endif
-      
-      if( MASTER .and. VERBOSE) then
-        print*
-        print*,'kernel name:',adjointKernelName
-        print*
-      endif
-
-      end
-      
       

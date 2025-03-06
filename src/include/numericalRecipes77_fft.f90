@@ -103,7 +103,7 @@
       c1=0.5 
       if (isign.eq.1) then 
         c2=-0.5 
-        call dfour1(data,n/2,+1) !Theforwardtransformis here. 
+        call dfour177(data,n/2,+1) !Theforwardtransformis here. 
       else 
         c2=0.5 !Otherwisesetupfor aninversetransform. 
         theta=-theta 
@@ -141,7 +141,7 @@
         h1r=data(1) 
         data(1)=c1*(h1r+data(2)) 
         data(2)=c1*(h1r-data(2)) 
-        call dfour1(data,n/2,-1) !Thisistheinversetransformforthecaseisign=-1. 
+        call dfour177(data,n/2,-1) !Thisistheinversetransformforthecaseisign=-1. 
       endif 
       return 
       END 

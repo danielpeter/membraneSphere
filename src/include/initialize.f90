@@ -1,6 +1,6 @@
 !=====================================================================
 !
-!       m e m b r a n e S p h e r e  1 . 0
+!       m e m b r a n e S p h e r e  1 . 1
 !       --------------------------------------------------
 !
 !      Daniel Peter
@@ -38,14 +38,12 @@
 
       ! console output         
       if( MASTER .and. VERBOSE) then
-        print*
         print*,'initialization o.k.'
-        print*
         
         ! benchmark
         benchAllEnd = MPI_WTIME()      
-        print*
-        print*,'running time: ',int((benchAllEnd-benchAllStart)/60.0),'min ',mod((benchAllEnd-benchAllStart),60.0),'sec'
+        print*,'running time: ',int((benchAllEnd-benchAllStart)/60.0),'min ',&
+                          mod((benchAllEnd-benchAllStart),60.0),'sec'
         print*
       endif      
                   
@@ -109,13 +107,14 @@
         if( Adjoint_InversionProgram ) print*,'heterogeneousInversion - computes inversion matrices by'
         if( Adjoint_Program ) then
           print*,'adjointMethod - computes kernel values'
+        else if( Phaseshift_Program ) then
+          print*,'phaseshift - computes kernel values'
+        else if( HetPhaseshift_Program ) then
+          print*,'phaseshift measurements - computed on the membrane'
         else
-          if( Phaseshift_Program ) then
-            print*,'phaseshift - computes kernel values'
-          else
-            print*,'propagation - membrane wave simulation'
-          endif
+          print*,'propagation - membrane wave simulation'
         endif
+        !endif
       endif
   
       ! console output
@@ -126,6 +125,8 @@
       if( MASTER ) then 
         call readParameters()
       endif
+      ! synchronize with processes
+      call syncParameters(rank,nprocesses)
 
       ! adjoint method initialization
       if( Adjoint_Program ) then
@@ -152,17 +153,10 @@
 !          sourceLon = 0.0_WP
 !        endif
       endif
-      
-      ! synchronize with processes
-      call syncParameters(rank,nprocesses)
-      
+            
       ! parallel simulation needs processes
-      if( nprocesses .lt. 2 ) PARALLELSEISMO = .false.
+      if( nprocesses < 2 ) PARALLELSEISMO = .false.
       
-      !set subdivisions & maximum numbers of triangles and vertices
-      MaxTriangles = 20*(4**(subdivisions+1) - 1)
-      MaxVertices  = 30*(4**subdivisions) + 2
-
       ! initialize for filtering
       call determineFilterParameters()
 
@@ -172,14 +166,14 @@
       ! console output         
       if( MASTER ) then
         print*
-        print*,'number of processes:',nprocesses
-        if( .not. FIXED_SOURCEPARAMETER ) print*,'wave parameters: factors ',FACTOR_TIME,FACTOR_WIDTH
-        if(DELTA) print*,'delta phase velocity increment:', deltaPerturbation
-        print*,'number of subdivisions used:', subdivisions
+        print*,'number of processes         : ',nprocesses
+        if( .not. FIXED_SOURCEPARAMETER ) print*,'wave parameters: theta_wid factor ',THETA_WID
+        if(DELTA) print*,'delta phase velocity increment : ', deltaPerturbation
+        print*,'number of subdivisions used : ', subdivisions
         if( HETEROGENEOUS ) then
           print*,'heterogeneous phase map used'
         else
-          print*,'homogeneous phase map', cphaseRef
+          print*,'homogeneous phase map      ', cphaseRef
         endif
         print*,'-----------------------------------------------------------------------'  
       endif      
@@ -190,8 +184,11 @@
       else
         beVerbose=.false.    
       endif
-                  
-      end
+      
+      if( MASTER .and. VERBOSE) then
+        print*,'  parameters o.k'
+      endif                        
+      end subroutine
 
 
 !-----------------------------------------------------------------------     
@@ -205,16 +202,11 @@
       real(WP):: lat,lon,distance
       integer:: ierror,i
       
-      !allocate arrays   
-      allocate(vertices(MaxVertices,3),cellNeighbors(MaxVertices,0:6),cellFace(MaxVertices,0:6),cellCorners(MaxTriangles,3),stat=ierror )
-      if( ierror .ne. 0 ) call stopProgram('error in allocating arrays for cell face,..   ')
-
-      if( Station_Correction ) then
-        allocate( cellTriangleFace(MaxTriangles,3),stat=ierror)
-        if( ierror .ne. 0 ) call stopProgram('error allocating cellTriangleFace    ')
-      endif
+      ! allocate grid arrays   
+      call allocateMesh()
             
-      !read and share initial grid points
+      ! read and share initial grid points        
+      if( MASTER ) call readData(VERBOSE)
       call syncInitialData()      
 
       ! wait until all processes reached this point
@@ -260,14 +252,14 @@
       ! console output
       if( MASTER .and. VERBOSE) then
         print*
-        print*,'source(lat/lon) desired:',desiredSourceLat,desiredSourceLon
-        print*,'                got:',sourceLat,sourceLon
-        print*,'                index:',sourceVertex
-        print*,'receiver(lat/lon) desired:',desiredReceiverLat,desiredReceiverLon
-        print*,'                  got:',receiverLat,receiverLon
-        print*,'                  index:',receiverVertex   
-        call greatCircleDistance(vertices(sourceVertex,:),vertices(receiverVertex,:),distance)     
-        print*,'distance source-receiver:',distance*180.0/PI
+        print*,'source(lat/lon) desired   : ',desiredSourceLat,desiredSourceLon
+        print*,'                got       : ',sourceLat,sourceLon
+        print*,'                index     : ',sourceVertex
+        print*,'receiver(lat/lon) desired : ',desiredReceiverLat,desiredReceiverLon
+        print*,'                  got     : ',receiverLat,receiverLon
+        print*,'                  index   : ',receiverVertex   
+        call greatCircleDistance(vertices(sourceVertex,:),vertices(receiverVertex,:),distance)
+        print*,'distance source-receiver  : ',distance*180.0/PI
         print*
         if( DELTA) then
           print*,'delta phase map ', DELTA, (cphaseRef + deltaPerturbation)
@@ -294,28 +286,18 @@
       endif
 
       ! allocate arrays for displacement datas  
-      allocate(displacement(numVertices),displacement_old(numVertices),newdisplacement(numVertices), stat=ierror )
-      if( ierror .ne. 0 ) call stopProgram('error in allocating displacement arrays   ')
-
-      !allocate new arrays for precalculated cell attributes  
-      allocate( cellAreas(numVertices),cellEdgesLength(numVertices,0:6),&
-              cellCenterDistances(numVertices,0:6),phaseVelocitySquare(numVertices), &
-              stat=ierror )
-      if( ierror .ne. 0 ) call stopProgram('error in allocating arrays for cell area,..   ')
-
-      ! initialize displacements and arrays
-      displacement_old(:) = 0.0_WP
-      displacement(:)     = 0.0_WP
-      newdisplacement(:)  = 0.0_WP
-      cellAreas(:)        = 0.0_WP
-      cellEdgesLength(:,:)     = 0.0_WP
-      cellCenterDistances(:,:) = 0.0_WP
-      phaseVelocitySquare(:)   = 0.0_WP
-
+      if( MASTER .and. VERBOSE) then
+        print*,'initializing data arrays...'
+      endif
+      call allocateData()
+            
       ! read and share precalculated arrays and sync them
       if( PRECALCULATED_CELLS ) call syncPrecalculated()
 
       ! initialize geometry of phase map and parallel domains
+      if( MASTER .and. VERBOSE) then
+        print*,'initializing phase map...'
+      endif
       call setupFrame()
 
       ! free arrays if possible
@@ -327,15 +309,19 @@
 
 !      if( Adjoint_Program .and. ADJOINT_ONTHEFLY ) then
 !        ! allocate arrays for displacement datas  
-!        allocate(backwardDisplacement(numVertices),backwardDisplacement_old(numVertices),backwardNewdisplacement(numVertices), stat=ierror )
+!        allocate(backwardDisplacement(numVertices),backwardDisplacement_old(numVertices),&
+!                      backwardNewdisplacement(numVertices), stat=ierror )
 !        if( ierror .ne. 0 ) call stopProgram('error in allocating displacement arrays   ')
 !        ! initialize
 !        backwardDisplacement_old(:)=0.0_WP
 !        backwardDisplacement(:)=0.0_WP
 !        backwardNewdisplacement(:)=0.0_WP        
 !      endif            
-      end
+      if( MASTER .and. VERBOSE) then
+        print*,'  meshing o.k'
+      endif
 
+      end subroutine
 
 !-----------------------------------------------------------------------     
       subroutine initializeWorld()
@@ -345,8 +331,8 @@
       use traveltime; use griddomain;use phaseBlockData;use loop;use deltaSecondLocation
       use filterType;use verbosity; use adjointVariables
       implicit none
-      real(WP):: long,colat
-      integer:: ierror
+      real(WP):: long,colat,distance
+      integer:: ierror,iorbit
       
       ! console output
       if( MASTER .and. VERBOSE) then
@@ -356,111 +342,146 @@
             
       ! mostly only squared time step is used for iteration
       dt2 = dt*dt
-            
-      ! time window
-      call determineSimulationsteps()
+
+      ! determines simulation time 
+      if( Adjoint_Program .and. Set_Antipode_Time) then
+        call determineOrbitDistance(distance,iorbit)
+        call setupNewSimulationtime(distance,iorbit)
+      endif    
+      
+      ! sets number of time steps
+      call determineSimulationsteps()      
 
       ! check for sampling rate and wave period (nyquist frequency limitation )
       if( bw_waveperiod .lt. dt*2 .or. bw_waveperiod*cphaseRef .lt. averageCellDistance ) then
         print*,'sampling rate is too low compared to wave period length!'
-        print*,'    wave period  : ',bw_waveperiod
-        print*,'    wave length  : ',bw_waveperiod*cphaseRef
-        print*,'    sampling rate: ',dt
-        print*,'    cell length  : ',averageCellDistance
-        call stopProgram('abort initializeWorld() - sampling too low   ')      
+        print*,'    wave period     : ',bw_waveperiod
+        print*,'    wave length     : ',bw_waveperiod*cphaseRef
+        print*,'    sampling rate   : ',dt
+        print*,'    cell length      : ',averageCellDistance
+        !call stopProgram('abort initializeWorld() - sampling too low   ')      
       endif
       
       !console output
       if( MASTER .and. VERBOSE) then
-        print*,'    time step dt:' ,dt
-        print*,'    time range:', firsttimestep*dt, lasttimestep*dt
-        print*,'    time iteration steps:',numofTimeSteps
-        print*,'    phase velocity:',cphaseRef        
-        if(DELTA)print*,'    delta heterogeneity: radius=',DELTARADIUS
+        print*,'    time step dt            : ',dt
+        print*,'    time range             : ',firsttimestep*dt,lasttimestep*dt
+        print*,'    time iteration steps     : ',numofTimeSteps
+        print*,'    phase velocity          : ',cphaseRef        
+        if(DELTA)print*,'    delta heterogeneity - radius: ',DELTARADIUS
       endif
 
 
-      ! adjoint method has one forward and one backward simulation, so start allocating those wavefields    
+      ! adjoint method has one forward and one backward simulation, 
+      ! allocates and initializes those wavefields    
       if( Adjoint_Program ) then            
-        ! allocate arrays
-        call allocateAdjointArrays()        
+        call initializeAdjointArrays()        
       endif
-      end      
+
+      if( MASTER .and. VERBOSE) then
+        print*,'  world o.k'
+      endif      
+      end subroutine
 
     
 !-----------------------------------------------------------------------     
       subroutine initializeSource()
 !-----------------------------------------------------------------------     
 ! prescribe initial source
-      use propagationStartup;use parallel;use cells;use phaseVelocityMap;use displacements 
-      use traveltime; use griddomain;use phaseBlockData;use loop;use deltaSecondLocation
-      use filterType;use verbosity; use adjointVariables
+      use propagationStartup; use parallel; use griddomain      
+      use cells,only: numDomainVertices
+      use verbosity
       implicit none
-      integer:: n,vertex,timestep,index,ierror     
-      real(WP):: forceTerm2Source,forceTermExact,time
-
-      ! source parameters
-      if( .not. FIXED_SOURCEPARAMETER ) then
-        ! calculate time parameter
-        TimeParameterSigma=FACTOR_TIME*dt
+      integer:: n,vertex,timestep,index,ierror,jrec
+      real(WP),external:: forceTerm2Source,forceTermExact
+      real(WP):: time,force,arraysize
+      real(WP),parameter:: EPS = 1.0e-5
+      real(WP):: forcetrace(numofTimeSteps)
+      character(len=3):: rankstr
+      real(WP),parameter:: RAM_LIMIT                 = 2000   ! in MB ; e.g.  2 GB equal 2000 MB
+      character(len=128),parameter:: temporaryDir   = '/scratch/dpeter/'
       
-        ! calculate width parameter (see Carl Tape Thesis , eq. 3.21 )
-        WidthParameterMu=FACTOR_WIDTH*averageCellDistance/(EARTHRADIUS*2.0*sqrt(-2.0*log(0.05)))
-      endif
-
       ! console output
       if( MASTER .and. VERBOSE) then
         print*
-        print*,'source parameters:'
-        print*,'    time parameter sigma:',TimeParameterSigma
-        print*,'    width parameter mu:',WidthParameterMu        
+        print*,'initializing source...'
       endif
       
-      !debug
-      if(DEBUG) print*,'    allocating forceTermPrescribed',rank,numDomainVertices,numofTimeSteps
+      ! source parameters
+      call determineSourceParameters()
       
-      ! allocate force array
-      if( allocated(forceTermPrescribed) ) deallocate(forceTermPrescribed)
-      if( .not. allocated(forceTermPrescribed) ) then
-        allocate(forceTermPrescribed(numDomainVertices,numofTimeSteps),stat=ierror)
-        if( ierror .gt. 0 ) then
-          print*,'    cannot allocate prescribedForce array. ',rank
-          print*,'    using calculation of source on the fly...',rank
-          PRESCRIBEDSOURCE=.false.
-          if( FILTERINITIALSOURCE ) then
-            print*,'    using file to store source array.',rank
-            sourceOnFile = .true.
-            open(sourceFileID,file=datadirectory(1:len_trim(datadirectory))//'forceTermPrescribed.bin',&
-                 access='direct',form='unformatted',recl=4)
-            call stopProgram('not yet implemented ...   ')
-            !print*,'    cannot filter source. ',rank
-            !call stopProgram('unable filtering source     ')
+      ! pre-calculates the force terms  
+      if( PRESCRIBEDSOURCE ) then      
+        ! check if to reallocate force array
+        if( allocated(forceTermPrescribed) ) then
+          if( size(forceTermPrescribed(:,1)) .ne. numDomainVertices .or. &
+             size(forceTermPrescribed(1,:)) .ne. numofTimeSteps) then
+            deallocate(forceTermPrescribed)
           endif
-          !call stopProgram('error in allocating prescribed force array    ')
-          return        
-        endif
+        endif  
+        ! reallocates array      
+        if( .not. allocated(forceTermPrescribed) ) then
+          arraysize = numDomainVertices*numofTimeSteps*sizeof(PI)/1024./1024.        
+          ! console output
+          if( MASTER .and. VERBOSE ) then
+            print*,'  allocating prescribedForce array: '
+            print*,'      vertices : ',numDomainVertices
+            print*,'      steps   : ',numofTimeSteps
+            print*,'      size    : ',arraysize,'Mb'
+          endif                              
+          
+          ! allocate array
+          if( arraysize > RAM_LIMIT .and. FILTERINITIALSOURCE ) then
+            if( MASTER .and. VERBOSE) print*,'    using file to store source array.'
+            sourceOnFile = .true.
+          else
+            ! allocates memory          
+            allocate(forceTermPrescribed(numDomainVertices,numofTimeSteps),stat=ierror)
+            if( ierror /= 0 ) then
+              print*,'    cannot allocate prescribedForce array: ',rank
+              ! change prescribed flag if necessary
+              if( FILTERINITIALSOURCE ) then
+                if( MASTER .and. VERBOSE) print*,'    using file to store source array.'
+                sourceOnFile = .true.
+              else
+                PRESCRIBEDSOURCE=.false.
+                if( MASTER .and. VERBOSE ) print*,'    using calculation of source on the fly...'
+                ! nothing else to do
+                return        
+              endif
+            endif                        
+          endif          
+          call syncFlag(rank,nprocesses,sourceOnFile)
+
+          ! storage on file
+          if( sourceOnFile ) then
+            if( allocated(forceTermPrescribed) ) deallocate(forceTermPrescribed)
+            
+            ! names file
+            write(rankstr,'(i3.3)') rank 
+            print*,'      prescribed source file:', &
+            datadirectory(1:len_trim(datadirectory))//'forceTermPrescribed'//rankstr//'.bin'
+            ! opens file to store data for each process  
+            open(sourceFileID,file=datadirectory(1:len_trim(datadirectory))//'forceTermPrescribed'//rankstr//'.bin',&
+               access='direct',form='unformatted',recl=sizeof(PI))            
+
+            ! storage in scratch dir
+            !open(sourceFileID,file=temporaryDir(1:len_trim(temporaryDir))//'forceTermPrescribed'//rankstr//'.bin',&
+            !     access='direct',form='unformatted',recl=sizeof(real(WP)))
+          endif          
+        endif ! not allocated 
         
         !init (critical: processes may stop here)
-        forceTermPrescribed(:,:)=0.0_WP
-    
-        if(DEBUG) then
-          ! wait until all processes reached this point    
-          call MPI_Barrier( MPI_COMM_WORLD, ierror )
-          if( ierror .ne. 0) call stopProgram('abort - MPI_Barrier kernels failed    ')      
-        endif        
-      endif
+        if(.not. sourceOnFile) then
+          !print*,'    intializing prescribedForce array: rank',rank
+          forceTermPrescribed(:,:)=0.0_WP
+        else
+          forcetrace(:)=0.0_WP
+        endif
       
-      ! prescribe the source
-      if( MASTER .and. VERBOSE) print*,'    prescribing source ...'
-      index=0
-      do timestep=firsttimestep,lasttimestep
-        ! model time
-        time = timestep*dt      
-        index=index+1        
+        ! prescribe the source
+        if( MASTER .and. VERBOSE) print*,'  prescribing source...'
 
-        !debug
-        !if(DEBUG) print*,'    force time:',rank,time
-        
         ! prescribe source for each vertex
         do n=1,numDomainVertices
           ! get cell vertex
@@ -470,18 +491,44 @@
             vertex=n
           endif          
           
-          if( Station_Correction ) then
-            forceTermPrescribed(n,index)=forceTermExact(vertex,time,desiredSourceLat,desiredSourceLon)          
-          else          
-            forceTermPrescribed(n,index)=forceTerm2Source(vertex,time,sourceVertex)          
-          endif
-        enddo   
-      enddo
+          index=0
+          do timestep=firsttimestep,lasttimestep
+            ! model time
+            time = timestep*dt      
+            index=index+1        
+            if( Station_Correction ) then
+              force = forceTermExact(vertex,time,desiredSourceLat,desiredSourceLon)          
+            else          
+              force = forceTerm2Source(vertex,time,sourceVertex)          
+            endif
+            ! store values
+            if( .not. sourceOnFile ) then
+              forceTermPrescribed(n,index) = force
+            else
+              forcetrace(index) = force
+            endif
+            
+            ! stops if source vanishes
+            if( time > 500.0 .and. abs(force) < EPS ) exit
+          enddo   
           
-      ! filter source
-      if( FILTERINITIALSOURCE) call filterSource()
-                                          
-      end
+          ! store on file if needed
+          if( sourceOnFile ) then
+            do index = 1,numofTimeSteps
+              jrec = (n-1)*numofTimeSteps + index
+              write(sourceFileID,rec=jrec) forcetrace(index)
+            enddo
+          endif
+        enddo
+            
+        ! filter source
+        if( FILTERINITIALSOURCE) call filterSource()
+      endif
+      
+      if( MASTER .and. VERBOSE) then
+        print*,'  source o.k'
+      endif      
+      end subroutine
 
 
 !-----------------------------------------------------------------------     
@@ -492,15 +539,29 @@
       use traveltime; use griddomain;use phaseBlockData;use loop;use deltaSecondLocation
       use filterType;use verbosity; use adjointVariables
       implicit none
-      integer:: vertex,timestep,index,i,n,ierror     
+      integer:: vertex,timestep,index,i,n,ierror,jrec
       character*8::vertexstr
       real(WP)::seismo(2,numofTimeSteps)
-      real(WP)::min,max
+      real(WP)::min,max,originalT,originalf
+      
+      ! filter around a specified (different) period
+      if( new_period ) then
+        originalf = bw_frequency
+        originalT = bw_waveperiod
+
+        bw_waveperiod = newperiod
+        
+        ! get (upper) half-bandwidth frequency for filtering
+        if( BW_FIXFREQUENCY ) then
+          bw_frequency = BW_HALFFREQUENCY
+        else
+          bw_frequency = BW_PERCENT/((BW_PERCENT+1.0)*bw_waveperiod)      
+        endif        
+      endif
       
       !console output
       if( MASTER .and. VERBOSE) then
-        print*
-        print*,'    filtering source...'
+        print*,'  filtering source...'
       endif
             
       ! initialize forces time
@@ -520,74 +581,97 @@
         endif          
 
         ! get corresponding source 
-        seismo(2,:)=forceTermPrescribed(n,:)
+        if( .not. sourceOnFile ) then
+          seismo(2,:)=forceTermPrescribed(n,:)
+        else
+          do i=1,numofTimeSteps
+            jrec = (n-1)*numofTimeSteps + i
+            read(sourceFileID,rec=jrec) seismo(2,i)
+          enddo
+        endif
 
         ! file output for sourceVertex
-        if( vertex .eq. sourceVertex .and. beVerbose ) then
+        if( vertex .eq. sourceVertex .and. beVerbose .and. .not. sourceOnFile ) then          
           write(vertexstr,'(i8.8)') vertex
-          open(22,file=datadirectory(1:len_trim(datadirectory))//'source2Prescribed.'//vertexstr//'.dat',iostat=ierror)
-          if( ierror .ne. 0 ) call stopProgram('error opening file: '//datadirectory(1:len_trim(datadirectory))//'source2Prescribed.'//vertexstr//'.dat   ')
+          print*,'    writing to file: ',datadirectory(1:len_trim(datadirectory))// &
+                        'source2Prescribed.'//vertexstr//'.dat'
+          open(22,file=datadirectory(1:len_trim(datadirectory))// &
+                        'source2Prescribed.'//vertexstr//'.dat',iostat=ierror)
+          if( ierror .ne. 0 ) call stopProgram('error opening file: '// &
+              datadirectory(1:len_trim(datadirectory))//'source2Prescribed.'//vertexstr//'.dat   ')
           do i=1,numofTimeSteps
             write(22,*) seismo(1,i),forceTermPrescribed(n,i)
           enddo
           close(22)       
         endif
         
-        ! filter only when there is displacement
-        min=0.0
-        max=0.0
-        do i=1,numofTimeSteps
-          if( seismo(2,i) .lt. min ) min = seismo(2,i)
-          if( seismo(2,i) .gt. max ) max = seismo(2,i)          
-        enddo        
-        
-        ! filter
+        ! filter only when there is some displacement in the trace
+        min=minval(seismo(2,:))
+        max=maxval(seismo(2,:))        
         if( (abs(max)+abs(min)) .gt. 1e-4 ) then
           !print*,'    filter',rank,vertex,max,min
           call dofilterSeismogram(seismo,numofTimeSteps)
         endif
-          
-        ! retain as new source
-        forceTermPrescribed(n,:)=seismo(2,:)          
-          
+
         ! start source at zero time for adjoint methods            
         if( Adjoint_Program .and. ADJOINT_STARTATZERO ) then
           if( MASTER .and. VERBOSE .and. n .eq. 1) print*,'starting source for adjoint method at time: zero'
           do i=1,numofTimeSteps
             if( seismo(1,i) .lt. 0.0 ) then            
-              forceTermPrescribed(n,i)=0.0_WP            
+              seismo(2,i)=0.0_WP            
             endif
           enddo
         endif        
+          
+        ! retain as new source
+        if( .not. sourceOnFile ) then
+          forceTermPrescribed(n,:)=seismo(2,:)          
+        else
+          do i = 1,numofTimeSteps
+            jrec = (n-1)*numofTimeSteps + i
+            write(sourceFileID,rec=jrec) seismo(2,i)
+          enddo
+        endif
+          
         
         ! file output
-        if( vertex .eq. sourceVertex .and. beVerbose ) then
+        if( vertex .eq. sourceVertex .and. beVerbose .and. .not. sourceOnFile ) then
           write(vertexstr,'(i8.8)') vertex
-          open(22,file=datadirectory(1:len_trim(datadirectory))//'source2Prescribed.filtered.'//vertexstr//'.dat',iostat=ierror)
-          if( ierror .ne. 0 ) call stopProgram('error opening file: '//datadirectory(1:len_trim(datadirectory))//'source2Prescribed.filtered'//vertexstr//'.dat   ')
+          open(22,file=datadirectory(1:len_trim(datadirectory))// &
+              'source2Prescribed.filtered.'//vertexstr//'.dat',iostat=ierror)
+          if( ierror .ne. 0 ) call stopProgram('error opening file: '// & 
+            datadirectory(1:len_trim(datadirectory))//'source2Prescribed.filtered'//vertexstr//'.dat   ')
           do i=1,numofTimeSteps
             write(22,*) seismo(1,i),forceTermPrescribed(n,i)
           enddo
           close(22)       
-        endif
-        
-        if( DEBUG ) then
-          if( mod(n,10000) .eq. 0 ) print*,'   filtered',rank,n
-        endif
+        endif        
       enddo            
-      end
+      
+      ! filter around a specified (different) period
+      if( new_period ) then
+        bw_waveperiod = originalT
+        bw_frequency = originalf
+      endif      
+      
+      end subroutine
 
 !-----------------------------------------------------------------------
       subroutine setupFrame()
 !-----------------------------------------------------------------------
-! setup of the phase map and source/receiver/delta locations
+! sets up of the phase map and source/receiver/delta locations
       use propagationStartup; use phaseVelocityMap; use parallel; use phaseBlockData
       use cells; use adjointVariables; use verbosity; use griddomain
       implicit none
       real(WP):: distance,vtmp(3),lat,lon
       integer:: i,ierror
 
+      ! reads in a heterogeneous phase velocity map
       if( HETEROGENEOUS ) then
+        if( MASTER .and. VERBOSE) then
+          print*,'  initializing heterogeneous phase map...'
+        endif
+      
         !allocate phaseMap array
         allocate(phaseMap(numVertices), stat=ierror)
         if( ierror .ne. 0) then
@@ -626,52 +710,37 @@
         
       ! parallelize grid or delta phase maps (when using different processors for a single simulation) 
       ! or determine where the deltaVertex lies (parallel different simulations)
+      if( MASTER .and. VERBOSE) then
+        print*,'  initializing parallelized maps...'
+      endif      
       if( PARALLELSEISMO ) then
         ! construct grid domains for parallelization of single simulation
         call constructParallelDomains()
         
         ! consider number of vertices for finite-difference iteration scheme
-        numDomainVertices=size(domainVertices(:)) ! take only vertices in this domain
+        numDomainVertices = size(domainVertices(:)) ! take only vertices in this domain
       else            
         ! set for each process a new delta location
-        call parallelizeDeltaLocations()
+        if( DELTA ) call parallelizeDeltaLocations()
         
         ! consider number of vertices for finite-difference iteration scheme
-        numDomainVertices=numVertices   ! propagate through all vertices
+        numDomainVertices = numVertices   ! propagate through all vertices
       endif
 
       ! precalculate the phase velocities for all grid points
+      if( MASTER .and. VERBOSE) then
+        print*,'  initializing phase velocities...'
+      endif
       call constructPhaseVelocitySquare()      
 
       ! phase map no more needed
       if( HETEROGENEOUS ) deallocate(phaseMap)      
 
-!      ! output phase speed model to file
-!      if( MASTER ) then
-!        ! output
-!        open(10,file=datadirectory(1:len_trim(datadirectory))//'tmpPhaseMap.dat')
-!        do i=1, numVertices
-!          call getSphericalCoord_Lat(i,lat,lon)
-!          write(10,*) real(lon),real(lat),sqrt(phaseVelocitySquare(i))
-!        enddo
-!        close(10)
-!      endif
-
-
-
       ! console output
       if( MASTER .and. VERBOSE .and. PARALLELSEISMO) then
-        print*,'master'
-        print*,'    infos: vertex from',1,'to',numDomainVertices        
+        print*,'  master info: vertex from',1,'to',numDomainVertices        
       endif      
-      ! debug
-      if(DEBUG .and. .not. MASTER .and. PARALLELSEISMO) then
-        print*,'slave', rank, ' of ',nprocesses
-        print*,'    infos:',numVertices, numNeighbors,numCorners,numFaces
-        print*,'    infos:vertex from',1,'to',numDomainVertices
-        print*      
-      endif            
-      end
+      end subroutine
       
 !-----------------------------------------------------------------------
       subroutine parallelizeDeltaLocations()
@@ -681,10 +750,7 @@
 ! return: new common deltaLat,deltaLon,deltaVertex for delta location
       use loop;use propagationStartup;use parallel; use deltaSecondLocation
       implicit none
-      
-      ! check
-      if( .not. DELTA ) return
-      
+            
       ! increment latitude corresponding for this process
       if( (deltaLat - (latitudeEnd - (nprocesses-1)*deltaMoveIncrement)) .gt. deltaMoveIncrement/2 ) then
         print*,'delta location too close to end'
@@ -698,7 +764,8 @@
       call findVertex(deltaLat,deltaLon,deltaVertex)
       
       ! for 2 delta scatterers
-      if( SECONDDELTA) call placeSecondDelta(deltaLat,deltaLon,deltaSecondLat,deltaSecondLon,deltaSecondVertex,deltaSecondDistance)
+      if( SECONDDELTA) call placeSecondDelta(deltaLat,deltaLon,deltaSecondLat,&
+                        deltaSecondLon,deltaSecondVertex,deltaSecondDistance)
       end      
           
       
@@ -741,201 +808,80 @@
 !
 ! returns: phaseMap() array
       use propagationStartup;use phaseVelocityMap;use phaseBlockData
-      use cells; use adjointVariables
+      use cells; use adjointVariables; use verbosity; use parallel
       implicit none
       integer:: index,i
       real(WP):: lat,lon,phasevelocity,vtmp(3),rot(3,3),Vsource(3),Vreceiver(3)
 
       ! check if phase reference is same as the one used for the propagation
       if(phaseBlockVelocityReference .ne. cphaseRef) then
-        print*,'using a false phase velocity data file for this referenced velocity:',cphaseRef,phaseBlockVelocityReference,phaseBlockFile
+        print*,'using a false phase velocity data file for this referenced velocity:',&
+                      cphaseRef,phaseBlockVelocityReference,phaseBlockFile
         call stopProgram( 'abort - constructPhasedata   ')
       endif
       
-      ! check if we read a gsh-file
-      phaseBlockFile=trim(phaseBlockFile)
-      print*,'reading phase map file-type: '//phaseBlockFile(len_trim(phaseBlockFile)-2:len_trim(phaseBlockFile))
-      if( phaseBlockFile(len_trim(phaseBlockFile)-2:len_trim(phaseBlockFile)) .eq. "gsh") then
-        ! read in phaseMap() array data
-        ! notice: using a heterogeneous phase map always rotates the map for a non-adjoint simulation!
-        !             such that source/receiver will lie on the equator
-        call readGSHPhasemap(phaseBlockFile)
-        return
+      ! checkerboard phase velocity map
+      if( DO_CHECKERBOARD ) then
+        if( MASTER .and. VERBOSE) print*,'checkerboard phase velocity map'
+        call makeCheckerboard()
+      else
+        ! check if we read a gsh-file
+        phaseBlockFile=trim(phaseBlockFile)
+        print*,'reading phase map file-type: '//&
+              phaseBlockFile(len_trim(phaseBlockFile)-2:len_trim(phaseBlockFile))
+        if( phaseBlockFile(len_trim(phaseBlockFile)-2:len_trim(phaseBlockFile)) .eq. "gsh") then
+          ! read in phaseMap() array data
+          ! notice: using a heterogeneous phase map always rotates the map for a non-adjoint simulation!
+          !             such that source/receiver will lie on the equator
+          if( phaseBlockFile(len_trim(phaseBlockFile)-6:len_trim(phaseBlockFile)) .eq. "abs.gsh") then        
+            call readGSHPhasemap(phaseBlockFile,.false.)
+          else
+            call readGSHPhasemap(phaseBlockFile,.true.)        
+          endif
+        else
+          !read in phase anomalies in percent
+          call readPixelPhasemap(phaseBlockFile)
+          
+          ! recalculate the absolute phase velocity (uses a reference velocity )
+          do i=1, numBlocks
+            phasevelocity = phaseBlockVelocityReference+phaseBlock(i)*phaseBlockVelocityReference/100.0
+            phaseBlock(i) = phasevelocity
+          enddo
+
+          if( rotate_frame ) then
+            ! determine rotation matrix from (1,0,0)/... to source/receiver frame
+            Vsource(:)= vertices(originSourceVertex,:)
+            Vreceiver(:)= vertices(originReceiverVertex,:)
+            call getRotationMatrix(Vsource,Vreceiver,rot)
+          endif
+      
+          !print*
+          do i=1, numVertices
+            ! vector to vertex
+            vtmp(:)= vertices(i,:)
+          
+            ! get rotated vector
+            if( rotate_frame ) then
+              call rotateVector(rot,vtmp,vtmp)
+            endif
+            
+            ! determine lat/lon
+            call getSphericalCoordinates(vtmp,lat,lon)
+            
+            !get vertex block index
+            call determineBlock(real(lat),real(lon),index)
+            if( index .lt. 0 .or. index .gt. numBlocks) then
+              print*,'   block error:',lat,lon
+              print*,'   index violates boundaries:',index, i,numBlocks
+              call stopProgram( 'abort - constructPhasedata   ')
+            endif
+            
+            ! set corresponding phase velocity
+            phaseMap(i)=phaseBlock(index)
+          enddo      
+        endif            
       endif
-            
-      !read in phase anomalies in percent
-      call readPixelPhasemap(phaseBlockFile)
-      
-      ! recalculate the absolute phase velocity (uses a reference velocity )
-      do i=1, numBlocks
-        phasevelocity = phaseBlockVelocityReference+phaseBlock(i)*phaseBlockVelocityReference/100.0
-        phaseBlock(i) = phasevelocity
-      enddo
-
-      if( rotate_frame ) then
-        ! determine rotation matrix from (1,0,0)/... to source/receiver frame
-        Vsource(:)= vertices(originSourceVertex,:)
-        Vreceiver(:)= vertices(originReceiverVertex,:)
-        call getRotationMatrix(Vsource,Vreceiver,rot)
-      endif
-  
-      !print*
-      do i=1, numVertices
-        ! vector to vertex
-        vtmp(:)= vertices(i,:)
-      
-        ! get rotated vector
-        if( rotate_frame ) then
-          call rotateVector(rot,vtmp,vtmp)
-        endif
-        
-        ! determine lat/lon
-        call getSphericalCoordinates(vtmp,lat,lon)
-        
-        !get vertex block index
-        call determineBlock(real(lat),real(lon),index)
-        if( index .lt. 0 .or. index .gt. numBlocks) then
-          print*,'   block error:',lat,lon
-          print*,'   index violates boundaries:',index, i,numBlocks
-          call stopProgram( 'abort - constructPhasedata   ')
-        endif
-        
-        ! set corresponding phase velocity
-        phaseMap(i)=phaseBlock(index)
-      enddo
-      end
-
-      
-!-----------------------------------------------------------------------
-      subroutine determineTimeStep()
-!-----------------------------------------------------------------------     
-! determines the time step size according to approximative formula
-! done by C. Tape (paragraph 5.5)
-!
-! input:
-!     cphaseRef          - phase velocity
-!     subdivisions  - grid level
-!     timestepsize  - model time step
-!     averageCellDistance - grid spacing
-!
-! returns: dt in seconds, averageCellDistance in km
-      use precision; use propagationStartup
-      implicit none
-      real(WP),parameter:: sqrt2=1.414213562373095_WP
-            
-      ! timestep width relation (Tape, chap. 5, (5.9), p. 66) with space steps (table 4.4) [averageCellDistance in km]
-      if( subdivisions .eq. 8) averageCellDistance = 17.3860147304427_WP
-      if( subdivisions .eq. 7) averageCellDistance = 34.7719816287154444_WP
-      if( subdivisions .eq. 6) averageCellDistance = 69.5435806022331491_WP
-      if( subdivisions .eq. 5) averageCellDistance = 139.084100036946921_WP
-      if( subdivisions .eq. 4) averageCellDistance = 278.143713101840262_WP
-      if( subdivisions .eq. 3) averageCellDistance = 556.091606162381709_WP
-      if( subdivisions .eq. 2) averageCellDistance = 1110.61907020550302_WP
-      if( subdivisions .eq. 1) averageCellDistance = 2208.80170795688991_WP
-      if( subdivisions .eq. 0) averageCellDistance = 4320.48077165147788_WP
-
-      ! for routine findVertex
-      distanceQuit = averageCellDistance*0.5/EARTHRADIUS
-            
-      ! calculate mean cphase velocity for delta phase map
-      !if(DELTA ) then
-      !  !reset cphase
-      !  cphase = 0.0_WP
-      !  !delta location source
-      !  !lat=deltaLat*PI/180.0_WP
-      !  !lon=deltaLon*PI/180.0_WP
-      !  !vectorS(1) = cos(lat)*cos(lon)
-      !  !vectorS(2) = cos(lat)*sin(lon)
-      !  !vectorS(3) = sin(lat)
-      !  vectorS(:)= vertices(deltaVertex,:)
-      !  
-      !  ! range of delta locations
-      !  ! calculate mean phase velocity
-      !  do n=1,numVertices
-      !    vectorV(:) =  vertices(n,:)
-      !    distance=EARTHRADIUS*greatCircleDistance(vectorS,vectorV)
-      !    if( distance .gt. DELTARADIUS) then ! changed since DELTARADIUS was defined only after this check
-      !      cphase = cphase+cphaseRef
-      !    else
-      !      cphase = cphase+ (cphaseRef + deltaPerturbation)
-      !    endif
-      !  enddo
-      !  !set cphase to mean value
-      !  cphase = cphase/numVertices
-      !endif
-            
-      ! time step - trial'n error formula (5.8)              
-      dt = averageCellDistance/(cphaseRef*sqrt2)        
-      
-      ! time step modification
-      !if( timestepsize .gt. 1.0_WP) timestepsize = 53.0_WP
-      !!!!!!!!!!!!!!!!!!!! fixed time step: 
-      !!!!!!!!!!!!!!!!!!!!    11.0 for phase velocity L35
-      !!!!!!!!!!!!!!!!!!!!    9.4 for phase velocity L300
-      !timestepsize = 2.2_WP
-      end
-            
-!-----------------------------------------------------------------------
-!      subroutine rotatePhaseMap()
-!-----------------------------------------------------------------------
-! rotates phase map from frame source/receiver to (1,0,0)/(0,1,0)/(0,0,1)
-!
-! returns: rotated cell index
-!      use propagationStartup;use phaseVelocityMap
-!      implicit none
-!      double precision,allocatable,dimension(:):: rotPhaseMap
-!      integer i,index,ierror
-!      double precision Vsource(3),Vreceiver(3),vtmp(3)
-!      double precision rot(3,3),lat,lon
-!        
-!      allocate(rotPhaseMap(numVertices),stat=ierror)
-!      if( ierror .gt. 0 ) then
-!        print*,'error in allocating rotPhaseMap array'
-!        stop 'abort - rotatePhaseMap'
-!      endif
-! 
-!      ! determine rotation matrix from source/receiver to (1,0,0)/... frame
-!      Vsource(:)=vertices(originSourceVertex,:)
-!      Vreceiver(:)=vertices(originReceiverVertex,:)      
-!      call getInverseRotationMatrix(Vsource,Vreceiver,rot)
-!                         
-!      ! create rotated phase map
-!      do i=1,numVertices
-!        index=i
-!        vtmp(:)=vertices(i,:)
-!        call rotateVector(rot,vtmp,vtmp)
-!        call getSphericalCoordinates(vtmp,lat,lon)
-!        call findVertex(lat,lon,index)
-!
-!        !call getRotatedIndex(index)
-!        !print*,'   index:',i,index
-!        !print*,'   phase value:',phaseMap(i)
-!        !print*,'   rotated value:',rotPhaseMap(index)
-!        if( index .lt. 0 .or. index .gt. numVertices) then
-!          print*,'   rotated index violates boundaries:',index, i
-!          stop 'abort - rotatePhaseMap'
-!        endif
-!        
-!        if( rotPhaseMap(index) .lt. 0.000000001) then
-!          rotPhaseMap(index)=phaseMap(i)
-!        else
-!          print*,'phase map rotation: ',i,' already mapped to', index, rotPhaseMap(index)
-!          rotPhaseMap(index)=phaseMap(i)
-!          !stop
-!        endif
-!      enddo
-!      
-!      ! copy it over
-!      phaseMap=rotPhaseMap
-!      
-!      ! output
-!      open(10,file='tmpRotatedPhaseMap.dat')
-!      do i=1, numVertices
-!        write(10,*) i, phaseMap(i)
-!      enddo
-!      close(10)
-!      end
-      
+      end subroutine
       
 !-----------------------------------------------------------------------
       subroutine initializeKernels()
@@ -966,7 +912,8 @@
 
           ! console output
           if( VERBOSE .and. MASTER) then
-            print*,'arrays for receivers allocated successfully',size(receiversSeismogram),size(kernelsReceiversSeismogramRef)
+            print*,'arrays for receivers allocated successfully',size(receiversSeismogram),&
+                              size(kernelsReceiversSeismogramRef)
             print*,'    epicentral distances between:',kernelStartDistance,kernelEndDistance
             print*,'    number of kernels:',numofKernels
           endif
@@ -1051,7 +998,8 @@
       character*3:: kernelstr
       
       ! useless for heterogeneous case
-      if( HETEROGENEOUS ) call stopProgram('multiple receiver stations and heterogeneous phase map not applicable!    ')
+      if( HETEROGENEOUS ) &
+        call stopProgram('multiple receiver stations and heterogeneous phase map not applicable    ')
       ! check number of receivers
       if( numofReceivers .le. 0 ) then
         print*,'number of receiver stations invalid!',numofReceivers
@@ -1067,7 +1015,8 @@
                 stat=ierror)      
         if( ierror .ne. 0 ) call stopProgram('cannot allocate receivers array   ')
         !console output
-        if( MASTER .and. VERBOSE ) print*,'arrays for receivers allocated successfully',size(receiversSeismogram),size(receiversSeismogramRef)
+        if( MASTER .and. VERBOSE ) print*,'arrays for receivers allocated successfully',&
+                    size(receiversSeismogram),size(receiversSeismogramRef)
       endif
       
       ! assumes the source to be on north pole, the receiver station placed along the same latitude
@@ -1139,9 +1088,8 @@
             close(10)        
           endif
         endif              
-      endif
-      
-      end
+      endif      
+      end subroutine
       
       
 !-----------------------------------------------------------------------   
@@ -1157,65 +1105,67 @@
       character*128:: datafile
       
       ! only master process creates the files
-      ! (but all processes must have access to these files)    
-      if( MASTER) then
-        if( VERBOSE .and. currentKernel .le. 1) then
-          print*,'creating new output files:'
-          print*,'   ',datadirectory(1:len_trim(datadirectory))//'ttkernel.rank***.dat'
-          print*,'   ',datadirectory(1:len_trim(datadirectory))//'ttkernel.rot.rank***.dat'
-        endif
-        
-        do i=0,nprocesses-1
-          write(rankstr,'(i3.3)') i
-          
-          ! create new 'ttkernel.dat' and 'ttkernel.rot.dat' files
-          do n=1,2
-            ! determine filename            
-            if( n .eq. 1) then
-              if( manyKernels) then            
-                write(kernelstr,'(i3.3)') int(kernelStartDistance+currentKernel-1)              
-                datafile=datadirectory(1:len_trim(datadirectory))//'ttkernel'//kernelstr//'.rank'//rankstr//'.dat'
-              else
-                datafile=datadirectory(1:len_trim(datadirectory))//'ttkernel.rank'//rankstr//'.dat'              
-              endif
-            else
-              if( manyKernels) then
-                write(kernelstr,'(i3.3)') int(kernelStartDistance+currentKernel-1)              
-                datafile=datadirectory(1:len_trim(datadirectory))//'ttkernel'//kernelstr//'.rot.rank'//rankstr//'.dat'          
-              else
-                datafile=datadirectory(1:len_trim(datadirectory))//'ttkernel.rot.rank'//rankstr//'.dat'                        
-              endif
-            endif
-            datafile=trim(datafile)
-            ! delete if existing
-            !open(10,file=datafile,iostat=ioerror)
-            !if( ioerror .eq. 0 ) close(10,status='DELETE')
-            
-            ! put two comment lines at beginning
-            open(10,file=datafile,iostat=ioerror)
-            if( ioerror .ne. 0) then
-              ! check if really we can not create the file
-              print*,'could not open file: '//datafile
-              print*,'  try again...'
-              open(10,file=datafile,status='unknown',iostat=ioerror)
-              if( ioerror .ne. 0 ) call stopProgram('createKernelFiles() - still not possible. shutting down    ')
-              print*,'  successed opening file'
-            endif
-            ! determine comment line text            
-            if( n .eq. 1 ) then
-              write(10,*) '# phase shift - sensitivity kernel'
-            else
-              write(10,*) '# rotated phase shift - sensitivity kernel'
-            endif
-            
-            ! add a values legend
-            write(10,'(1x,''# lon lat kernel kernelAnalytic receiverVertex'',''timelag timelagAnayltic vperturbation receiverLat receiverLon'')')
-            !write(100,*) '# lon  lat  kernel  kernelAnalytic  receiverVertex  timelag  timelagAnalytic  vperturbation receiverLat  receiverLon'
-            close(10)
-          enddo
-        enddo
+      ! (but all processes must have access to these files) 
+      if( .not. MASTER ) return
+ 
+      if( VERBOSE .and. currentKernel .le. 1) then
+        print*,'creating new output files:'
+        print*,'   ',datadirectory(1:len_trim(datadirectory))//'ttkernel.rank***.dat'
+        print*,'   ',datadirectory(1:len_trim(datadirectory))//'ttkernel.rot.rank***.dat'
       endif
-      end
+        
+      do i=0,nprocesses-1
+        write(rankstr,'(i3.3)') i
+        
+        ! create new 'ttkernel.dat' and 'ttkernel.rot.dat' files
+        do n=1,2
+          ! determine filename            
+          if( n .eq. 1) then
+            if( manyKernels) then            
+              write(kernelstr,'(i3.3)') int(kernelStartDistance+currentKernel-1)              
+              datafile=datadirectory(1:len_trim(datadirectory))//'ttkernel'//&
+                                          kernelstr//'.rank'//rankstr//'.dat'
+            else
+              datafile=datadirectory(1:len_trim(datadirectory))//'ttkernel.rank'//rankstr//'.dat'              
+            endif
+          else
+            if( manyKernels) then
+              write(kernelstr,'(i3.3)') int(kernelStartDistance+currentKernel-1)              
+              datafile=datadirectory(1:len_trim(datadirectory))//'ttkernel'//&
+                                  kernelstr//'.rot.rank'//rankstr//'.dat'          
+            else
+              datafile=datadirectory(1:len_trim(datadirectory))//'ttkernel.rot.rank'//rankstr//'.dat'                        
+            endif
+          endif
+          datafile=trim(datafile)
+          ! delete if existing
+          !open(10,file=datafile,iostat=ioerror)
+          !if( ioerror .eq. 0 ) close(10,status='DELETE')
+          
+          ! put two comment lines at beginning
+          open(10,file=datafile,iostat=ioerror)
+          if( ioerror .ne. 0) then
+            ! check if really we can not create the file
+            print*,'could not open file: '//datafile
+            print*,'  try again...'
+            open(10,file=datafile,status='unknown',iostat=ioerror)
+            if( ioerror .ne. 0 ) call stopProgram('createKernelFiles() - still not possible. shutting down    ')
+            print*,'  successed opening file'
+          endif
+          ! determine comment line text            
+          if( n .eq. 1 ) then
+            write(10,*) '# phase shift - sensitivity kernel'
+          else
+            write(10,*) '# rotated phase shift - sensitivity kernel'
+          endif
+          
+          ! add a values legend
+          write(10,'(1x,"# lon lat kernel kernelAnalytic receiverVertex timelag " &
+                              & "timelagAnayltic vperturbation receiverLat receiverLon")')
+          close(10)
+        enddo
+      enddo
+      end subroutine
 
 !-----------------------------------------------------------------------
       subroutine prepareCouple(epla,eplo,stla,stlo)
@@ -1231,6 +1181,7 @@
       implicit none
       real:: epla,eplo,stla,stlo
       real(WP):: distance
+      integer:: iorbit
       
       ! source will be placed
       desiredSourceLat = epla
@@ -1245,12 +1196,15 @@
       ! determine epicentral distance
       call greatCircleDistance(vertices(sourceVertex,:),vertices(receiverVertex,:),distance)
 
-      ! change simulation time according to epicentral distance or antipode 
-      call setupNewSimulationtime(distance)      
+      ! changes simulation time according to epicentral distance or antipode 
+      iorbit = 1
+      call setupNewSimulationtime(distance,iorbit)      
+
+      ! sets number of time steps
+      call determineSimulationsteps()      
 
       ! recalculate the force array
       call initializeSource()             
-
             
       end
 
@@ -1267,9 +1221,9 @@
       call getSphericalCoord_Lat(sourceVertex,sourceLat,sourceLon)
       
       if( MASTER .and. VERBOSE) then
-        print*,'source(lat/lon) desired:',lat,lon
-        print*,'                  got:',sourceLat,sourceLon
-        print*,'                  index:',sourceVertex
+        print*,'    source(lat/lon) desired:',lat,lon
+        print*,'      got:',sourceLat,sourceLon
+        print*,'      index:',sourceVertex
       endif 
       
       end      
@@ -1281,7 +1235,7 @@
 ! setup new receiver location
       use propagationStartup; use parallel; use verbosity; use cells
       implicit none
-      real(WP):: lat,lon
+      real(WP),intent(in):: lat,lon
       real(WP):: distance
       integer:: i
       
@@ -1303,45 +1257,54 @@
 
       
       if( MASTER .and. VERBOSE) then
-        print*,'receiver(lat/lon) desired:',desiredReceiverLat,desiredReceiverLon
-        print*,'                  got:',receiverLat,receiverLon
-        print*,'                  index:',receiverVertex
-        print*,'distance source-receiver:',distance*180.0/PI
-        print*
+        print*,'    receiver(lat/lon) desired:',desiredReceiverLat,desiredReceiverLon
+        print*,'      got:',receiverLat,receiverLon
+        print*,'      index:',receiverVertex
+        print*,'    distance source-receiver:',distance*180.0/PI
         if( Station_Correction ) then
-          print*,'interpolation receiver station:'
-          print*,'        triangle:',interpolation_triangleIndex
-          print*,'        corners :',(interpolation_corners(i),i=1,3)
-          print*,'        side lengths (degrees):',(interpolation_triangleLengths(i)*180.0/PI,i=1,3)          
-          print*,'        receiverdistance (degr.):',(interpolation_distances(i)*180.0/PI,i=1,3)
-          print*
+          print*,'    interpolation receiver station:'
+          print*,'      triangle:',interpolation_triangleIndex
+          print*,'      corners :',(interpolation_corners(i),i=1,3)
+          print*,'      side lengths (degrees):',(interpolation_triangleLengths(i)*180.0/PI,i=1,3)          
+          print*,'      receiverdistance (degr.):',(interpolation_distances(i)*180.0/PI,i=1,3)
         endif        
       endif        
-      end            
+      end subroutine            
 
 !-----------------------------------------------------------------------
       subroutine setupStation(lat,lon)
 !-----------------------------------------------------------------------
-! setup new receiver location and adapt simulation time
+! sets up new receiver location and kernel output file
       use adjointVariables; use propagationStartup; use parallel; use cells; use verbosity
       implicit none
-      real(WP):: distance,lat,lon
-      character*64,parameter::distanceFile                  = 'tmpEpiDistances.dat'
-      integer:: ierror
+      real(WP),intent(in):: lat,lon
+      real(WP):: distance
+      character*64,parameter::distanceFile     = 'Kernel_EpiDistances.dat'
+      integer:: ierror,iorbit
 
       ! place new receiver
       call setupNewReceiver(lat,lon)
-            
-      ! determine epicentral distance
-      call greatCircleDistance(vertices(sourceVertex,:),vertices(receiverVertex,:),distance)
-      
-      if( MASTER .and. VERBOSE) then
+                  
+      ! writes epicentral distance to file
+      if( MASTER ) then
         if( Adjoint_Program ) then
           if( kernelIteration ) then
+            ! determine epicentral distance
+            call determineOrbitDistance(distance,iorbit)
+            
             ! print epicentral distances into file
-            open(10,file=datadirectory(1:len_trim(datadirectory))//distanceFile(1:len_trim(distanceFile)),status='old',position='append',iostat=ierror)    
+            open(10,file=datadirectory(1:len_trim(datadirectory))//&
+                distanceFile(1:len_trim(distanceFile)),status='old',position='append',iostat=ierror)    
             if( ierror .ne. 0 ) then
-              open(10,file=datadirectory(1:len_trim(datadirectory))//distanceFile(1:len_trim(distanceFile)),status='new',iostat=ierror)        
+              ! console output
+              if( VERBOSE ) then
+                print*,'  epicentral distances of kernels in file:'
+                print*,'    ',datadirectory(1:len_trim(datadirectory))//distanceFile(1:len_trim(distanceFile))
+                print*
+              endif
+              ! open as new file
+              open(10,file=datadirectory(1:len_trim(datadirectory))//&
+                  distanceFile(1:len_trim(distanceFile)),status='new',iostat=ierror)        
               if( ierror .eq. 0 ) then
                 write(10,*) '# epicentral distances'
                 write(10,*) '# rounded exactDistance (in degrees)'
@@ -1355,23 +1318,30 @@
         endif
       endif
       
-      ! change simulation time according to epicentral distance or antipode 
-      call setupNewSimulationtime(distance)      
-
-      end            
+      end subroutine           
 
 
 !-----------------------------------------------------------------------
-      subroutine setupNewSimulationtime(distance)
+      subroutine setupNewSimulationtime(distance,iorbit)
 !-----------------------------------------------------------------------
-! change times according to epicentral distance or antipode 
+! changes simulation time according to epicentral distance or antipode given and
+! depending on parameter USEOVERTIME set by commonModules
+!
+! input:
+!   distance - epicentral distance between source & receiver (can be higher orbit)
+!   iorbit      - orbit number 
+!
+! returns: LASTTIME is set accordingly
       use propagationStartup; use parallel; use verbosity
       implicit none
-      real(WP)::distance,arrivalTime,antipodeTime
+      real(WP),intent(in)::distance
+      integer,intent(in):: iorbit
+      real(WP):: arrivalTime,antipodeTime
       
       ! set last time
-      antipodeTime = PI*EARTHRADIUS/cphaseRef
+      antipodeTime = (PI + (iorbit-1)*PI)*EARTHRADIUS/cphaseRef
       arrivalTime = distance*EARTHRADIUS/cphaseRef
+      
       if( USEOVERTIME ) then
         LASTTIME = arrivalTime + SIMULATIONOVERTIMEPERCENT*arrivalTime
         if( LASTTIME > antipodeTime ) LASTTIME = antipodetime
@@ -1379,37 +1349,173 @@
         LASTTIME = antipodeTime
       endif      
       if( MASTER .and. VERBOSE) then
-        print*,'simulation time will end at:',LASTTIME
+        print*,'    new simulation time will end at:',LASTTIME
       endif            
-
-      ! set number of time steps
-      call determineSimulationsteps()      
       
-      end
+      end subroutine
       
       
 !-----------------------------------------------------------------------
       subroutine determineSimulationsteps()
 !-----------------------------------------------------------------------
-! determine the time steping for the simulation
-      use propagationStartup
+! determines the time steping for the simulation
+      use propagationStartup,only: FIRSTTIME,LASTTIME,dt,firsttimestep,lasttimestep, &
+                            numofTimeSteps,seismogramReceiver
+      use parallel,only: MASTER
+      use verbosity,only: VERBOSE
+      use filterType,only: WindowSIZE
       implicit none
-      integer:: ierror
-      
+      integer:: ierror,isteps
+
       ! stepings    
       firsttimestep = int( FIRSTTIME/dt) !default: -6500/ almost same results for -800
       lasttimestep = int( LASTTIME/dt) !default: 22000
-      numofTimeSteps=lasttimestep-firsttimestep+1
+      isteps=lasttimestep-firsttimestep+1
       
+      if( MASTER .and. VERBOSE) then
+        print*,'    number of time steps  : ',isteps
+      endif 
       
-      ! newly allocate seismogram for receiver
-      if( allocated(seismogramReceiver) ) deallocate(seismogramReceiver)
-      allocate(seismogramReceiver(2,numofTimeSteps),stat=ierror)
-      if( ierror .gt. 0 ) call stopProgram('error in allocating seismogram array    ')
+      if( numofTimeSteps /= isteps ) then
+        numofTimeSteps = isteps
+        ! newly allocate seismogram for receiver
+        if( allocated(seismogramReceiver) ) then
+         if( size(seismogramReceiver(1,:)) /= numofTimeSteps) deallocate(seismogramReceiver)
+        endif
+        if( .not. allocated(seismogramReceiver)) allocate(seismogramReceiver(2,numofTimeSteps),stat=ierror)
+        if( ierror .gt. 0 ) call stopProgram('error in allocating seismogram array    ')
       
-      ! fft size
-      call determineFFTWindowsize()
-      
-      end
+        ! fft size
+        call determineFFTWindowsize(numofTimeSteps,WindowSIZE)
+      endif      
+      end subroutine
 
+!-----------------------------------------------------------------------
+      subroutine determineOrbitDistance(distance,iorbit)
+!-----------------------------------------------------------------------
+! determines the travelled distance between source and station, taking account of
+! multiple orbits, when the parameter WINDOW_START, set by commonModules,
+! indicates so.
+!
+! input:
+!     distance, iorbit      -   epicentral distance between source/receiver, orbit number
+!
+! returns: distance (in rad) and iorbit are set accordingly
+      use precisions; use parallel; use verbosity
+      use cells,only: vertices; 
+      use propagationStartup
+      use filtertype, only: bw_waveperiod
+      use adjointVariables
+      implicit none
+      real(WP),intent(out):: distance
+      integer,intent(out):: iorbit
+      real(WP):: minor_distance,arrivalTime
+      
+      ! gets minor arc distance (in rad)
+      call greatCircleDistance(vertices(sourceVertex,:),vertices(receiverVertex,:),minor_distance)
+      distance = minor_distance
+      
+      ! higher orbits
+      iorbit = 1
+      arrivalTime = distance*EARTHRADIUS/cphaseRef      
+      do while( WINDOW_START > arrivalTime )
+        iorbit = iorbit + 1        
+        if( mod(iorbit,2 ) == 0 ) then
+          ! even orbits
+          distance = (iorbit-1)*2.0*PI - minor_distance
+          arrivalTime = distance*EARTHRADIUS/cphaseRef
+        else
+          ! odd orbits
+          distance = (iorbit-1)*2.0*PI + minor_distance
+          arrivalTime = distance*EARTHRADIUS/cphaseRef
+        endif
+      enddo      
+      
+      end subroutine
+      
+!-----------------------------------------------------------------------
+      subroutine determineSourceParameters()
+!-----------------------------------------------------------------------
+! sets parameters sigma and mu which govern the Gaussian source characteristics      
+!
+! returns: muSquare,muTwo,TimeParameterSigma,WidthParameterMu
+      use propagationStartup; use parallel
+      use cells,only: subdivisions       
+      use filterType; use verbosity
+      implicit none
+      real(WP):: theta_radian,tmp
+      logical,parameter:: ADAPT_SOURCE   = .false.
+
+      ! calculates width parameter (see Carl Tape Thesis , eq. 3.21 )
+      if( .not. FIXED_SOURCEPARAMETER ) then
+        !WidthParameterMu=FACTOR_WIDTH*averageCellDistance/(EARTHRADIUS*2.0*sqrt(-2.0*log(0.05)))
+        theta_radian = THETA_WID*PI/180.0
+        WidthParameterMu = theta_radian/(2.0*sqrt(-2.0*log(0.05)))        
+      endif
+      muSquare = WidthParameterMu * WidthParameterMu
+      muTwo    = muSquare + muSquare
+      
+      ! checks width parameter
+      if( subdivisions <= 6 .and. WidthParameterMu < 0.008 ) then
+        print*,'  minimum period: ',20.+WidthParameterMu*7000.
+        !call stopProgram("source not optimal ")      
+      endif
+      if( subdivisions <= 7 .and. WidthParameterMu < 0.004 ) then
+        print*,'  minimum period: ',20.+WidthParameterMu*7000.
+        !call stopProgram("source not optimal ")
+      endif 
+      
+      ! empirical formula to obtain a maximum at the reference period
+      if( ADAPT_SOURCE ) then
+        if( (20.+WidthParameterMu*7000.) > bw_waveperiod ) then
+          print*,'  minimum period possible: ',20.+WidthParameterMu*7000.
+          print*,'  width parameter mu:',WidthParameterMu        
+          call stopProgram("source not possible    ")
+        endif
+        tmp = 1.0-8.0/3.0*(20.+WidthParameterMu*7000.-bw_waveperiod)
+        if( tmp < 0.0 ) then 
+          call stopProgram("source parameter sigma not defined    ")
+        endif
+        TimeParameterSigma = 0.75 + 0.75*sqrt( tmp )
+      endif
+      
+      tmp = 2./3.*TimeParameterSigma**2-TimeParameterSigma+20.+7000.*WidthParameterMu
+      ! console output              
+      if( MASTER .and. VERBOSE) then
+        print*,'  source parameters:'
+        print*,'    time parameter sigma :',TimeParameterSigma
+        print*,'    width parameter mu   :',WidthParameterMu        
+        print*,'    empirical spectral maximum around period:',tmp
+        print*
+      endif
+
+      end subroutine
+
+!-----------------------------------------------------------------------   
+      subroutine stopProgram(textline)
+!-----------------------------------------------------------------------   
+      use parallel
+      implicit none
+      character*128:: textline
+      integer:: i,endindex,ierror
+      logical:: flag
+      
+      ! console output
+      endindex=index(textline,"  ")
+      if( endindex .lt. 1 ) endindex = 128            
+      print*,textline(1:endindex)
+      
+      ! on linux machines : i/o unit 6 is the stdout , on SGI 101
+      call flush(6)
+      
+      ! stop MPI
+      call MPI_Initialized(flag,ierror)
+      if( flag .eqv. .true. .and. ierror == 0) then
+        call MPI_Abort(MPI_COMM_WORLD, ierror )
+        call MPI_FINALIZE(ierror)
+      endif
+      
+      ! stop process
+      stop 'abort - program '      
+      end
       

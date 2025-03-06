@@ -1,6 +1,6 @@
 !=====================================================================
 !
-!       m e m b r a n e S p h e r e  1 . 0
+!       m e m b r a n e S p h e r e  1 . 1
 !       --------------------------------------------------
 !
 !      Daniel Peter
@@ -13,27 +13,6 @@
 !=====================================================================
 
 !-----------------------------------------------------------------------
-      subroutine readPhaseMap()
-!-----------------------------------------------------------------------
-! reads in a phase velocity map file from directory /phasedata
-! for corresponding grid level size e.g. 'phase.6.dat'
-!
-! returns: phaseMap array filled up 
-      use propagationStartup
-      implicit none
-      character*64:: fileName
-      character*1:: divString
-      
-      ! parameters
-      write(divString,'(i1)') subdivisions  ! grid level
-      fileName = '../phasedata/phase.6.L150.dat'   !filename of phase velocity map (values in absolute km/s)
-  
-      ! read phase map
-      call readPhaseVelocityMap(fileName)
-      
-      end
-
-!-----------------------------------------------------------------------
       subroutine readPhaseVelocityMap(fileName)
 !-----------------------------------------------------------------------
 ! reads in a phase velocity map file from directory /phasedata
@@ -43,7 +22,7 @@
 !     fileName -  phase velocity map file
 !
 ! returns: phaseMap array filled up 
-      use phaseVelocityMap; use propagationStartup; use verbosity      
+      use phaseVelocityMap; use propagationStartup; use verbosity; use cells
       implicit none
       integer:: i,ioerror,id
       character*64:: fileName
@@ -75,5 +54,27 @@
         print*,'read entries do not match'
         call stopProgram( 'abort - readPhaseMap   ')
       endif
+      
+      end
+
+!-----------------------------------------------------------------------
+      subroutine readPhaseMap()
+!-----------------------------------------------------------------------
+! reads in a phase velocity map file from directory /phasedata
+! for corresponding grid level size e.g. 'phase.6.dat'
+!
+! returns: phaseMap array filled up 
+      use cells
+      implicit none
+      character*64:: fileName
+      character*1:: divString
+      
+      ! parameters
+      write(divString,'(i1)') subdivisions  ! grid level
+      !filename of phase velocity map (values in absolute km/s)      
+      fileName = '../phasedata/phase.'//divString//'.L150.dat'   
+  
+      ! read phase map
+      call readPhaseVelocityMap(fileName)
       
       end

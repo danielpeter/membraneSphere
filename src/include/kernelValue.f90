@@ -1,6 +1,6 @@
 !=====================================================================
 !
-!       m e m b r a n e S p h e r e  1 . 0
+!       m e m b r a n e S p h e r e  1 . 1
 !       --------------------------------------------------
 !
 !      Daniel Peter
@@ -25,7 +25,7 @@
 !   arrivalTime            - arrival time
 !   vperturbation         - velocity perturbation
 !
-! returns: kernel value
+! returns: kernel value [1/rad^2]
       use cells;use phaseVelocityMap
       implicit none
       real(WP):: getKernelValue,t_lag,phaseVelocityRef,phasevelocity,vertexCellArea,arrivalTime,vperturbation
@@ -33,7 +33,7 @@
       logical:: heterogeneous
       
       ! convert cell area into radians square
-      vertexCellArea=cellAreas(deltaScatterer)/(EARTHRADIUS*EARTHRADIUS)
+      vertexCellArea=cellAreas(deltaScatterer)/EARTHRADIUS_SQUARED
       
       ! get velocity correction
       if( heterogeneous ) then
@@ -233,10 +233,10 @@
         call stopProgram('fitSphericalHarmonics() - variance reduction is not good enough!    ')
       endif
 
-      !open(2,file=nameout)
-      !write(2,*)lmx
-      !write(2,*)(x(i),i=1,ncoef)
-      !close(2)
+      !open(12,file=nameout)
+      !write(12,*)lmx
+      !write(12,*)(x(i),i=1,ncoef)
+      !close(12)
       
       ! store spherical harmonics coefficients
       SH_lmx=lmx
@@ -424,7 +424,7 @@
       write(chlmax,'(i3.3)')lmax
       write(chialpha,"(i1.1)")ialpha
       nameout=datadirectory(1:len_trim(datadirectory))//'ttkernel.regular.xyz'
-      open(2,file=nameout)
+      open(12,file=nameout)
 
       igrid=0
       if(lmax.gt.lmx)stop "l too big"
@@ -445,12 +445,12 @@
           enddo
           
           ! file output
-          write(2,*)xlon,xlat,z
+          write(12,*)xlon,xlat,z
         enddo
       enddo
             
       ! close output-file
-      close(2)
+      close(12)
       
       ! console output
       if( VERBOSE ) then

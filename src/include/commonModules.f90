@@ -1,6 +1,6 @@
 !=====================================================================
 !
-!       m e m b r a n e S p h e r e  1 . 0
+!       m e m b r a n e S p h e r e  1 . 1
 !       --------------------------------------------------
 !
 !      Daniel Peter
@@ -12,12 +12,13 @@
 !      
 !=====================================================================
 !
-! modules needed by e.g. program propagation
+! modules needed by e.g. program phaseshift
 
       ! working precision & parameters
       ! these values are not set in 'Parameter_Input'      
-      module precision
-        !-------------------------------------------------------------------------------------------------------------
+      !------------------------------------------------------------------------------------------
+      module precisions
+      !------------------------------------------------------------------------------------------
         ! user can modify these settings
         ! working precision in bytes: real = 4,double precision = 8 
         integer, parameter :: WP                   = 4            
@@ -32,26 +33,35 @@
         !                                  L75: 1.783786819208144E-002
         !                                  WidthParameterMu = 0.017968_WP         
         !                                  good other values q4:0.0713 (20 degree), 
-        !                                                       q6: 0.017826 (5 degree),0.017968 (factor 8x)
-        ! factor_time: these factors are taken to calculate source parameters sigma/mu 
+        !                                                   q6: 0.017826 (5 degree),0.017968 (factor 8x)
+        ! theta_wid: factor is taken to calculate source parameters mu 
         !                     when no FIXED_SOURCEPARAMETER
-        !                     for Love L150 - subdivision 8: fT6.0,fW8.0 have main period at 139.6 s ,
-        !                                              subdivision 7: fT4.0,fW10.0 main period at 206.9 s
-        !                     (check with waveparameters executable)                                
+        !                     (see Tape, thesis 2003, eq. 3.21)
+        !                     for Love L150 - subdivision 8: fW8.0 have main period at 139.6 s ,
+        !                                              subdivision 7: fW10.0 main period at 206.9 s
+        !                     (check with waveparameters executable) 
+        ! default: 
+        !     sigma = 60.0 
+        !     mu     = 4.e-2 
+        ! other comparison: 180. 15.e-2 (bit better...), Carl 204.5/theta_wid=5
+        real(WP) :: TimeParameterSigma              = 60.0          ! L100: 30.0  , L50: 10.0
+        real(WP) :: WidthParameterMu                = 4.0e-2        ! L100: 2.e-2 , L50: 1.e-2
         logical,parameter :: FIXED_SOURCEPARAMETER  = .true. 
-        real(WP) :: TimeParameterSigma            = 60.0_WP  
-        real(WP) :: WidthParameterMu              = 4.0E-02  
-        real(WP),parameter :: FACTOR_TIME          = 4.0_WP     
-        real(WP),parameter :: FACTOR_WIDTH         = 8.0_WP          
+        real(WP),parameter :: THETA_WID             = 5.0_WP ! (in degrees)
 
         ! filter parameters
         ! FILTERINITIALSOURCE: filter initial prescribed source too
         ! FILTERSEISMOGRAMS: use filtering when calculating timelag
         ! bw_fixfrequency: use the fixed halfband-frequency or a percentage of the wave period
+        !
         ! half-bandwidth frequency: use same bandwidth-half as for analytic comparision 
         !                                           (compare: Kernels/BORN/find_kernels.f, parameter deltau)
+        !                                           paper suggests:
+        !                                           Spetzler et al. 2002: delta_f_half = 2.5 mHz
+        !                                           Ekstrom et al. 1997: delta_f_half ~ 2.27 mHz (derived from eq. 13 and fig. 2)
+        !
         ! bandwidth percent: 10% of corner period used as filter width on both sides 
-        !                                ( e.g. Love 150s gets +- 15 s filter ), 0.6059 for half-bandwidth of 2.5 mHz        
+        !                    ( e.g. Love 150s gets +- 15 s filter ), 0.6059 for half-bandwidth of 2.5 mHz
         ! butterworthfilter: just use bandpass filter or butterworth bandpass filter
         ! butterworth_power: butterworth power exponent
         ! arrival_threshold: threshold value for arrival time picking also determines startTime 
@@ -63,89 +73,181 @@
         !                                   frequency kernel cross-sections)        
         ! ANALYTICAL_CORRELATION: calculates also the analytically derived timelag & 
         !                                                   kernel value
-        logical,parameter :: FILTERINITIALSOURCE    = .true.    
-        logical,parameter :: FILTERSEISMOGRAMS      = .false.         
+        logical,parameter :: FILTERINITIALSOURCE    = .false. !.true. for inversions/kernels    
+        logical,parameter :: FILTERSEISMOGRAMS      = .true.         
         logical,parameter :: BW_FIXFREQUENCY        = .true.     
-        real(WP),parameter :: BW_HALFFREQUENCY     = 2.5e-3 
+        real(WP),parameter :: BW_HALFFREQUENCY     = 2.5e-3  ! default: 2.5e-3; Ekstrom: 2.27e-3
         real(WP),parameter :: BW_PERCENT           = 0.0_WP     
         logical,parameter :: BUTTERWORTHFILTER      = .false.   
         integer,parameter :: BUTTERWORTH_POWER      = 1         
         real(WP),parameter :: ARRIVAL_THRESHOLD    = 1.0_WP    
         real(WP),parameter :: HANNWINDOW_PERCENT   = 0.1        
-        real(WP),parameter :: MEMBRANECORRECTION   = -0.0      
+        real(WP),parameter :: MEMBRANECORRECTION   = 0.0      
         logical,parameter :: ANALYTICAL_CORRELATION = .false.   
+        ! filter the source around a new period  
+        logical:: new_period                        = .false.
+        real(WP):: newperiod                       = 150.919  ! (s)
+
+
+        ! adjoint method
+        ! time window of signal
+        ! WINDOW_START: for major-arcs R150: 4700.;  R200: 4400.; R250: 4100.; R300: 3800. 
+        logical,parameter:: WINDOWEDINTEGRATION      = .false. 
+        real(WP):: WINDOW_START                      = 0.0 ! in seconds 
+        real(WP):: WINDOW_END                        = 4300.0 ! in seconds 
+        
         
         ! routine optimization
         ! precalculated_cells: speeding up computation by using precalculated cell areas 
         !                                 and distances
         ! prescribedsource: precalculates source values and stores in an array for faster 
         !                              computation of finite-difference iteration 
-        logical,parameter::PRECALCULATED_CELLS      = .true.         
-        logical:: PRESCRIBEDSOURCE                 = .true.              
-        
+        ! relaxed_grid: takes cell infos from grid files ***.relaxed.dat
+        logical,parameter::PRECALCULATED_CELLS       = .true.         
+        logical:: PRESCRIBEDSOURCE                   = .false.              
+        logical,parameter:: RELAXED_GRID             = .false.
+        logical,parameter:: CORRECT_RATIO            = .false.
+
         ! analytical spherical harmonics degrees
         ! degree's l & m : spherical harmonic degrees for comparision with laplacian accuracy
         ! degreeAccuracy : legendre accuracy for analytic solution of seismogram with source 2
-        !                              default: 80; see plot fig. (3.3)B, Tape, p. 32
+        !                              see plot fig. (3.3)B, Tape, p. 32
+        !                             ( 38 for 180/0.15; 80 for 60/0.04; >120 for 10/0.02 )
         integer, parameter :: DEGREE_L              = 6
         integer, parameter :: DEGREE_M              = 1        
-        integer, parameter :: DEGREEACCURACY        = 100
+        integer, parameter :: DEGREEACCURACY        = 120    
 
         ! inversion
-        ! compatible_refgridXrefgrid: set equal to 1 to make the grid compatible with a refgridXrefgrid grid
+        ! compatible_refgridXrefgrid: set equal to 1 to make the grid 
+        !                           compatible with a refgridXrefgrid grid
         !   0 for L0035.jwkb.lsqr.mod.pcn-.2-.2 or L150.crust.2degree.gsh.modelVector.*.pcn.blk
         !   1 for L150.crust
-        ! grid pixelsize: inversion grid consists of approximately equal sized pixels with this size (in  degrees)
+        ! grid pixelsize: inversion grid consists of approximately equal sized 
+        ! pixels with this size (in  degrees)
         integer,parameter:: compatible_refgridXrefgrid  = 0
 
         ! source/station location
         ! station_correction: tries to use exact locations of source and receiver.
         !                               interpolates linearly for the receiver displacement.
-        logical,parameter:: Station_Correction                = .false.
+        logical:: Station_Correction                    = .true.
 
         ! use overtime : for the adaption of the simulation time for different source/receiver setups
-        !                         (e.g. when more kernels either uses an overtime or antipode time)
+        !                         otherwise the antipode time is taken when calculating a new simulation time
+        !                         (e.g. for many-kernels calculation)
         ! simulation overtime %: how much percent more time shall be given for the overtime
         logical,parameter:: USEOVERTIME                 = .false.    
         real(WP),parameter:: SIMULATIONOVERTIMEPERCENT = 0.8_WP
 
+        ! checkerboard map parameters
+        ! instead of reading in a heterogeneous phase velocity map, it creates
+        ! a checkerboard map with corresponding parameters
+        logical,parameter :: DO_CHECKERBOARD          = .true.
+        real(WP),parameter :: MAP_PERCENT_AMPLITUDE  = 2.0    !given in percent, i.e. 5% = 5.0
+        integer,parameter :: MAP_DEGREE_L            = 13 ! 9 ! 20
+        integer,parameter :: MAP_DEGREE_M            = 7 ! 5 ! 10        
         
-        !-------------------------------------------------------------------------------------------------------------
+        ! simulation output
+        integer,parameter :: SIMULATION_TIMESTEPPING = 4  ! takes every fifth timestep for output
+        
+        !----------------------------------------------------------------------------------------
         ! user shouldn't need to modify the following ones
         ! PREM values
         ! radius measured in km; phase velocities measured in km/s
         ! high periods 450/600: determined with spline representation for wave period 
         ! (see: Kernels/BORN/find_kernels.f)   
-        real(WP), parameter :: EARTHRADIUS = 6371.0_WP        
-        real(WP), parameter :: PHASEVELOCITY_R40 = 3.92799_WP !rayleigh wave 40s
+        real(WP), parameter :: EARTHRADIUS         = 6371.0_WP        
+        real(WP), parameter :: EARTHRADIUS_SQUARED = 40589641.0_WP
+        
+        ! rayleigh waves
+        real(WP), parameter :: PHASEVELOCITY_R35 = 3.91253_WP
+        real(WP), parameter :: PHASEVELOCITY_R37 = 3.91926_WP
+        !real(WP), parameter :: PHASEVELOCITY_R40 = 3.9284_WP  ! TW 3.9284
+        real(WP), parameter :: PHASEVELOCITY_R40 = 3.92799_WP  ! ETL 3.92799
+        real(WP), parameter :: PHASEVELOCITY_R45 = 3.94044_WP    
         real(WP), parameter :: PHASEVELOCITY_R50 = 3.95146_WP    
         real(WP), parameter :: PHASEVELOCITY_R60 = 3.97339_WP                
-        real(WP), parameter :: PHASEVELOCITY_R75 = 4.01077_WP                      
-        real(WP), parameter :: PHASEVELOCITY_L35 = 4.39987_WP !love wave 35s 
-        real(WP), parameter :: PHASEVELOCITY_L50 = 4.49336_WP    
+        real(WP), parameter :: PHASEVELOCITY_R75 = 4.01077_WP 
+        real(WP), parameter :: PHASEVELOCITY_R100 = 4.08957_WP 
+        real(WP), parameter :: PHASEVELOCITY_R150 = 4.30508_WP 
+        real(WP), parameter :: PHASEVELOCITY_R200 = 4.57676_WP 
+        real(WP), parameter :: PHASEVELOCITY_R250 = 4.91844_WP 
+        real(WP), parameter :: PHASEVELOCITY_R300 = 5.29076_WP 
+        real(WP), parameter :: WAVEPERIOD_R35    = 35.0987_WP
+        real(WP), parameter :: WAVEPERIOD_R37    = 37.0734_WP
+        !real(WP), parameter :: WAVEPERIOD_R40    = 40.1970_WP  ! TW: 40.1970
+        real(WP), parameter :: WAVEPERIOD_R40    = 40.0432_WP  ! ETL: 40.0432
+        real(WP), parameter :: WAVEPERIOD_R45    = 45.0501_WP
+        real(WP), parameter :: WAVEPERIOD_R50    = 50.0271_WP
+        real(WP), parameter :: WAVEPERIOD_R60    = 60.1467_WP
+        real(WP), parameter :: WAVEPERIOD_R75    = 75.3258_WP
+        real(WP), parameter :: WAVEPERIOD_R100    = 100.3930_WP
+        real(WP), parameter :: WAVEPERIOD_R150    = 151.1930_WP ! minor arc?
+        !real(WP), parameter :: WAVEPERIOD_R150    = 150.0_WP ! major arc?
+        real(WP), parameter :: WAVEPERIOD_R200    = 200.0_WP
+        real(WP), parameter :: WAVEPERIOD_R250    = 250.0_WP
+        real(WP), parameter :: WAVEPERIOD_R300    = 300.0_WP
+        
+        ! love waves                     
+        real(WP), parameter :: PHASEVELOCITY_L35 = 4.39987_WP  
+        real(WP), parameter :: PHASEVELOCITY_L37 = 4.41795_WP  
+        real(WP), parameter :: PHASEVELOCITY_L40 = 4.44109_WP  
+        real(WP), parameter :: PHASEVELOCITY_L45 = 4.47005_WP          
+        real(WP), parameter :: PHASEVELOCITY_L50 = 4.49336_WP  
+        real(WP), parameter :: PHASEVELOCITY_L60 = 4.53031_WP            
         real(WP), parameter :: PHASEVELOCITY_L75 = 4.57474_WP    
         real(WP), parameter :: PHASEVELOCITY_L100= 4.64431_WP    
-        real(WP), parameter :: PHASEVELOCITY_L150= 4.77915_WP ! first arrival phase velocity             
+        !real(WP), parameter :: PHASEVELOCITY_L150= 4.78619_WP ! TW: 4.78619
+        real(WP), parameter :: PHASEVELOCITY_L150= 4.77915_WP ! ETL: 4.77915 first arrival
         real(WP), parameter :: PHASEVELOCITY_L200= 4.91928_WP          
         real(WP), parameter :: PHASEVELOCITY_L250= 5.07097_WP          
         real(WP), parameter :: PHASEVELOCITY_L300= 5.22906_WP    
         real(WP), parameter :: PHASEVELOCITY_L450= 5.74979_WP 
         real(WP), parameter :: PHASEVELOCITY_L600= 6.36841_WP 
-        real(WP), parameter :: PI = 3.1415926535897931_WP       
-        !-------------------------------------------------------------------------------------------------------------        
-      end module precision      
+        real(WP), parameter :: WAVEPERIOD_L35    = 35.0599_WP
+        real(WP), parameter :: WAVEPERIOD_L37    = 37.0585_WP
+        real(WP), parameter :: WAVEPERIOD_L40    = 40.1497_WP
+        real(WP), parameter :: WAVEPERIOD_L45    = 45.1143_WP
+        real(WP), parameter :: WAVEPERIOD_L50    = 50.1901_WP
+        real(WP), parameter :: WAVEPERIOD_L60    = 60.3145_WP
+        real(WP), parameter :: WAVEPERIOD_L75    = 75.1095_WP
+        real(WP), parameter :: WAVEPERIOD_L100   = 100.8090_WP
+        !real(WP), parameter :: WAVEPERIOD_L150   = 153.462_WP ! TW: 153.462
+        real(WP), parameter :: WAVEPERIOD_L150   = 150.9190_WP ! ETL: 150.9190
+        real(WP), parameter :: WAVEPERIOD_L200    = 200.0_WP
+        real(WP), parameter :: WAVEPERIOD_L250    = 250.0_WP
+        real(WP), parameter :: WAVEPERIOD_L300    = 300.0_WP
+        
+        ! useful parameters
+        real(WP), parameter :: PI                 = 3.1415926535897931_WP       
+        real(WP), parameter :: RAD2DEGREE         = 180.0_WP/PI
+        real(WP), parameter :: DEGREE2RAD         = PI/180.0_WP
+      end module precisions     
+
+!-----------------------------------------------------------------------
+      module phaseVelocityMap
+!-----------------------------------------------------------------------
+      ! phaseVelocityMap module
+      ! used for phase velocity maps
+        use precisions
+        integer:: numPhaseEntries
+        real(WP), allocatable, dimension(:):: phaseMap
+        real(WP), allocatable, dimension(:):: phaseVelocitySquare        
+      end module
+
 !-----------------------------------------------------------------------
       module verbosity
+!-----------------------------------------------------------------------
         logical:: VERBOSE     = .true.         !for console verbosity
-        logical:: beVerbose   = .true.         !for getTimelag verbosity
+        logical:: beVerbose   = .false.         !for getTimelag verbosity
         logical:: fileOutput  = .false.        !for debuging: outputs to file 'tmp*.dat'
-        logical:: DEBUG       = .false.        !for debugging: code very verbose!
       end module
+
+!-----------------------------------------------------------------------
+      module adjointVariables
 !-----------------------------------------------------------------------
       ! adjoint module
       ! used for adjoint routines
-      module adjointVariables
-        use precision
+        use precisions
         ! adjoint parameters
         ! onthefly: instead of integration at the end, after each time step 
         ! startatzero: start integration from zero, not for whole seismogram
@@ -155,147 +257,182 @@
         logical,parameter:: ADJOINT_ONTHEFLY            = .false. 
         logical,parameter:: ADJOINT_STARTATZERO         = .false. 
         logical,parameter:: PRECALCULATE_DERIVATIVES    = .false. 
-        logical,parameter:: WINDOWEDINTEGRATION         = .false. 
         
         ! adjoint variables
-        logical:: Adjoint_Program                   = .false.
-        logical:: Adjoint_InversionProgram          = .false.
-        logical:: kernelIteration,storeAsFile
+        logical:: Adjoint_Program                        = .false.
+        logical:: Adjoint_InversionProgram               = .false.
+        logical:: kernelIteration,storeAsFile,Set_Antipode_Time
         integer:: adjointSourceVertex     
         character*64:: adjointKernelName
         real(WP):: normFactor   
         real(WP),allocatable,dimension(:,:):: adjointSource
         real(WP),allocatable,dimension(:):: adjointKernel
-        real(WP),allocatable,dimension(:):: backwardDisplacement,backwardDisplacement_old,backwardNewdisplacement
-        real(WP),allocatable,dimension(:,:):: wavefieldForward, wavefieldAdjoint,seismoSecondDerivative      
+        real(WP),allocatable,dimension(:):: backwardDisplacement,&
+                                           backwardDisplacement_old,&
+                                           backwardNewdisplacement
+        real(WP),allocatable,dimension(:,:):: wavefieldForward, wavefieldAdjoint,&
+                                            seismoSecondDerivative      
         integer,parameter:: adjSourceFileID=101,adjRecFileID=102,adjMidpointFileID=103
       end module
+      
+!-----------------------------------------------------------------------
+      module cells  
 !-----------------------------------------------------------------------
       ! cells module
       ! used for precalculated values of cell areas etc.
-      module cells  
-        use precision
-        integer:: MaxTriangles,MaxVertices
+        use precisions
+        integer:: subdivisions,MaxTriangles,MaxVertices
         integer,allocatable, dimension(:,:):: cellFace,cellNeighbors,cellTriangleFace
-        integer:: numFaces,numNeighbors,numTriangleFaces,numCorners
+        integer:: numFaces,numNeighbors,numTriangleFaces,numCorners,numVertices,&
+                 numDomainVertices
         real(WP), allocatable, dimension(:)::cellAreas
-        real(WP), allocatable, dimension(:,:)::vertices,cellEdgesLength,cellCenterDistances,cellCorners
+        real(WP), allocatable, dimension(:,:)::vertices,cellEdgesLength,&
+                                             cellCenterDistances,cellCorners,cellFractions
         real(WP):: interpolation_distances(3),interpolation_triangleLengths(3)
         integer:: interpolation_corners(3),interpolation_triangleIndex
       end module cells    
+
 !-----------------------------------------------------------------------
-      ! phaseVelocityMap module
-      ! used for phase velocity maps
-      module phaseVelocityMap
-        use precision
-        integer:: numPhaseEntries
-        real(WP), allocatable, dimension(:):: phaseMap
-        real(WP), allocatable, dimension(:):: phaseVelocitySquare
-      end module
+      module propagationStartup
 !-----------------------------------------------------------------------
       ! propagationStartup module
       ! used for initialization startup process
-      module propagationStartup
-        use precision
+        use precisions
         logical:: Phaseshift_Program = .false.
-        logical:: HETEROGENEOUS,DELTA,SIMULATIONOUTPUT,SECONDDELTA,MOVEDELTA    
+        logical:: HetPhaseshift_Program = .false.
+        logical:: HETEROGENEOUS,DELTA,SECONDDELTA,MOVEDELTA
+        logical:: SIMULATIONOUTPUT
         logical:: manyReceivers,manyKernels
         logical:: importKernelsReceivers,referenceRun
-        integer:: startVertex,endVertex,firsttimestep,lasttimestep,numofTimeSteps,midpointVertex
-        integer:: sourceVertex,receiverVertex,deltaVertex,originSourceVertex,originReceiverVertex
-        integer:: numVertices,numDomainVertices,subdivisions,numofReceivers,numofKernels,currentKernel   
+        integer:: startVertex,endVertex,firsttimestep,lasttimestep,&
+                 numofTimeSteps,midpointVertex
+        integer:: sourceVertex,receiverVertex,deltaVertex,originSourceVertex,&
+                  originReceiverVertex
+        integer:: numofReceivers,numofKernels,currentKernel   
         integer,allocatable,dimension(:):: receivers
         integer,allocatable,dimension(:,:)::kernelsReceivers
         character*8:: DELTAFUNCTION,cphasetype
         character*128:: datadirectory
         real(WP):: FIRSTTIME,LASTTIME,DELTARADIUS
-        real(WP):: sourceLat,sourceLon,receiverLat,receiverLon,cphaseRef,desiredSourceLat,desiredSourceLon
-        real(WP):: deltaLat,deltaLon,deltaPerturbation,deltaMoveIncrement,desiredReceiverLat,desiredReceiverLon 
+        real(WP):: sourceLat,sourceLon,receiverLat,receiverLon,cphaseRef,&
+                   desiredSourceLat,desiredSourceLon,muSquare,muTwo
+        real(WP):: deltaLat,deltaLon,deltaPerturbation,deltaMoveIncrement,&
+                   desiredReceiverLat,desiredReceiverLon 
         real(WP):: cphase2,dt,dt2,averageCellDistance
         real(WP):: kernelStartDistance,kernelEndDistance,distanceQuit
         real(WP):: benchAllStart,benchAllEnd,benchstart,benchend
-        real(WP),allocatable,dimension(:,:):: seismogramReceiver,receiversSeismogram,receiversSeismogramRef                
-        real(WP),allocatable,dimension(:,:,:)::kernelsReceiversSeismogram,kernelsReceiversSeismogramRef
+        real(WP),allocatable,dimension(:,:):: seismogramReceiver,&
+                                             receiversSeismogram,&
+                                             receiversSeismogramRef 
+        real(WP),allocatable,dimension(:,:,:)::kernelsReceiversSeismogram,&
+                                              kernelsReceiversSeismogramRef
         real(WP),allocatable,dimension(:,:)::forceTermPrescribed
         logical:: sourceOnFile = .false.
         integer:: sourceFileID = 201 
         integer::SH_lmx,SH_ncoef
         real,allocatable,dimension(:)::SH_coef
-        logical:: rotate_frame = .true.  ! rotate source&receiver locations/heterogeneous phase map to equatorial plane (by default)
+        ! rotate source&receiver locations / 
+        ! heterogeneous phase map to equatorial plane (by default)
+        logical:: rotate_frame = .false.  
       end module
+
+!-----------------------------------------------------------------------
+      module deltaSecondLocation
 !-----------------------------------------------------------------------
       ! additional delta location
-      module deltaSecondLocation
-        use precision
+        use precisions
         integer:: deltaSecondVertex
         real(WP):: deltaSecondLat,deltaSecondLon
         real(WP),parameter:: deltaSecondDistance = 3.0
       end module
+
+!-----------------------------------------------------------------------
+      module parallel
 !-----------------------------------------------------------------------
       ! parallel module
       ! used for MPI parallelization
-      module parallel
         include 'mpif.h'
         logical:: PARALLELSEISMO,MASTER
         integer:: nprocesses,rank,tag,MPI_CUSTOM
         integer:: status(MPI_STATUS_SIZE)
       end module
+
+!-----------------------------------------------------------------------
+      module displacements
 !-----------------------------------------------------------------------
       ! displacement arrays
-      module displacements
-        use precision
+        use precisions
         real(WP),allocatable,dimension(:):: displacement
         real(WP),allocatable,dimension(:):: displacement_old
         real(WP),allocatable,dimension(:):: newdisplacement
       end module
+
+!-----------------------------------------------------------------------
+      module griddomain
 !-----------------------------------------------------------------------
       ! grid domain array
-      module griddomain
-        use precision
-        integer boundariesMaxRange
+        use precisions
+        integer:: boundariesMaxRange
         integer,allocatable,dimension(:)::domainVertices
         integer,allocatable,dimension(:)::vertexDomain
         integer,allocatable,dimension(:,:,:)::boundaries
         integer,allocatable,dimension(:,:)::domainNeighbors
         real(WP),allocatable,dimension(:)::sendDisp,receiveDisp
       end
+
+!-----------------------------------------------------------------------
+      module loop
 !-----------------------------------------------------------------------
       ! looping delta location
-      module loop
         integer:: latitudeStart, latitudeEnd
         integer:: longitudeEnd
       end
+
 !-----------------------------------------------------------------------      
-      ! phase module
       module phaseBlockData
-        use precision
+!-----------------------------------------------------------------------
+      ! phase module
+        use precisions
         integer:: numBlocks
         real(WP), allocatable, dimension(:):: phaseBlock
         real(WP):: phaseBlockVelocityReference
         character*128:: phaseBlockFile,heterogeneousDataFile,heterogeneousOutput
-        real:: heterogeneousPixelsize        
+        real:: heterogeneousPixelsize
+        integer:: gsh_maximum_expansion        
       end module                  
+
+!-----------------------------------------------------------------------
+      module traveltime
 !-----------------------------------------------------------------------
       ! traveltime common parameters
-      module traveltime
-        use precision
+        use precisions
         real(WP):: t_lag,arrivalTime,vertexCellArea,t_lagAnalytic,seismo_timestep
         real(WP):: phasevelocity,kernel,kernelAnalytic
       end module
+
 !-----------------------------------------------------------------------      
       module filterType
-        use precision
-        integer:: WindowSIZE                    ! window size for fft
-        integer:: bw_width                      ! full bandwidth (in frequency domain)
-        real(WP):: bw_frequency,bw_waveperiod  ! half-bandwidth frequency, wave period used for bandwidth filtering
+!-----------------------------------------------------------------------
+        use precisions
+        ! window size for fft
+        integer:: WindowSIZE                    
+        ! full bandwidth (in frequency domain)
+        integer:: bw_width                      
+        ! half-bandwidth frequency, wave period used for bandwidth filtering
+        real(WP):: bw_frequency,bw_waveperiod  
       end module      
+
 !-----------------------------------------------------------------------      
       module splineFunction
-        integer:: i1,i2
+!-----------------------------------------------------------------------
+        integer:: i1,i2,ilength
         double precision, allocatable,dimension(:):: X,Y
         double precision, allocatable,dimension(:,:):: Q,F
       end module          
+
 !-----------------------------------------------------------------------      
       module heterogeneousMatrix
+!-----------------------------------------------------------------------
         real:: Amin,Amax
       end       
+

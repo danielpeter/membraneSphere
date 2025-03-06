@@ -1,6 +1,6 @@
 !=====================================================================
 !
-!       m e m b r a n e S p h e r e  1 . 0
+!       m e m b r a n e S p h e r e  1 . 1
 !       --------------------------------------------------
 !
 !      Daniel Peter
@@ -13,52 +13,124 @@
 !=====================================================================
 
 !-----------------------------------------------------------------------
-      subroutine allocateAdjointArrays()
+      subroutine prepareKernel(kernelIncrement)
+!-----------------------------------------------------------------------
+! prepare model for a new simulation with the setup of a new receiver location
+!
+! input:
+!     kernelIncrement     -   integer of degrees to increment the epicentraldistance
+!                                        between source and station
+!
+! returns: newly initialize station setup
+      use adjointVariables; use propagationStartup; use parallel
+      use cells; use verbosity
+      implicit none
+      integer:: kernelIncrement
+      character*3::kernelstr    
+      real(WP):: lat,lon,distance
+
+      ! append kernel number to name of adjoint kernel file 
+      !(originally something like 'adjointKernel.dat' should become 
+      ! e.g. 'adjointKernel.023.dat' for epicentral distance 23 degree )
+      write(kernelstr,'(i3.3)') int(kernelStartDistance+kernelIncrement-1)
+      if( kernelIncrement .eq. 1 ) then
+        adjointKernelName(len_trim(adjointKernelName)-2:len_trim(adjointKernelName)+4)&
+                =kernelstr//'.dat'
+      else
+        adjointKernelName(len_trim(adjointKernelName)-6:len_trim(adjointKernelName))&
+                =kernelstr//'.dat'      
+      endif
+      
+      if( MASTER .and. VERBOSE) then
+        print*
+        print*,'kernel name: ',adjointKernelName
+      endif
+            
+      ! receivers will be placed on the equator
+      desiredReceiverLat = 0.0_WP
+      desiredReceiverLon = kernelStartDistance + kernelIncrement - 1
+      call setupStation( desiredReceiverLat, desiredReceiverLon )
+      
+      ! initialize new model with new simulation time
+      if( USEOVERTIME ) then 
+        call initializeWorld()            
+        ! build new source (only when number of time steps changed)
+        if( size(forceTermPrescribed(1,:)) /= numofTimeSteps ) call initializeSource()
+      else
+        call initializeAdjointArrays()
+      endif      
+
+      end subroutine
+      
+!-----------------------------------------------------------------------
+      subroutine initializeAdjointArrays()
 !-----------------------------------------------------------------------
 ! allocates dynamically the arrays:   adjointKernel, adjointSource, wavefieldForward
-      use propagationStartup;use parallel;use adjointVariables;use verbosity
+! and initializes them
+      use propagationStartup;use parallel;use adjointVariables
+      use verbosity; use cells
       implicit none
       real(WP)::memory
       integer:: ierror
       
-      ! allocate arrays
-      if( allocated(adjointKernel) ) deallocate(adjointKernel)
-      allocate(adjointKernel(numVertices), stat=ierror)
-      if( ierror .ne. 0 ) call stopProgram('error allocating adjoint kernel arrays    ')
-      ! initialize array
+      ! allocates array for storing the adjoint kernel values
+      if( .not. allocated(adjointKernel) ) then
+        if( MASTER .and. VERBOSE ) then
+          print*,'  allocating adjointKernel array...'
+          print*,'    size: ',numVertices*sizeof(PI)/1024./1024.,'Mb'
+        endif
+        allocate(adjointKernel(numVertices), stat=ierror)
+        if( ierror .ne. 0 ) call stopProgram('error allocating adjoint kernel arrays    ')
+      endif
+      ! initializes array
       adjointKernel(:) = 0.0_WP
 
-      ! velocity seismogram
-      if( allocated(adjointSource) ) deallocate(adjointSource)
-      allocate(adjointSource(2,numofTimeSteps),stat=ierror)
-      if( ierror .ne. 0 ) call stopProgram('error allocating adjoint source arrays   ')
+      ! reallocates velocity seismogram 
+      ! (maybe the number of time steps changed..)      
+      if( allocated(adjointSource) ) then
+        if( size(adjointSource(1,:)) /= numofTimeSteps ) deallocate(adjointSource)
+      endif
+      
+      if( .not. allocated(adjointSource) ) then
+        allocate(adjointSource(2,numofTimeSteps),stat=ierror)
+        if( ierror .ne. 0 ) call stopProgram('error allocating adjoint source arrays   ')
+      endif
+      
+      ! initializes the adjoint source trace
       adjointSource(:,:)= 0.0_WP
       
       ! machine memory holds for 2 GB RAM: 
-      !   level 6: numVertices=122'882, numofTimeSteps~500, double precision 8 byte -> needs ~ 500 MB per wavefield, still o.k.
-      !   level 7: numVertices=491'522, numofTimeSteps~100, dp 8 byte -> needs ~ 3.8 GB ! per wavefield, too big
-      !if( subdivisions .gt. 6 ) then
-      !  storeAsFile=.true.
-      !endif
-
-      ! for faster computation try to store values in arrays than files
-      storeAsFile = .false.   
-      ! try to allocate wavefield arrays
-      if( allocated(wavefieldForward) ) deallocate(wavefieldForward)
-      allocate(wavefieldForward(numDomainVertices,numofTimeSteps),stat=ierror)
-      if( ierror .ne. 0 ) then
-        ! required harddisk memory shouldn't be bigger than 10 GB
-        memory=numVertices*numofTimeSteps*8
-        if( DEBUG ) print*,'required memory:',memory
-        if( memory .gt. 10.0e9 ) call stopProgram('too much memory use to store data!   ')
+      !   level 6: numVertices=122'882, numofTimeSteps~500, double precision 8 byte 
+      !               -> needs ~ 500 MB per wavefield, still o.k.
+      !   level 7: numVertices=491'522, numofTimeSteps~100, dp 8 byte 
+      !               -> needs ~ 3.8 GB ! per wavefield, too big
+      !
+      ! for faster computation try to store values in arrays than files:
+      ! trys to reallocate wavefield arrays 
+      ! ( maybe time steps changed for new kernel calculation...)
+      if( allocated(wavefieldForward) ) then
+        if( size(wavefieldForward(1,:)) /= numofTimeSteps) deallocate(wavefieldForward)
+      endif
       
-        storeAsFile = .true.
-        ! debug
-        if( DEBUG) print*,'   allocating forward wavefield failed...',rank          
-      else
-        !initialize
-        wavefieldForward(:,:)=0.0_WP
-        !wavefieldAdjoint(:,:)=0.0_WP
+      storeAsFile = .false.   
+      if( .not. allocated(wavefieldForward) ) then
+        memory=numDomainVertices*numofTimeSteps*sizeof(PI)
+        if( MASTER .and. VERBOSE ) then
+          print*,'  allocating wavefieldForward array...'
+          print*,'    vertices   : ',numDomainVertices
+          print*,'    time steps : ',numofTimeSteps          
+          print*,'    size       : ',memory/1024./1024.,'Mb'
+        endif
+        allocate(wavefieldForward(numDomainVertices,numofTimeSteps),stat=ierror)
+        if( ierror .ne. 0 ) then
+          ! sets some reasonable limit to computation:
+          ! required harddisk memory shouldn't be bigger than 10 GB, 
+          ! else the kernels will waste too much space for storage 
+          if( memory .gt. 10.0e9 ) call stopProgram('too much memory use to store data   ')
+          storeAsFile = .true.
+        endif
+        ! ensures that flag is equal for all processes
+        call syncFlag(rank, nprocesses,storeAsFile)      
       endif
       
       ! storage of adjoint wavefields
@@ -69,25 +141,58 @@
         ! console output
         if( MASTER .and. VERBOSE) then
           print*
-          print*,'adjoint wavefields will be stored as data-files, slower performance expected.'
+          print*,'not available RAM memory size:', memory/1024./1024.,'Mb'
           print*
+          print*,'adjoint wavefields would be stored as data-files:'
+          print*,'    - slower performance expected'
+          print*,'    - large storage files expected'          
+          print*
+          call stopProgram("error adjoint arrays  ")
         endif
       endif
-      end
+    
+      ! initializes
+      wavefieldForward(:,:)=0.0_WP
+
+      ! stores adjoint, backpropagating wavefield
+      if( .not. ADJOINT_ONTHEFLY ) then
+        ! checks if already an instance exists
+        if( allocated(wavefieldAdjoint) ) then
+          if( size(wavefieldAdjoint(1,:)) /= numofTimeSteps) deallocate(wavefieldAdjoint)          
+        endif
+        
+        ! allocates memory
+        if( .not. allocated(wavefieldAdjoint) ) then
+          if( MASTER .and. VERBOSE ) then 
+            print*,'  allocating wavefieldAdjoint array...'
+            print*,'    size       : ',numDomainVertices*numofTimeSteps*sizeof(PI)/1024./1024.,'Mb'
+          endif        
+          allocate(wavefieldAdjoint(numDomainVertices,numofTimeSteps),stat=ierror)
+          if( ierror /= 0 ) call stopProgram('error allocating adjoint wavefield    ')
+        endif
+        
+        ! initializes
+        wavefieldAdjoint(:,:)=0.0_WP
+      endif
+      
+      end subroutine
 
 !-----------------------------------------------------------------------
       subroutine storeForwardDisplacements(timestep,index)
 !-----------------------------------------------------------------------
+! saves displacements of a forward simulation for future adjoint calculation        
+!
+! input:  timestep     -  time step in iterative scheme
+!            index          - iteration number
+! returns: stores newdisplacements either in file or in array wavefieldForward
       use adjointVariables;use displacements;use parallel;use propagationStartup
-      use verbosity;use griddomain
+      use verbosity;use griddomain; use cells
       implicit none
-      integer:: timestep,index,vertex,n,ierror
+      integer,intent(in):: timestep,index
+      integer::vertex,n,ierror
       character*8:: timestepstr
       character*3:: rankstr
       
-      !debug
-      if(DEBUG) print*,'    storing forward field...',rank,numDomainVertices,index
-    
       if( storeAsFile ) then
         ! collect displacements
         !if( PARALLELSEISMO) then
@@ -99,10 +204,11 @@
         ! output to file for each process
         write(timestepstr,'(i8.7)')timestep
         write(rankstr,'(i3.3)') rank            
-        open(10,file=datadirectory(1:len_trim(datadirectory))//'wavefield_'//timestepstr//'.rank'//rankstr//'.dat',&
-              access='direct',recl=8,iostat=ierror)
-        !open(10,file=datadirectory(1:len_trim(datadirectory))//'wavefield_'//timestepstr//'.rank'//rankstr//'.dat',iostat=ierror)
-        if( ierror .ne. 0 ) call stopProgram('could not open file: wavefield_'//timestepstr//'.rank'//rankstr//'.dat ....     ')
+        open(10,file=datadirectory(1:len_trim(datadirectory))//'wavefield_'//&
+                timestepstr//'.rank'//rankstr//'.dat',&
+              access='direct',recl=sizeof(PI),iostat=ierror)
+        if( ierror .ne. 0 ) call stopProgram('could not open file: wavefield_'//&
+              timestepstr//'.rank'//rankstr//'.dat ....     ')
         ! fill in displacements
         !do i=1,numVertices
         !  call getSphericalCoord_Lat(i,lat,lon)
@@ -132,8 +238,57 @@
           wavefieldForward(n,index) = newdisplacement(vertex)
         enddo            
       endif
-      end
-
+      end subroutine
+      
+!-----------------------------------------------------------------------
+      subroutine storeBackwardDisplacements(timestep,index)
+!-----------------------------------------------------------------------
+! saves displacements for future adjoint calculation        
+!
+! input:  timestep     -  time step in iterative scheme
+!            index          - iteration number
+! returns: stores newdisplacements either in file or in array wavefieldAdjoint 
+      use adjointVariables;use displacements;use parallel;use propagationStartup
+      use verbosity;use griddomain; use cells
+      implicit none
+      integer,intent(in):: timestep,index
+      integer::vertex,n,ierror
+      character*8:: timestepstr
+      character*3:: rankstr
+      
+      if( storeAsFile ) then        
+        ! output to file for each process
+        write(timestepstr,'(i8.7)')timestep
+        write(rankstr,'(i3.3)') rank            
+        open(10,file=datadirectory(1:len_trim(datadirectory))//'wavefieldAdj_'//&
+              timestepstr//'.rank'//rankstr//'.dat',&
+              access='direct',recl=sizeof(PI),iostat=ierror)
+        if( ierror .ne. 0 ) call stopProgram('could not open file wavefieldAdj_'//&
+              timestepstr//'.rank'//rankstr//'.dat ....     ')
+        ! fill in displacements
+        do n=1, numDomainVertices
+          ! choose vertex
+          if( PARALLELSEISMO ) then
+            vertex=domainVertices(n)
+          else
+            vertex=n
+          endif
+          write(10,rec=n) newdisplacement(vertex)
+        enddo
+        close(10)
+      else
+        ! store in adjoint wavefield array
+        do n=1,numDomainVertices
+          ! choose vertex
+          if( PARALLELSEISMO ) then
+            vertex=domainVertices(n)
+          else
+            vertex=n
+          endif
+          wavefieldAdjoint(n,index) = newdisplacement(vertex)
+        enddo            
+      endif                 
+      end subroutine
 
 !-----------------------------------------------------------------------
       subroutine getAdjointSource()
@@ -144,93 +299,131 @@
       use verbosity; use filterType; use adjointVariables
       implicit none
       real(WP)::seismo(numofTimeSteps),seismoDisplacement(numofTimeSteps)
+      real(WP),dimension(:,:),allocatable:: window_signal
       integer::n,i,ierror
-      
+      integer:: window_startindex,window_endindex,window_range
+      logical,parameter:: TAPER_SIGNAL = .true.
+
       ! console output
-      if( MASTER .and. VERBOSE) print*,'getting adjoint source...'            
+      if( MASTER .and. VERBOSE) then 
+        print*,'getting adjoint source...'            
+      endif
 
       ! synchronize seismogram at receiver location
       if( PARALLELSEISMO ) call syncReceiverSeismogram()
-                  
-      ! for spline representation
-      !allocate(X(numofTimeSteps),Y(numofTimeSteps),Q(3,numofTimeSteps),F(3,numofTimeSteps),stat=ierror)
-      !if( ierror .ne. 0) call stopProgram('getAdjointSource() - error allocating spline arrays    ')
-      
+                        
       ! filter around corner frequency
       !if( FILTERSEISMOGRAMS ) then
       !  if( MASTER .and. VERBOSE) print*,'    using filtered receiver seismogram...' 
       !  if( .not. MASTER ) beVerbose=.false.     
       !  call dofilterSeismogram(seismogramReceiver,numofTimeSteps)
       !endif
-            
+
       ! get receiver's velocity seismogram (first time derivative of recorded seismogram at receiver)
       seismo(:)=0.0_WP
-      seismoDisplacement(:)=seismogramReceiver(2,:)
+      seismoDisplacement(:)=seismogramReceiver(2,:)            
       call getFirstDerivative(seismoDisplacement,seismo,dt,numofTimeSteps)
 
       ! file output
-      if( MASTER .and. VERBOSE) then
-        print*,'    printing to file: '//datadirectory(1:len_trim(datadirectory))//'seismo.velocity.dat'
+      if( MASTER .and. fileOutput) then
+        print*,'  printing to file: '//datadirectory(1:len_trim(datadirectory))//'seismo.velocity.dat'
         open(10,file=datadirectory(1:len_trim(datadirectory))//'seismo.velocity.dat')
         do n=1,numofTimeSteps
           write(10,*) seismogramReceiver(1,n),seismo(n)
         enddo
-        close(10)
+        close(10)        
       endif
-      
-      ! source is the velocity seismogram reversed in time
+
+      ! adjoint source is the velocity seismogram reversed in time
       do i=1,numofTimeSteps
-        adjointSource(1,i)=seismogramReceiver(1,numofTimeSteps-i+1)
-        adjointSource(2,i)=seismo(numofTimeSteps-i+1)
+        adjointSource(1,i) = seismogramReceiver(1,numofTimeSteps-i+1)          
+        adjointSource(2,i) = seismo(numofTimeSteps-i+1)        
       enddo
+
+      ! determines the window for the cross-correlation ( Tromp et al, 2005: eq. 41, parameter w_r(t) )      
+      if( WINDOWEDINTEGRATION ) call determineWindowsize(window_startindex,window_endindex,window_range)
       
       ! apply hanning window  to smooth adjoint source ends
-      call taperSeismogram(adjointSource,numofTimeSteps,numofTimeSteps,.false.)
-      
+      if( TAPER_SIGNAL ) then
+        if( WINDOWEDINTEGRATION) then
+          ! cuts out a window of the adjoint signal
+          !if( MASTER .and. VERBOSE ) print*,'    allocating window...',window_startindex,window_endindex
+          allocate(window_signal(2,window_startindex-window_endindex-1),stat=ierror)
+          if( ierror /= 0 ) call stopProgram('error - window_signal ')
+
+          ! sets window which contains signal  
+          window_signal(1,:) = adjointSource(1,window_endindex+1:window_startindex-1) 
+          window_signal(2,:) = adjointSource(2,window_endindex+1:window_startindex-1) 
+
+          ! tapers window  
+          call taperSeismogram(window_signal,window_startindex-window_endindex-1, &
+                              window_startindex-window_endindex-1,.false.)
+          adjointSource(2,window_endindex+1:window_startindex-1) = window_signal(2,:)       
+        else
+          call taperSeismogram(adjointSource,numofTimeSteps,numofTimeSteps,.false.)      
+        endif      
+      endif
+
       ! normalization factor (Tromp et al., 2005, sec. 4.1 eq. (42) )          
       ! get second time derivative
       seismo(:)=0.0
       call getSecondDerivative(seismoDisplacement,seismo,dt,numofTimeSteps)
       
       ! file output
-      if( MASTER .and. VERBOSE ) then
-        print*,'    printing to file: '//datadirectory(1:len_trim(datadirectory))//'seismo.acceleration.dat'
+      if( MASTER .and. fileOutput ) then
+        print*,'  printing to file: '//datadirectory(1:len_trim(datadirectory))//'seismo.acceleration.dat'
         open(10,file=datadirectory(1:len_trim(datadirectory))//'seismo.acceleration.dat')
         do n=1,numofTimeSteps
           write(10,*) seismogramReceiver(1,n),seismo(n)
         enddo
         close(10)
+        if( WINDOWEDINTEGRATION ) then
+          print*,'  printing to file: '//datadirectory(1:len_trim(datadirectory))//'seismo.window.dat'
+          open(10,file=datadirectory(1:len_trim(datadirectory))//'seismo.window.dat')
+          do n=1,numofTimeSteps
+            write(10,*) adjointSource(1,n),adjointSource(2,n)
+          enddo
+          close(10)        
+        endif
       endif
-      
+
       ! normalization factor is the time integral
       normFactor=0.0
+      if( WINDOWEDINTEGRATION ) then
+        ! windows signal ( index = numofTimeSteps-i+1 )
+        seismoDisplacement(1:numofTimeSteps-window_startindex+1) = 0.0
+        seismoDisplacement(numofTimeSteps-window_endindex+1:numofTimeSteps) = 0.0
+      endif
       call getIntegral(seismo,seismoDisplacement,normFactor,dt,numofTimeSteps)
 
       ! check for division by zero
-      if( abs(normFactor) .lt. 1e-6 ) call stopProgram('normalization factor zero!   ')
+      if( abs(normFactor) < 1e-6 ) call stopProgram('normalization factor zero   ')
 
       ! normalize source
-      adjointSource(2,:)=adjointSource(2,:)/normFactor
+      adjointSource(2,:) = adjointSource(2,:)/normFactor
 
       ! adjoint source localization is at the receiver
-      adjointSourceVertex=receiverVertex      
+      adjointSourceVertex = receiverVertex      
       
       ! console & file output
       if( MASTER .and. VERBOSE ) then
+        ! debug normalization output
+        print*,'    normalization factor: ',normFactor
+      
         ! store adjoint source seismogram
-        print*,'    printing to file: '//datadirectory(1:len_trim(datadirectory))//'seismo.adjointSource.dat'
+        print*,'  printing to file: '//datadirectory(1:len_trim(datadirectory))//'seismo.adjointSource.dat'
         open(10,file=datadirectory(1:len_trim(datadirectory))//'seismo.adjointSource.dat')
         do n=1,numofTimeSteps
           write(10,*) adjointSource(1,n),adjointSource(2,n)
         enddo
         close(10)
-        ! normalization output
-        print*,'    normalization factor: ',normFactor
       endif
+
                         
       ! precalculate the second time derivatives of all vertices belonging to this process
-      if( ADJOINT_ONTHEFLY .and. PRECALCULATE_DERIVATIVES ) call precalculateSecondDerivatives()      
-      end
+      if( ADJOINT_ONTHEFLY .and. PRECALCULATE_DERIVATIVES ) call precalculateSecondDerivatives() 
+
+      end subroutine
       
 !-----------------------------------------------------------------------
       subroutine precalculateSecondDerivatives()
@@ -238,7 +431,8 @@
 ! calculates the second derivatives of the forward wavefield seismogram at each vertex
 !
 ! returns: stores the second derivatives in the wavefieldForward array
-      use propagationStartup; use parallel; use griddomain; use filterType; use adjointVariables;use verbosity
+      use propagationStartup; use parallel; use griddomain; use filterType
+      use adjointVariables;use verbosity; use cells
       implicit none
       integer::n,vertex,index
       real(WP)::seismo(2,numofTimeSteps),seismoTmp(numofTimeSteps)
@@ -287,26 +481,25 @@
           call setForwardWave(n,seismoTmp)
         else
           wavefieldForward(n,:)=seismoTmp(:)
-        endif
-        
+        endif        
       enddo
-      end
+      end subroutine
             
                         
 !-----------------------------------------------------------------------
       subroutine backwardIteration()
 !-----------------------------------------------------------------------
-! (back-propagation) simlation with the adjoint source
-      use propagationStartup; use cells; use phaseVelocityMap; use parallel; use displacements;use verbosity
-      use loop; use phaseBlockData; use griddomain; use splineFunction; use adjointVariables; use precision
+! (back-propagation) simulation with the adjoint source
+      use propagationStartup; use cells
+      use parallel; use displacements; use verbosity
+      use griddomain,only: domainVertices
+      use phaseVelocityMap,only: phaseVelocitySquare
+      use adjointVariables
       implicit none
-      real(WP):: u_t, u_tplus1, u_tminus1,forcing,forcingRef,forceAdjointSource,arrivalTime,vertexCellArea
-      real(WP):: D2,time,discreteLaplacian, precalc_discreteLaplacian,precalc_backdiscreteLaplacian,distance
-      integer:: n,i,k,timestep,vertex,index,getDomain,vertexIndex,ierror
-      external:: forceAdjointSource,discreteLaplacian,precalc_discreteLaplacian,precalc_backdiscreteLaplacian,getDomain
-      character*8:: timestepstr
-      character*3:: rankstr
-      character*4:: timestr
+      real(WP):: u_t,u_tplus1,u_tminus1,forcing,forcingRef,D2,time
+      real(WP),external:: forceAdjointSource,discreteLaplacian,precalc_discreteLaplacian
+      real(WP),external:: precalc_backdiscreteLaplacian
+      integer:: n,i,k,timestep,vertex,index,ierror
       
       ! benchmark
       if( MASTER .and. VERBOSE ) benchstart = MPI_WTIME()      
@@ -318,62 +511,62 @@
         !backwardNewDisplacement(:) = displacement(:)      
 
         ! look for vertex in middle of source/receiver
-        call findVertex(sourceLat+nint((receiverLat-sourceLat)/2.0),sourceLon+nint((receiverLon-sourceLon)/2.0),midpointVertex)
+        call findVertex(sourceLat+nint((receiverLat-sourceLat)/2.0),&
+                sourceLon+nint((receiverLon-sourceLon)/2.0),midpointVertex)
 
-        if( MASTER .and. VERBOSE ) print*,'   storing file:',datadirectory(1:len_trim(datadirectory))//'seismo.integral_source.dat'
+        if( MASTER .and. VERBOSE ) print*,'   storing file:',&
+              datadirectory(1:len_trim(datadirectory))//'seismo.integral_source.dat'
         open(adjSourceFileID,file=datadirectory(1:len_trim(datadirectory))//'seismo.integral_source.dat')
-        if( MASTER .and. VERBOSE ) print*,'   storing file:',datadirectory(1:len_trim(datadirectory))//'seismo.integral_rec.dat'
+        if( MASTER .and. VERBOSE ) print*,'   storing file:',&
+              datadirectory(1:len_trim(datadirectory))//'seismo.integral_rec.dat'
         open(adjRecFileID,file=datadirectory(1:len_trim(datadirectory))//'seismo.integral_rec.dat')
-        if( MASTER .and. VERBOSE ) print*,'   storing file:',datadirectory(1:len_trim(datadirectory))//'seismo.integral_midpoint.dat'
+        if( MASTER .and. VERBOSE ) print*,'   storing file:',&
+              datadirectory(1:len_trim(datadirectory))//'seismo.integral_midpoint.dat'
         open(adjMidpointFileID,file=datadirectory(1:len_trim(datadirectory))//'seismo.integral_midpoint.dat')
       else
         if( .not. storeAsFile ) then      
           ! allocate adjoint wavefield 
           if( .not. allocated(wavefieldAdjoint) ) then
-            allocate(wavefieldAdjoint(numDomainVertices,numofTimeSteps),stat=ierror)
-            if( ierror .ne. 0 ) then
-              call stopProgram('error allocating adjoint wavefield    ')
+            if( MASTER .and. VERBOSE ) then 
+              print*,'    allocating adjoint wavefield...'
+              print*,'      vertices    : ',numDomainVertices
+              print*,'      time steps : ',numofTimeSteps
+              print*,'      array size  : ',numDomainVertices*numofTimeSteps*sizeof(PI)/1024./1024.,'Mb'
             endif
+            
+            allocate(wavefieldAdjoint(numDomainVertices,numofTimeSteps),stat=ierror)
+            if( ierror /= 0 ) call stopProgram('error allocating adjoint wavefield    ')
             !initialize
             wavefieldAdjoint(:,:)=0.0_WP     
           endif
         endif   
       endif
+
             
       ! reset displacements for adjoint propagation
       displacement_old(:)=0.0_WP
       displacement(:)=0.0_WP
       newdisplacement(:)=0.0_WP      
-              
+      
       ! time iteration of displacements
+      if( MASTER .and. VERBOSE ) print*,'  backward iteration...'
       index=0
-      do timestep=lasttimestep,firsttimestep,-1
+      do timestep=lasttimestep,firsttimestep,-1        
         ! model time
-        time = timestep*dt      
-        !debug 
-        if(DEBUG) then
-          print*,'    time:',rank,time
-        endif             
-        
-        ! time index
-        index=index+1
+        time  = timestep*dt              
+        index = index+1
         
         ! swap displacement arrays
         displacement_old(:) = displacement(:)
-        displacement(:) = newdisplacement(:)
-        
-        !if( ADJOINT_ONTHEFLY ) then
-        !  backwardDisplacement_old(:) = backwardDisplacement(:)
-        !  backwardDisplacement(:) = backwardNewdisplacement(:)
-        !endif
-                                                            
+        displacement(:)     = newdisplacement(:)
+ 
         ! propagate only corresponding vertices
         do n=1, numDomainVertices
           ! choose vertex
           if( PARALLELSEISMO ) then
-            vertex=domainVertices(n)
+            vertex = domainVertices(n)
           else
-            vertex=n
+            vertex = n
           endif
           
           ! spherical Laplacian    
@@ -384,163 +577,63 @@
           endif
           
           ! calculate new displacement in time
-          u_t = displacement(vertex)
+          u_t       = displacement(vertex)
           u_tminus1 = displacement_old(vertex)
-          
+
+          ! determines adjoint source    
           forcing = forceAdjointSource(vertex,index)
 
-          ! calculate phase velocity square 
+          ! gets phase velocity square 
           cphase2 = phaseVelocitySquare(vertex)
                            
           !propagation step                                                     
-          u_tplus1=u_t+u_t-u_tminus1+cphase2*dt2*(D2+forcing)
+          u_tplus1 = u_t + u_t - u_tminus1 + cphase2*dt2*(D2+forcing)
                         
           ! iterated displacements
           newdisplacement(vertex) = u_tplus1
           
+          ! computes adjoint kernel value step by step 
           if( ADJOINT_ONTHEFLY ) then
-          !  ! simulate backward iteration in parallel
-          !  ! spherical Laplacian          
-          !  D2 = precalc_backdiscreteLaplacian(vertex) !uses displacement(..) field
-          !  
-          !  ! calculate new displacement in time
-          !  u_t = backwardDisplacement(vertex)
-          !  u_tminus1 = backwardDisplacement_old(vertex)            
-          !  
-          !  ! calculate phase velocity square 
-          !  cphase2 = phaseVelocitySquare(vertex)
-          !                   
-          !  !propagation step ( no force applies for backward calculation of previous forward field)
-          !  u_tplus1=u_t+u_t-u_tminus1+cphase2*dt2*(D2)
-          !                
-          !  ! iterated displacements
-          !  backwardNewdisplacement(vertex) = u_tplus1
-          !  
-            ! compute adjoint kernel value step by step 
-            call getAdjointKernel(vertex,timestep)
+            call getAdjointKernel_fly(vertex,timestep)
           endif
         enddo
 
-        !print*,'synchronizing...',rank,nprocesses,index,time
+        ! synchronize new displacement arrays
         if( PARALLELSEISMO ) then
-          ! synchronize new displacement arrays
           call syncNewdisplacement()
-          ! synchronize new displacement arrays
-          !if( ADJOINT_ONTHEFLY ) then
-          !  call syncBackwardNewdisplacement(rank,nprocesses)
-          !endif
+        endif
+
+        ! save displacements at each time step for future adjoint calculation        
+        if( .not. ADJOINT_ONTHEFLY ) then
+          call storeBackwardDisplacements(timestep,index)          
         endif
 
         !file output for simulation snapshots
         if(SIMULATIONOUTPUT) then
-          if( mod(timestep,10) .eq. 0 .and. time .ge. 0.0 .and. MASTER ) then
-            write(timestr,'(i4.4)') timestep
-            open(10,file=datadirectory(1:len_trim(datadirectory))//'simulationAdjoint.'//timestr//'.dat')        
-            do n=1, numVertices
-              write(10,'(4f18.6)')(vertices(n,k),k=1,3),newdisplacement(n)
-            enddo
-            close(10) 
-          endif          
-        endif
-
-        if( .not. ADJOINT_ONTHEFLY ) then
-          !debug
-          if(DEBUG) print*,'    storing adjoint field...',rank,numDomainVertices,index
-
-          ! save displacements at each time step for future adjoint calculation        
-          if( storeAsFile ) then        
-            ! output to file for each process
-            write(timestepstr,'(i8.7)')timestep
-            write(rankstr,'(i3.3)') rank            
-            open(10,file=datadirectory(1:len_trim(datadirectory))//'wavefieldAdj_'//timestepstr//'.rank'//rankstr//'.dat',&
-                  access='direct',recl=8,iostat=ierror)
-            !open(10,file=datadirectory(1:len_trim(datadirectory))//'wavefield_'//timestepstr//'.rank'//rankstr//'.dat',iostat=ierror)
-            if( ierror .ne. 0 ) call stopProgram('could not open file wavefieldAdj_'//timestepstr//'.rank'//rankstr//'.dat ....     ')
-            ! fill in displacements
-            do n=1, numDomainVertices
-              ! choose vertex
-              if( PARALLELSEISMO ) then
-                vertex=domainVertices(n)
-              else
-                vertex=n
-              endif
-              write(10,rec=n) newdisplacement(vertex)
-            enddo
-            close(10)
-          else
-            ! store in adjoint wavefield array
-            do n=1, numDomainVertices
-              ! choose vertex
-              if( PARALLELSEISMO ) then
-                vertex=domainVertices(n)
-              else
-                vertex=n
-              endif
-              wavefieldAdjoint(n,index) = newdisplacement(vertex)
-            enddo            
-          endif           
-        endif ! .not. ADJOINT_ONTHEFLY
+          call printAdjointWavefield(timestep,time)
+        endif        
       enddo !timestep
 
       ! on the fly calculation needs to be scaled finally
       if( ADJOINT_ONTHEFLY ) then
-        ! close output files
-        close(adjSourceFileID)
-        close(adjRecFileID)
-        close(adjMidpointFileID)
-      
-        ! cell area in [rad^2]
-        vertexCellArea= cellAreas(receiverVertex)/(EARTHRADIUS*EARTHRADIUS)
-      
-        ! calculate the reference travel time
-        call greatCircleDistance(vertices(sourceVertex,:),vertices(receiverVertex,:),distance)
-        arrivalTime=distance*EARTHRADIUS/cphaseRef      
-
-        ! scale each entry of the adjoint kernel        
-        adjointKernel(:)= adjointKernel(:)/(arrivalTime*vertexCellArea)      
-      endif
-
-      !debug file output for seismogram at source again
-      if(DEBUG) then
-        if( rank .eq. getDomain(sourceVertex) .and. .not. storeAsFile .and. .not. ADJOINT_ONTHEFLY ) then
-          ! index for source vertex location in the wavefield files
-          if( PARALLELSEISMO ) then
-            do n=1,numDomainVertices
-              if( sourceVertex .eq. domainVertices(n) ) then
-                vertexIndex=n
-                exit
-              endif
-            enddo
-          else
-            vertexIndex=vertex
-          endif
-          ! write to file  
-          print*,'    printing to file: '//datadirectory(1:len_trim(datadirectory))//'seismo.atSource.dat'          
-          open(10,file=datadirectory(1:len_trim(datadirectory))//'seismo.atSource.dat')
-          do n=1,numofTimeSteps
-            write(10,*) (lasttimestep-n+1)*dt+dt,wavefieldAdjoint(vertexIndex,n)
-          enddo
-          close(10)
-        endif
+        call scaleAdjointKernel_fly()        
       endif
       
       ! free memory to be able to have some to collect data
-      !deallocate(cellEdgesLength,cellCenterDistances,cellNeighbors)
-      !deallocate(displacement,displacement_old,newdisplacement)
-      !if( PARALLELSEISMO ) deallocate(boundaries,sendDisp,receiveDisp,domainNeighbors)    
-      !if( ADJOINT_ONTHEFLY ) deallocate(backwardDisplacement,backwardDisplacement_old,backwardNewdisplacement)
+      !if( PARALLELSEISMO .and. ( .not. kernelIteration ) ) &
+      !      deallocate(boundaries,sendDisp,receiveDisp,domainNeighbors)      
       
       ! benchmark output
       if( MASTER .and. VERBOSE ) then
         benchend = MPI_WTIME()
-        print*,'    benchmark seconds:',benchend-benchstart
+        print*,'  benchmark seconds:',benchend-benchstart
         print*
       endif            
-      end
+      end subroutine
       
             
 !-----------------------------------------------------------------------
-      subroutine getAdjointKernel(vertex,timestep)
+      subroutine getAdjointKernel_fly(vertex,timestep)
 !-----------------------------------------------------------------------
 ! determine sensitivity kernel value when calculating "on the fly"
 !
@@ -550,15 +643,16 @@
       implicit none
       integer:: vertex,timestep,n,index,vertexIndex
       real(WP):: seismo(3),seismoAdjoint(3),seismoTmp(numofTimeSteps),timewindow
-      real(WP):: kernelVal,val1,val2,for1,for2,for3,for4,derivativeActual,derivativeNext,kernelfactor
+      real(WP):: kernelVal,val1,val2,for1,for2,for3,for4
+      real(WP):: derivativeActual,derivativeNext,kernelfactor
       logical:: bySpline=.false.
       
       ! current time step index
-      index= timestep - firsttimestep  + 1
+      index = timestep - firsttimestep  + 1
 
       ! time window for integration
       if( WINDOWEDINTEGRATION ) then
-        if( timestep*dt .lt. 0.0 .and. timestep*dt .gt. arrivalTime ) then
+        if( timestep*dt < WINDOW_START .or. timestep*dt > WINDOW_END ) then
           return
         endif
       endif
@@ -674,23 +768,52 @@
       ! sum up to build adjointKernel value
       adjointKernel(vertex)=adjointKernel(vertex)+kernelVal
       
-      !debug
-      !if(DEBUG) print*,'adjoint:',adjointKernel(vertex),kernelVal,vertex
-
-      ! output to files (timestep: correct +1 by back-propagation and to account for values stored in displacement() and not newdisplacement() )
+      ! output to files (timestep: correct +1 by back-propagation and to account 
+      ! for values stored in displacement() and not newdisplacement() )
       if( vertex .eq. sourceVertex ) then
-          write(adjSourceFileID,'(6e16.4e3)') (timestep+1)*dt,seismo(2),(timestep+1)*dt,seismoAdjoint(2),adjointKernel(vertex),kernelVal/kernelFactor
+          write(adjSourceFileID,'(6e16.4e3)') (timestep+1)*dt,seismo(2),&
+            (timestep+1)*dt,seismoAdjoint(2),adjointKernel(vertex),kernelVal/kernelFactor
       endif          
-      
+      ! debug output
       if( vertex .eq. receiverVertex ) then
-          write(adjRecFileID,'(6e16.4e3)') (timestep+1)*dt,seismo(2),(timestep+1)*dt,seismoAdjoint(2),adjointKernel(vertex),kernelVal/kernelFactor
+          write(adjRecFileID,'(6e16.4e3)') (timestep+1)*dt,seismo(2),&
+            (timestep+1)*dt,seismoAdjoint(2),adjointKernel(vertex),kernelVal/kernelFactor
       endif          
-
+      ! debug output
       if( vertex .eq. midpointVertex ) then
-          write(adjMidpointFileID,'(6e16.4e3)') (timestep+1)*dt,seismo(2),(timestep+1)*dt,seismoAdjoint(2),adjointKernel(vertex),kernelVal/kernelFactor
-      endif                    
+          write(adjMidpointFileID,'(6e16.4e3)') (timestep+1)*dt,seismo(2),&
+            (timestep+1)*dt,seismoAdjoint(2),adjointKernel(vertex),kernelVal/kernelFactor
+      endif                          
+      end subroutine
       
-      end   
+!-----------------------------------------------------------------------
+      subroutine scaleAdjointKernel_fly()
+!-----------------------------------------------------------------------
+      use adjointVariables
+      use cells; use propagationStartup
+      implicit none
+      real(WP):: scalefactor,vertexCellArea,distance,arrivalTime
+      integer:: iorbit
+      
+      ! close output files
+      close(adjSourceFileID)
+      close(adjRecFileID)
+      close(adjMidpointFileID)
+    
+      ! cell area in [rad^2]
+      vertexCellArea = cellAreas(receiverVertex)/EARTHRADIUS_SQUARED
+    
+      ! calculate the reference travel time
+      call determineOrbitDistance(distance,iorbit)
+      arrivalTime = distance*EARTHRADIUS/cphaseRef      
+
+      ! scale each entry of the adjoint kernel        
+      scalefactor      = 1.0/(arrivalTime*vertexCellArea)
+      adjointKernel(:) = scalefactor*adjointKernel(:)
+    
+      ! free some memory
+      deallocate(backwardDisplacement,backwardDisplacement_old,backwardNewdisplacement)        
+      end subroutine
       
 !-----------------------------------------------------------------------
       subroutine frechetKernel()
@@ -701,14 +824,14 @@
       use propagationStartup; use parallel; use griddomain; use splineFunction 
       use phaseVelocityMap; use filterType; use verbosity; use cells; use adjointVariables
       implicit none
-      logical:: bySpline=.false.
-      integer:: timestep,index,indexadjoint,vertex,n,i
+      integer:: timestep,index,indexadjoint,vertex,n,i,iorbit
       real(WP):: kernelVal,val1,val2,derivativeActual,derivativeNext,kernelfactor
       real(WP):: arrivalTime,distance,vertexCellArea,vertexCellAreaRad,timewindow,for1,for2,for3
-      real(WP)::seismo(2,numofTimeSteps),seismoAdjoint(2,numofTimeSteps),seismoTmp(numofTimeSteps)      
+      real(WP)::seismo(2,numofTimeSteps),seismoAdjoint(2,numofTimeSteps),seismoTmp(numofTimeSteps)
+      logical,parameter:: bySPLINE = .false.
       
       ! console output
-      if( MASTER .and. VERBOSE) print*,'calculating kernel values...'      
+      if( MASTER .and. VERBOSE) print*,'  calculating kernel values...'      
             
       ! initialize with time (dealing with newdisplacements means at time steps t+dt)
       do index=1,numofTimeSteps
@@ -719,28 +842,29 @@
       ! calculate the reference travel time 
       ! attention: for a heterogeneous background it takes here the PREM value as well.
       !                this should be considered when inverting and using these kernels.
-      call greatCircleDistance(vertices(sourceVertex,:),vertices(receiverVertex,:),distance)
+      call determineOrbitDistance(distance,iorbit)
       arrivalTime=distance*EARTHRADIUS/cphaseRef      
       
       ! cell area 
       vertexCellArea=cellAreas(receiverVertex)
       ! convert cell area into [rad^2]
-      vertexCellAreaRad=vertexCellArea/(EARTHRADIUS*EARTHRADIUS)
+      vertexCellAreaRad=vertexCellArea/EARTHRADIUS_SQUARED
             
       ! console output
       if( MASTER .and. VERBOSE) then
-        print*,'    reference travel time [s]:',arrivalTime      
-        print*,'    receiver cell area [km2]:',vertexCellArea !for [rad2]: vertexCellArea/(EARTHRADIUS*EARTHRADIUS)      
-        print*,'time integration:'
-        print*,'    starting seismogram at:',seismo(1,1)
-        print*,'    ending seismogram at:',seismo(1,numofTimeSteps)      
-        if( WINDOWEDINTEGRATION ) print*,'    windowing between:',0.0,arrivalTime
+        print*,'    reference travel time [s]  : ',arrivalTime   
+        !for [rad2]: vertexCellArea/(EARTHRADIUS*EARTHRADIUS)         
+        print*,'    receiver cell area [km2]  : ',vertexCellArea 
+        print*,'    time integration:'
+        print*,'    starting seismogram at   :',seismo(1,1)
+        print*,'    ending seismogram at    :',seismo(1,numofTimeSteps)      
+        if( WINDOWEDINTEGRATION ) print*,'    windowed adjoint source between:',WINDOW_START,WINDOW_END
         print*
-
       endif  
             
       ! look for vertex in middle of source/receiver
-      call findVertex(sourceLat+nint((receiverLat-sourceLat)/2.0),sourceLon+nint((receiverLon-sourceLon)/2.0),midpointVertex)
+      !call findVertex(sourceLat+nint((receiverLat-sourceLat)/2.0),&
+      !          sourceLon+nint((receiverLon-sourceLon)/2.0),midpointVertex)
       
       ! determine kernel value at each grid point for the corresponding processor domain
       do n=1, numDomainVertices        
@@ -754,58 +878,47 @@
         ! get forward seismogram
         if( storeAsFile ) then
           call getForwardWave(n,seismoTmp)          
-          seismo(2,:)=seismoTmp(:)
+          seismo(2,:) = seismoTmp(:)
         else
-          seismo(2,:)=wavefieldForward(n,:)
+          seismo(2,:) = wavefieldForward(n,:)
         endif
 
         ! get adjoint seismogram
         if( storeAsFile ) then
           call getAdjointWave(n,seismoTmp)  
-          seismoAdjoint(2,:)=seismoTmp(:)        
+          seismoAdjoint(2,:) = seismoTmp(:)        
         else
-          seismoAdjoint(2,:)=wavefieldAdjoint(n,:)
+          seismoAdjoint(2,:) = wavefieldAdjoint(n,:)
         endif
                         
         ! filter (and taper) the seismograms 
         if( FILTERSEISMOGRAMS ) then
-          ! reset the verbosity
-          if( MASTER .and. VERBOSE) then
-            beverbose = .true.
-          else
-            beverbose = .false.
-          endif        
-          
           ! filter
           if( beverbose ) print*,'   filtering seismograms...'
           call dofilterSeismogram(seismo,numofTimeSteps)
           call dofilterSeismogram(seismoAdjoint,numofTimeSteps)
+          
+          ! be verbose only once
           beverbose=.false.
         endif
 
         ! kernel value
         kernelVal=0.0_WP   
         seismoTmp(:)=0.0_WP     
-        if( bySpline ) then        
+        if( bySPLINE ) then        
           ! compute second derivative of forward seismogram       
           call getSecondDerivative(seismo(2,:),seismo(2,:),dt,numofTimeSteps)
                     
           ! kernel value is the time integral  
           do index=1,numofTimeSteps-1
-            ! time window for integration
-            timewindow=1.0_WP            
-            if( WINDOWEDINTEGRATION ) then
-              if( seismo(1,index) .lt. 0.0 .and. seismo(1,index) .gt. arrivalTime ) then
-                timewindow=0.0_WP
-              endif
-            endif
+            ! time window for integration is taken account of in building the adjoint source 
           
             derivativeActual=seismo(2,index)
             derivativeNext=seismo(2,index+1)
   
-            ! kernel value is the time integral (by a sum of discrete rectangles with size dt)                
+            ! kernel value is the time integral (by a sum of discrete rectangles with size dt)
             val1=derivativeActual*seismoAdjoint(2,numofTimeSteps-index+1)
-            val2=derivativeNext*seismoAdjoint(2,numofTimeSteps-index+1-1)                    
+            val2=derivativeNext*seismoAdjoint(2,numofTimeSteps-index+1-1) 
             
             kernelVal=kernelVal+0.5_WP*(val1+val2)*dt*timewindow
             
@@ -828,96 +941,35 @@
           call getIntegral(seismo(2,:),seismoAdjoint(2,:),kernelVal,dt,numofTimeSteps)          
         else          
           ! central differences - scheme          
-          do index=1,numofTimeSteps-1          
-            ! time window for integration
-            timewindow=1.0_WP            
-            if( WINDOWEDINTEGRATION ) then
-              if( seismo(1,index) .lt. 0.0 .and. seismo(1,index) .gt. arrivalTime ) then
-                timewindow=0.0_WP
-              endif
-            endif
-            
+          do index=2,numofTimeSteps-1          
+            ! time window for integration is taken account of in building the adjoint source            
             ! compute second derivative of forward seismogram                
-            if( index .eq. 1 ) continue
-            
             for1=seismo(2,index-1)
             for2=seismo(2,index)
             for3=seismo(2,index+1)
-
+            ! second time derivative of forward signal
             val1=(for1 + for3 - 2.0_WP*for2)/dt2
             
             ! adjoint wavefield index
-            ! careful: the index of the adjoint wavefield corresponds to T-t, therefore (numofTimeSteps - index) for this second derivative
-            indexadjoint=numofTimeSteps-index            
+            ! careful: the index of the adjoint wavefield corresponds to T-t, 
+            ! therefore (numofTimeSteps - index) for this second derivative
+            indexadjoint = numofTimeSteps - index            
             
-            kernelVal=kernelVal+val1*seismoAdjoint(2,indexadjoint)*dt
             
-            !seismoSecondDerivative(vertex,index)=(seismo(2,index+1)-2.0_WP*seismo(2,index)+seismo(2,index-1))/dt2
-            !seismoSecondDerivative(vertex,index+1)=(seismo(2,index+2)-2.0_WP*seismo(2,index+1)+seismo(2,index))/dt2
-            !if( index .eq. 1 ) then
-            !  derivativeActual=(seismo(2,index+1)-2.0_WP*seismo(2,index)+seismo(2,index))/dt2
-            !  !derivativeNext=(seismo(2,index+2)-2.0_WP*seismo(2,index+1)+seismo(2,index))/dt2
-            !else if( index .eq. numofTimeSteps-1 ) then
-            !  derivativeActual=(seismo(2,index+1)-2.0_WP*seismo(2,index)+seismo(2,index-1))/dt2
-            !  !derivativeNext=(seismo(2,index+1)-2.0_WP*seismo(2,index+1)+seismo(2,index))/dt2                        
-            !else            
-            !  derivativeActual=(seismo(2,index+1)-2.0_WP*seismo(2,index)+seismo(2,index-1))/dt2
-            !  !derivativeNext=(seismo(2,index+2)-2.0_WP*seismo(2,index+1)+seismo(2,index))/dt2
-            !endif
-  
             ! kernel value is the time integral (by a sum of discrete trapezoids with size dt)                
-            !val1=seismoAdjoint(2,index)*seismoSecondDerivative(vertex,index)
-            !val2=seismoAdjoint(2,index+1)*seismoSecondDerivative(vertex,index+1)                    
-            !val1=derivativeActual*seismoAdjoint(2,numofTimeSteps-index+1)
-            !val2=derivativeNext*seismoAdjoint(2,numofTimeSteps-index+1-1)                                
-            !kernelVal=kernelVal+0.5_WP*(val1+val2)*dt*timewindow
-            
-            ! check & store temporary
-            !if( index .gt. 1 ) then
-            !  if( val1 .ne. seismoTmp(index) ) print*,'kernel values:',val1,seismoTmp(index)
-            !endif
-            !seismoTmp(index)=val1
-            !seismoTmp(index+1)=val2            
+            kernelVal = kernelVal + val1*seismoAdjoint(2,indexadjoint)*dt                          
           enddo
         endif
-                                                                        
-        ! calculate kernel factor for relative phase shift kernel (units in radians; sign convection depending on time lag definition)
+
+        ! calculate kernel factor for relative phase shift kernel (units in radians; 
+        ! sign convection depending on time lag definition)
         kernelfactor=2.0_WP/(phaseVelocitySquare(vertex)*arrivalTime*vertexCellAreaRad)
         kernelVal=kernelfactor*kernelVal
         
         ! store in array
-        adjointKernel(vertex)=kernelVal
-        
-        ! console output &  output to files
-        if( vertex .eq. sourceVertex .and. VERBOSE ) print*,'    kernel values source:',vertex,kernelVal,kernelfactor,kernelVal/kernelfactor               
-        if( vertex .eq. sourceVertex .and. VERBOSE ) then
-          if( MASTER .and. VERBOSE ) print*,'   storing file:',datadirectory(1:len_trim(datadirectory))//'seismo.integral_source.dat'
-          open(10,file=datadirectory(1:len_trim(datadirectory))//'seismo.integral_source.dat')
-          do i=1,numofTimeSteps
-            write(10,'(6e16.4e3)') seismo(1,i),seismo(2,i),seismoAdjoint(1,i),seismoAdjoint(2,i),seismo(2,i)*seismoAdjoint(2,i),seismoTmp(i)
-          enddo
-          close(10)
-        endif          
-        if( vertex .eq. receiverVertex .and. VERBOSE ) print*,'    kernel values receiver:',vertex,kernelVal,kernelfactor,kernelVal/kernelfactor                
-        if( vertex .eq. receiverVertex .and. VERBOSE ) then
-          if( MASTER .and. VERBOSE ) print*,'   storing file:',datadirectory(1:len_trim(datadirectory))//'seismo.integral_rec.dat'
-          open(10,file=datadirectory(1:len_trim(datadirectory))//'seismo.integral_rec.dat')
-          do i=1,numofTimeSteps
-            write(10,'(6e16.4e3)') seismo(1,i),seismo(2,i),seismoAdjoint(1,i),seismoAdjoint(2,i),seismo(2,i)*seismoAdjoint(2,i),seismoTmp(i)
-          enddo
-          close(10)
-        endif          
-        if( vertex .eq. midpointVertex .and. VERBOSE ) print*,'    kernel values midpoint (',sourceLat+nint((receiverLat-sourceLat)/2.0),'/',sourceLon+nint((receiverLon-sourceLon)/2.0),'):',vertex,kernelVal,kernelfactor,kernelVal/kernelfactor                
-        if( vertex .eq. midpointVertex .and. VERBOSE ) then
-          if( MASTER .and. VERBOSE ) print*,'   storing file:',datadirectory(1:len_trim(datadirectory))//'seismo.integral_midpoint.dat'
-          open(10,file=datadirectory(1:len_trim(datadirectory))//'seismo.integral_midpoint.dat')
-          do i=1,numofTimeSteps
-            write(10,'(6e16.4e3)') seismo(1,i),seismo(2,i),seismoAdjoint(1,i),seismoAdjoint(2,i),seismo(2,i)*seismoAdjoint(2,i),seismoTmp(i)
-          enddo
-          close(10)
-        endif                    
+        adjointKernel(vertex)=kernelVal        
       enddo            
-      end
+      end subroutine
       
 !-----------------------------------------------------------------------
       subroutine storeAdjointKernel()
@@ -930,7 +982,7 @@
       character*128:: kernelfile
 
       ! console output
-      if( MASTER .and. VERBOSE) print*,'writing values to kernel file...'
+      if( MASTER .and. VERBOSE) print*,'  writing values to kernel file...'
             
       ! get complete adjoint kernel array in case we run a single simulation on parallel processors      
       if( PARALLELSEISMO ) call collectAdjointKernel()
@@ -939,51 +991,46 @@
       if( storeAsFile ) call cleanupWaveFiles()   
       
       ! slaves are done
-      if( .not. MASTER) return
+      if( MASTER) then
       
-      ! open kernel file
-      kernelfile=datadirectory(1:len_trim(datadirectory))//adjointKernelName(1:len_trim(adjointKernelName))
-      open(10,file=kernelfile,iostat=ierror)
-      if( ierror .ne. 0) then
-        print*,'could not open '//kernelfile
-        call stopProgram( 'abort - storeAdjointKernel()    ')
-      endif
-      
-      ! file header
-      write(10,*) '# adjoint method - sensitivity kernel'
-      write(10,*) '# lon lat kernel vertexID'
-      
-      !debug
-      if(DEBUG) open(30,file=datadirectory(1:len_trim(datadirectory))//'adjointKernel.lon45.dat')
-      
-      ! write values to file
-      sum_kern=0.0_WP
-      do i=1,numVertices
-        call getSphericalCoord_Lat(i,lat,lon)
-        write(10,'(2f8.2,e18.6e3,i12)') lon,lat,adjointKernel(i),i
-        
-        ! debug a trace
-        if(DEBUG) then
-          if( abs(lon-45._WP) .lt. 0.5 ) then
-            write(30,'(2f8.2,e18.6e3,i12)') lon,lat,adjointKernel(i),i          
-          endif        
+        ! open kernel file
+        kernelfile = datadirectory(1:len_trim(datadirectory))//adjointKernelName(1:len_trim(adjointKernelName))
+        if( VERBOSE ) then
+          print*,'    storing kernel values in file:'
+          print*,'      ',kernelfile(1:len_trim(kernelfile))
+        endif
+        open(10,file=kernelfile,iostat=ierror)
+        if( ierror .ne. 0) then
+          print*,'could not open '//kernelfile
+          call stopProgram( 'abort - storeAdjointKernel    ')
         endif
         
-        ! summate values
-        sum_kern=sum_kern+adjointKernel(i)*cellAreas(i)/(EARTHRADIUS*EARTHRADIUS)
-      enddo      
-      close(10)
-      !debug
-      if(DEBUG) close(30)
-      if(DEBUG) print*,'    trace at longitude 45 written to: ',datadirectory(1:len_trim(datadirectory))//'adjointKernel.lon45.dat'
-      
-      if( VERBOSE) then
-        print*,'    stored kernel values in file: ',kernelfile(1:len_trim(kernelfile))
-        print*,'    integrated over sphere: ',sum_kern
-        print*
+        ! file header
+        write(10,*) '# adjoint method - sensitivity kernel'
+        write(10,*) '# lon lat kernel vertexID'
+        
+        ! write values to file
+        sum_kern=0.0_WP
+        do i=1,numVertices
+          call getSphericalCoord_Lat(i,lat,lon)
+          write(10,'(2f8.2,e18.6e3,i12)') lon,lat,adjointKernel(i),i
+          
+          ! summate values
+          sum_kern=sum_kern+adjointKernel(i)*cellAreas(i)/EARTHRADIUS_SQUARED
+        enddo      
+        close(10)
+        
+        if( MASTER .and. VERBOSE) then
+          print*,'    integrated over sphere : ',sum_kern
+          print*,'    min/max               : ',minval(adjointKernel(:)),maxval(adjointKernel(:))
+        endif
       endif
+
+      ! wait until all processes reached this point
+      call MPI_Barrier( MPI_COMM_WORLD, ierror )
+      if( ierror .ne. 0) call stopProgram('abort - final MPI_Barrier failed    ')      
                      
-      end
+      end subroutine
       
 !-----------------------------------------------------------------------
       subroutine getForwardWave(index,seismo)
@@ -1002,16 +1049,18 @@
         i=i+1
         write(timestepstr,'(i8.7)')timestep      
         !if(rank .eq. 1) print*,'    open timestep:',i,timestep
-        open(10,file=datadirectory(1:len_trim(datadirectory))//'wavefield_'//timestepstr//'.rank'//rankstr//'.dat',&
-            access='direct',recl=8,iostat=ierror)
-        !open(10,file=datadirectory(1:len_trim(datadirectory))//'wavefield_'//timestepstr//'.rank'//rankstr//'.dat',iostat=ierror)
-        if( ierror .ne. 0 ) call stopProgram('could not open for input, file wavefield_'//timestepstr//'.rank'//rankstr//'.dat ...    ')
+        open(10,file=datadirectory(1:len_trim(datadirectory))//'wavefield_'//&
+            timestepstr//'.rank'//rankstr//'.dat',&
+            access='direct',recl=sizeof(PI),iostat=ierror)
+        if( ierror .ne. 0 ) call stopProgram('could not open for input, file wavefield_'//&
+            timestepstr//'.rank'//rankstr//'.dat ...    ')
         ! fill in displacements
         !if(rank .eq. 1) print*,'    read timestep:',i,timestep        
         read(10,rec=index,iostat=ierror) seismo(i)
         if( ierror .ne. 0 ) then
           print*,'read error:',timestep,index,ierror
-          call stopProgram('could not read input from file wavefield_'//timestepstr//'.rank'//rankstr//'.dat ...    ')
+          call stopProgram('could not read input from file wavefield_'//&
+                  timestepstr//'.rank'//rankstr//'.dat ...    ')
         endif
         !if(rank .eq. 1) print*,'    close timestep:',i,timestep        
         close(10)      
@@ -1036,15 +1085,17 @@
       do timestep= firsttimestep, lasttimestep
         i=i+1
         write(timestepstr,'(i8.7)')timestep      
-        open(10,file=datadirectory(1:len_trim(datadirectory))//'wavefield_'//timestepstr//'.rank'//rankstr//'.dat',&
-            access='direct',recl=8,iostat=ierror)
-        !open(10,file=datadirectory(1:len_trim(datadirectory))//'wavefield_'//timestepstr//'.rank'//rankstr//'.dat',iostat=ierror)
-        if( ierror .ne. 0 ) call stopProgram('could not open for output, file wavefield_'//timestepstr//'.rank'//rankstr//'.dat ...    ')
+        open(10,file=datadirectory(1:len_trim(datadirectory))//'wavefield_'//&
+            timestepstr//'.rank'//rankstr//'.dat',&
+            access='direct',recl=sizeof(PI),iostat=ierror)
+        if( ierror .ne. 0 ) call stopProgram('could not open for output, file wavefield_'//&
+            timestepstr//'.rank'//rankstr//'.dat ...    ')
         ! fill in displacements
         write(10,rec=index,iostat=ierror) seismo(i)
         if( ierror .ne. 0 ) then
           print*,'write error:',timestep,index,ierror
-          call stopProgram('could not write input from file wavefield_'//timestepstr//'.rank'//rankstr//'.dat ...    ')
+          call stopProgram('could not write input from file wavefield_'//&
+              timestepstr//'.rank'//rankstr//'.dat ...    ')
         endif
         
         close(10)      
@@ -1067,18 +1118,22 @@
       i=numofTimeSteps                 
       do timestep= firsttimestep, lasttimestep
         write(timestepstr,'(i8.7)')timestep      
-        open(10,file=datadirectory(1:len_trim(datadirectory))//'wavefieldAdj_'//timestepstr//'.rank'//rankstr//'.dat',&
-            access='direct',recl=8,iostat=ierror)
-        !open(10,file=datadirectory(1:len_trim(datadirectory))//'wavefield_'//timestepstr//'.rank'//rankstr//'.dat',iostat=ierror)
-        if( ierror .ne. 0 ) call stopProgram('could not open for input, file wavefieldAdj_'//timestepstr//'.rank'//rankstr//'.dat ...    ')
+        open(10,file=datadirectory(1:len_trim(datadirectory))//'wavefieldAdj_'//&
+            timestepstr//'.rank'//rankstr//'.dat',&
+            access='direct',recl=sizeof(PI),iostat=ierror)
+        if( ierror .ne. 0 ) call stopProgram('could not open for input, file wavefieldAdj_'//&
+            timestepstr//'.rank'//rankstr//'.dat ...    ')
         ! fill in displacements
         read(10,rec=index,iostat=ierror) seismo(i)
         if( ierror .ne. 0 ) then
           print*,'read error:',timestep,index,ierror
-          call stopProgram('could not read input from file wavefieldAdj_'//timestepstr//'.rank'//rankstr//'.dat ...    ')
+          call stopProgram('could not read input from file wavefieldAdj_'//&
+              timestepstr//'.rank'//rankstr//'.dat ...    ')
         endif        
         close(10)      
-        i=i-1  ! adjoint wavefield: stores T-t meaning that firsttimestep value (t=0) is at seismo(T=numofTimeSteps) and lasttimestep at seismo(1)
+        ! adjoint wavefield: stores T-t meaning that firsttimestep value (t=0)
+        ! is at seismo(T=numofTimeSteps) and lasttimestep at seismo(1)
+        i=i-1  
       enddo
       
       end
@@ -1097,15 +1152,189 @@
       do timestep= firsttimestep, lasttimestep
         write(timestepstr,'(i8.7)')timestep      
         ! forward wavefield files
-        open(10,file=datadirectory(1:len_trim(datadirectory))//'wavefield_'//timestepstr//'.rank'//rankstr//'.dat',&
-            access='direct',recl=8,iostat=ierror)
-        !open(10,file=datadirectory(1:len_trim(datadirectory))//'wavefield_'//timestepstr//'.rank'//rankstr//'.dat',iostat=ierror)
+        open(10,file=datadirectory(1:len_trim(datadirectory))//'wavefield_'//&
+            timestepstr//'.rank'//rankstr//'.dat',&
+            access='direct',recl=sizeof(PI),iostat=ierror)
         if( ierror .eq. 0 ) close(10,status='DELETE')      
         ! adjoint wavefield files
-        open(20,file=datadirectory(1:len_trim(datadirectory))//'wavefieldAdj_'//timestepstr//'.rank'//rankstr//'.dat',&
-            access='direct',recl=8,iostat=ierror)
-        !open(10,file=datadirectory(1:len_trim(datadirectory))//'wavefield_'//timestepstr//'.rank'//rankstr//'.dat',iostat=ierror)
+        open(20,file=datadirectory(1:len_trim(datadirectory))//'wavefieldAdj_'//&
+            timestepstr//'.rank'//rankstr//'.dat',&
+            access='direct',recl=sizeof(PI),iostat=ierror)
         if( ierror .eq. 0 ) close(20,status='DELETE')      
       enddo
-      end
+      end subroutine
+
+!-----------------------------------------------------------------------
+      subroutine checkKernel()
+!-----------------------------------------------------------------------
+! calculates the integral over the sphere of the kernel 
+! this value should have a modulus close to 1
+      use propagationStartup; use parallel; use adjointVariables;use verbosity; use cells
+      implicit none
+      integer:: i
+      real(WP):: lat,lon,sum_kern
+      real(WP),parameter:: EPS = 1.5
+      
+      ! get complete adjoint kernel array in case we run a single simulation on parallel processors
+      if( PARALLELSEISMO ) call collectAdjointKernel()
+
+      ! slaves are done
+      if( .not. MASTER) return
+
+      ! summate values
+      sum_kern=0.0_WP
+      do i=1,numVertices
+        sum_kern=sum_kern+adjointKernel(i)*cellAreas(i)/EARTHRADIUS_SQUARED
+      enddo            
+      
+      ! check
+      if( abs(sum_kern) > EPS ) then
+        print*
+        print*,'kernel integral over sphere:',sum_kern
+        call stopProgram('kernel integral error ')
+      endif      
+      
+      ! console output
+      print*,'      kernel integral:',sum_kern
+      
+      end subroutine
+      
+!-----------------------------------------------------------------------
+      subroutine determineWindowsize(startindex,endindex,range)
+!-----------------------------------------------------------------------
+! based upon the window size mentioned in Ekstrom et al., 1997: eq. 16 and
+! denoted parameter J_i which is one half of the window:
+! the total window includes three cycles of the center period
+      use precisions; use parallel; use verbosity
+      use cells,only: vertices; 
+      use propagationStartup
+      use filtertype, only: bw_waveperiod
+      use adjointVariables
+      implicit none
+      integer,intent(out):: startindex,endindex,range
+      real(WP):: halfwidth,max
+      real(WP):: arrivalTime,distance
+      integer,dimension(1):: loc
+      integer:: center,i,default_start,default_end,iorbit
+      
+      ! half of the window (total window includes three cycles)
+      halfwidth = 3.0 * bw_waveperiod / 2.0
+
+      ! determines which is the default window's start index   
+      loc = maxloc( seismogramReceiver(1,:), MASK = seismogramReceiver(1,:) < WINDOW_START )
+      default_start = loc(1)
+      if( default_start < 1 .or. default_start > numofTimeSteps ) default_start = 1
+      ! determines which is the default window's end index
+      loc = minloc( seismogramReceiver(1,:), MASK = seismogramReceiver(1,:) > WINDOW_END )
+      default_end = loc(1)
+      if( default_end < 1 .or. default_end > numofTimeSteps ) default_end = numofTimeSteps
+      if( default_start > default_end ) default_end = default_start
+
+      ! this takes the reference travel time as center of the window
+      call determineOrbitDistance(distance,iorbit)
+      arrivalTime = distance*EARTHRADIUS/cphaseRef      
+      loc = maxloc( seismogramReceiver(1,default_start:default_end), &
+                  MASK = seismogramReceiver(1,default_start:default_end) < arrivalTime )
+      center = default_start + loc(1) ! take next higher step index
+      max = seismogramReceiver(2,center)   
+      
+      ! alternative:
+      ! window centers around the time of maximum of the default seismogram
+      !loc = maxloc( abs(seismogramReceiver(2,default_start:default_end)) )
+      !center = default_start + loc(1) - 1       
+          
+      if( MASTER .and. VERBOSE ) then
+        print*,'  determining cross-correlation window...'
+        print*,'    center time (s) / value            : ',seismogramReceiver(1,center),max
+        print*,'    reference arrival time (s) / orbit : ',arrivalTime,iorbit
+        print*,'    half width (s)                     : ',halfwidth
+        print*,'    default window start/end           : ',WINDOW_START,WINDOW_END
+        print*,'    default index start/end            : ',default_start,default_end
+        if( WINDOW_END < arrivalTime) print*,'  default WINDOW_END may be too small !'
+      endif
+                  
+      ! centers window around maximum
+      WINDOW_START = seismogramReceiver(1,center) - halfwidth
+      WINDOW_END = seismogramReceiver(1,center) + halfwidth
+            
+      ! initializes
+      startindex = 0
+      endindex = 1
+      
+      ! time window sets adjoint signal to zero outside of window 
+      ! (note: adjointSource is reversed in time)
+      do i=1,numofTimeSteps
+        if( adjointSource(1,i) > WINDOW_END ) then 
+          adjointSource(2,i) = 0.0          
+          endindex = i  ! points to where end begins
+        else if( adjointSource(1,i) < WINDOW_START ) then 
+          adjointSource(2,i) = 0.0
+          if( startindex == 0) startindex = i ! points to where start ends :)
+        endif
+      enddo
+      WINDOW_START = adjointSource(1,startindex)
+      WINDOW_END   = adjointSource(1,endindex)
+      
+      ! console output
+      if( MASTER .and. VERBOSE ) then
+        print*,'  adjoint source window (in s):'
+        print*,'    start              : ',WINDOW_START
+        print*,'    end                : ',WINDOW_END
+        print*,'    center/halfwidth    : ',seismogramReceiver(1,center),halfwidth
+      endif      
+
+      ! checks window
+      range = startindex - endindex + 1
+      if( range < 1 ) then 
+          print*,'no window for windowed integration : ',rank
+          print*,'window start/end                   : ',WINDOW_START,WINDOW_END
+          print*,'adjoint indices start/end             : ',startindex,endindex
+          print*,'number of timesteps                : ',numofTimeSteps
+          call stopProgram('error - crosscorrelation window')
+      endif
+      
+      ! inform for different windows, in cases
+      ! for large epicentral distances and simulation time set to antipode time
+      if( abs(seismogramReceiver(1,center)-WINDOW_START) < halfwidth &
+         .or. abs(seismogramReceiver(1,center)-WINDOW_END) < halfwidth ) then
+        if( MASTER ) then
+          print*,'  adjoint window for cross-correlation shortened:'
+          print*,'    window start/end       : ',WINDOW_START,WINDOW_END
+          print*,'    adjoint indices start/end : ',startindex,endindex
+          print*,'    simulation start/end     : ',adjointSource(1,numofTimeSteps),adjointSource(1,1)
+          !call stopProgram("window too small    ")
+        endif
+      endif 
+      
+      end subroutine
+      
+!-----------------------------------------------------------------------
+      subroutine printAdjointWavefield(timestep,time)
+!-----------------------------------------------------------------------
+! prints complete newdisplacement wavefield to file
+!
+! returns: wavefiled in file #output-dir#/simulation.#time#.dat
+      use precisions
+      use cells,only: vertices,numVertices
+      use parallel,only: MASTER
+      use displacements,only: newdisplacement
+      use propagationStartup,only: datadirectory
+      implicit none
+      integer,intent(in):: timestep
+      real(WP),intent(in):: time
+      character*4:: timestr
+      integer:: n,k
+      
+      ! only master process writes to files
+      if( mod(timestep,10) .eq. 0 .and. time .ge. 0.0 .and. MASTER ) then
+        write(timestr,'(i4.4)') timestep
+        open(10,file=datadirectory(1:len_trim(datadirectory))//'simulationAdjoint.'//timestr//'.dat')
+        do n=1, numVertices
+          write(10,'(4f18.6)')(vertices(n,k),k=1,3),newdisplacement(n)
+        enddo
+        close(10) 
+        print*,'    file written: '//datadirectory(1:len_trim(datadirectory))//'simulationAdjoint.'//timestr//'.dat'
+      endif                
+      end subroutine
+      
       

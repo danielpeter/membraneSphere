@@ -1,6 +1,6 @@
 !=====================================================================
 !
-!       m e m b r a n e S p h e r e  1 . 0
+!       m e m b r a n e S p h e r e  1 . 1
 !       --------------------------------------------------
 !
 !      Daniel Peter
@@ -53,8 +53,6 @@
         !determine triangles corner indices
         corner2=cellFace(vertex,n)
         corner3=cellFace(vertex,(mod(n,cellFace(vertex,0))+1) )
-        !debug
-        if(DEBUG) print*,corner1,corner2,corner3
 
         !get corner vectors
         vectorB(:) = cellCorners(corner2,:)
@@ -70,7 +68,7 @@
         excess = 4.0_WP*atan( tanexcess4)
         
         
-        area = area+(EARTHRADIUS*EARTHRADIUS)*excess
+        area = area+EARTHRADIUS_SQUARED*excess
       enddo
       
       if( area .lt. 1.0) then
@@ -124,8 +122,6 @@
         !calculate arc distance between these two
         call greatCircleDistance(vectorA,vectorB,distance)
         distances(n)=EARTHRADIUS*distance
-        !debug
-        if(DEBUG) print*,'vertex(',vertex,'),',n,': ',distances(n)        
       enddo
 
       end
@@ -159,7 +155,7 @@
       endif
                       
       !get cell edge lengths
-      !write(1,*) '#',vertex
+      !write(11,*) '#',vertex
       lengths(0) = cellFace(vertex,0)
       do n=1, cellFace(vertex,0)        
         ! determine which corners (they are ordered clockwise)
@@ -180,15 +176,13 @@
         lengths(n)=EARTHRADIUS*distance
         
         !print an output file for gnuplot       
-        !write(1,'(3f12.8,f12)') vectorA(1),vectorA(2),vectorA(3),
+        !write(11,'(3f12.8,f12)') vectorA(1),vectorA(2),vectorA(3),
          !&                             lengths(n)
-        !debug
-        if(DEBUG) print*,'vertex(',vertex,'),',n,': ',lengths(n),corner1,corner2
       enddo
 
       !end output with first vertex again
-      !write(1,'(3f12.8,f12)') (vectorB(k),k=1,3), lengths(1)
-      !write(1,*) '\n'
+      !write(11,'(3f12.8,f12)') (vectorB(k),k=1,3), lengths(1)
+      !write(11,*) '\n'
       
       end
 
@@ -232,9 +226,6 @@
         corner2=cellFace(vertex,n)
         corner3=cellFace(vertex,(mod(n,cellFace(vertex,0))+1) )
 
-        !debug
-        if(DEBUG) print*,corner1,corner2,corner3
-
         !get corner vectors
         vectorB(:) = cellCorners(corner2,:)
         vectorC(:) = cellCorners(corner3,:)
@@ -244,15 +235,343 @@
         call sphericalAngle(vectorB,vectorA,vectorC,angleB)
         call sphericalAngle(vectorC,vectorA,vectorB,angleC)
         !debug
-        if(DEBUG) then
-          print*,'angleA',angleA/PI*180
-          print*,'angleB',angleB/PI*180
-          print*,'angleC',angleC/PI*180
-        endif
+        !print*,'angleA',angleA/PI*180
+        !print*,'angleB',angleB/PI*180
+        !print*,'angleC',angleC/PI*180
         
-        area = area+(EARTHRADIUS*EARTHRADIUS)*(angleA + angleB + angleC - PI) 
-        
+        area = area+EARTHRADIUS_SQUARED*(angleA + angleB + angleC - PI)         
       enddo
 
+      end
+
+
+!-----------------------------------------------------------------------
+      subroutine get_dataVariation(timestep,statfile_output)
+!-----------------------------------------------------------------------
+! calculates heikes&randall ratio for midpoints 
+! and writes it to files
+      implicit none
+      integer,intent(in):: timestep
+      logical,intent(in):: statfile_output
+      character(len=24):: charstep
+      
+      ! writes precalculated values to files
+      if( statfile_output) then
+        if( timestep < 0 ) then
+          charstep=""
+        else
+          write(charstep,'(i)') timestep
+        endif
+
+        !for print out of cells for gnuplot
+        open(11,file='OUTPUT/cellAreas.'//trim(adjustl(charstep))//'.dat')
+        open(12,file='OUTPUT/cellFractionAverage.'//trim(adjustl(charstep))//'.dat')
+        open(13,file='OUTPUT/cellEdgesLength.'//trim(adjustl(charstep))//'.dat')
+        open(14,file='OUTPUT/cellCenterDistances.'//trim(adjustl(charstep))//'.dat')
+        open(15,file='OUTPUT/cellFractions.'//trim(adjustl(charstep))//'.dat')
+      endif
+      
+      !calculations
+      call dataVariation(statfile_output,.false.)
+
+      if( statfile_output ) then
+        !end print out
+        close(11)
+        close(12)
+        close(13)
+        close(14)
+        close(15)
+        print*,'  files written:'
+        print*,'    OUTPUT/cellAreas.'//trim(adjustl(charstep))//'.dat'
+        print*,'    OUTPUT/cellFractionAverage.'//trim(adjustl(charstep))//'.dat'
+        print*,'    OUTPUT/cellEdgesLength.'//trim(adjustl(charstep))//'.dat'
+        print*,'    OUTPUT/cellCenterDistances.'//trim(adjustl(charstep))//'.dat'
+        print*,'    OUTPUT/cellFractions.'//trim(adjustl(charstep))//'.dat'
+      endif
+      
+      end subroutine
+
+
+!c-----------------------------------------------------------------------
+      subroutine dataVariation(statfile_output,plotfile_output)
+!c-----------------------------------------------------------------------
+!c calculates variation of cell areas, cell center distances,
+!c and cell edge lengths
+!c
+!c return: prints output
+      use cells
+      implicit none
+      !include 'spherical.h'
+      logical,intent(in):: statfile_output,plotfile_output
+      real(WP):: centerDistances(0:6),edgesLength(0:6) 
+      real(WP):: laplace,area
+      real(WP):: sumNeighbors, sumFactor
+      integer::               n,k,i,vertex
+      real(WP):: averageArea, averageLength
+      real(WP):: averageDist
+      integer::               areaCount, lengthCount, distCount
+      real(WP):: areaMin, areaMax
+      real(WP):: distMin, distMax
+      real(WP):: edgeMin, edgeMax
+      real(WP):: fractionMin,fractionMax,fractions(0:6),fractionavg
+      integer::  areaMaxIndex,areaMinIndex
+      integer::  edgeMaxIndex,edgeMinIndex
+      integer::  distMaxIndex,distMinIndex
+      integer::  fractionMaxIndex,fractionMinIndex
+      real(WP):: fractionR
+      
+      !initialize
+      averageArea   = 0.0
+      averageLength = 0.0
+      areaCount     = 0
+      lengthCount   = 0
+      distCount     = 0
+      areaMin       = 1000000000.0
+      areaMax       = 0.0
+      distMin       = 1000000000.0
+      distMax       = 0.0
+      edgeMin       = 1000000000.0
+      edgeMax       = 0.0
+      fractionMin   = 1000000000.0
+      fractionMax   = 0.0
+      fractionR     = 0.0
+      
+      !for all vertices (cell centers)
+      print*,'calculating averages for ',numVertices,'vertices...'
+      do n=1, numVertices
+        !get spherical area of vertex's cell
+        call getCellArea(n,area)
+        
+        ! output to cellAreas
+        if( statfile_output ) write(11,'(f18.12)') area
+        
+        !print*,'area',area
+        if( area .gt. areaMax) then
+           areaMax = area
+           areaMaxIndex = n
+        endif
+        if( area .lt. areaMin ) then
+          areaMin = area
+          areaMinIndex = n
+        endif
+        
+        averageArea = averageArea + area
+        areaCount = areaCount + 1
+        
+        !get arc distances from center to neighbors
+        call getcellCenterDistances(n,centerDistances)
+        
+        ! output to cellCenterDistances
+        if( statfile_output ) write(14,'(7f18.12)') (centerDistances(k),k=0,6)
+        
+        do k=1, centerDistances(0)
+          !debug
+          !print*,'distance one',centerDistances(k)
+          if( centerDistances(k) .gt. distMax)  then
+            distMax = centerDistances(k)
+            distMaxIndex = n
+          endif
+          if( centerDistances(k) .lt. distMin) then
+             distMin = centerDistances(k)
+             distMinIndex = n
+          endif
+     
+          averageDist = averageDist + centerDistances(k)
+          distCount = distCount + 1
+        enddo
+        
+        !get cell edges length
+        call getCellEdgesLength(n,edgesLength)
+        
+        ! output to cellEdgesLength
+        if( statfile_output ) write(13,'(7f18.12)') (edgesLength(k),k=0,6)
+                
+        do k=1, edgesLength(0)
+          if( edgesLength(k) .gt. edgeMax) then
+            edgeMax = edgesLength(k)
+            edgeMaxIndex = n
+          endif
+          if( edgesLength(k) .lt. edgeMin ) then
+            edgeMin =edgesLength(k)
+            edgeMinIndex = n
+          endif
+        
+          averageLength = averageLength+edgesLength(k)
+          lengthCount = lengthCount +1
+        enddo
+
+        !get cell derivative fractions
+        call cellDerivativeFractions(n,fractions,fractionavg,plotfile_output)
+        
+        ! output to cellFractionAverage.dat
+        if( statfile_output ) write(12,*) fractionavg
+        ! output to cellFractions.dat
+        if( statfile_output ) write(15,'(f18.12,6e18.8)') (fractions(k),k=0,6)
+                
+        do k=1, fractions(0)
+          ! global function (see Miura, 2005: eq (7), p. 2822)
+          fractionR = fractionR + fractions(k)**4
+          
+          ! min / max
+          if( fractions(k) .gt. fractionMax) then
+            fractionMax =fractions(k)
+            fractionMaxIndex = n
+          endif
+          if( fractions(k) .lt. fractionMin) then
+            fractionMin =fractions(k)
+            fractionMinIndex=n
+          endif
+          
+        enddo        
+      enddo !n
+        
+      !info
+      print*
+      print*,'AREAS'
+      print*,'number of face areas: ',areaCount
+      print*,'average area: ',averageArea/areaCount, ' km2'
+      print*,'total areas: ',averageArea, ' km2'
+      print*,'  expected:',4*PI*EARTHRADIUS_SQUARED, ' km2'
+      print*,'a_min/a_max :', areaMin/areaMax
+      print*,'minimum area: ',areaMin, ' km2 ', areaMinIndex
+      print*,'maximum area: ',areaMax, ' km2 ',areaMaxIndex
+      print*
+      print*,'CELL CENTER DISTANCES'
+      print*,'number of distances: ',distCount
+      print*,'average distances: ', averageDist/distCount, ' km'
+      print*,'d_min/d_max: ', distMin/distMax
+      print*,'minimum distance: ',distMin, ' km ',distMinIndex
+      print*,'maximum distance: ',distMax, ' km ',distMaxIndex
+      print*
+      print*,'CELL EDGES'
+      print*,'number of edges: ', lengthCount
+      print*,'average lengths: ',averageLength/lengthCount, ' km'
+      print*,'e_min/e_max: ', edgeMin/edgeMax
+      print*,'minimum edge length: ',edgeMin, &
+                    ' km(',edgeMin/EarthRadius,') ',edgeMinIndex
+      print*,'maximum edge length: ',edgeMax, &
+                    ' km(',edgeMax/EarthRadius,') ',edgeMaxIndex
+      print*
+      print*,'CELL DERIVATIVE FRACTIONS'
+      print*,'min/max fraction:',fractionMin,fractionMax,' - ',fractionMinIndex,fractionMaxIndex
+      print*,'global function R:',fractionR
+      end
+      
+      
+
+      
+!c-----------------------------------------------------------------------
+      subroutine cellDerivativeFractions(vertex,fractions,fractionavg,plotfile_output)
+!c-----------------------------------------------------------------------
+!c calculates for vertex the fraction of the distance
+!c between an edge midpoint and the corresponding
+!c cell center line midpoint for all cell neighbors
+!c (defined after Heikes&Randall
+!c
+!c input:
+!c    vertex     - index of reference vertex
+!c    fractions      - fractions for all neighbors
+!c
+!c return: fractions
+      use cells
+      implicit none
+      !include 'spherical.h'
+      logical,intent(in):: plotfile_output
+      integer,intent(in):: vertex
+      real(WP),intent(out):: fractions(0:6),fractionavg
+      real(WP):: fraction, distance
+      real(WP):: vectorA(3),vectorB(3),vectorC(3),vectorD(3)
+      integer:: n,k,corner1,corner2
+      !real(WP) greatCircleDistance
+      real(WP):: midpointCenterLine(3)
+      real(WP):: midpointEdge(3)
+      real(WP):: edgeLength, midpointsDifference
+      
+      !check index
+      if( cellFace(vertex,0).gt.6.or.cellFace(vertex,0).lt.5) then
+        print*,'vertex',vertex
+        stop 'abort-cellDerivativeFraction cellFace'
+      endif
+      if( cellNeighbors(vertex,0).gt.6.or.cellNeighbors(vertex,0).lt.5) then
+        print*,'vertex',vertex
+        stop 'abort-cellDerivativeFraction cellNeighbors'
+      endif      
+     
+      !set how many neighbors
+      fractions(:) = 0.0
+      fractions(0)=cellNeighbors(vertex,0)
+  
+      !write(21,*) '\n\n#',vertex
+      !write(22,*) '\n\n#',vertex
+      !write(23,*) '\n\n#',vertex
+      
+      !for each neighbor cell    
+      do n=1, cellNeighbors(vertex,0)     
+        !get center vectors
+        vectorA(:) = vertices(vertex,:)
+        vectorB(:) = vertices(cellNeighbors(vertex,n),:)
+        !debug
+        !print*,(vectorA(k),k=1,3)
+        !print*,(vectorB(k),k=1,3)
+        
+        !get cell center line midpoint
+        call greatCircleMidpoint(vectorA,vectorB,midpointCenterLine)
+               
+        !get midpoint of corresponding cell edge
+        !first determine which corners (they are ordered clockwise)
+        corner1=cellFace(vertex,n)
+        corner2=cellFace(vertex, mod(n,int(cellFace(vertex,0)))+1)
+             
+        !get corresponding corner vectors
+        vectorC(:) = cellCorners(corner1,:)
+        vectorD(:) = cellCorners(corner2,:)
+        !debug
+        !print*,(vectorC(k),k=1,3)
+        !print*,(vectorD(k),k=1,3)
+        
+        !get cell edge midpoint and length
+        call greatCircleMidpoint(vectorC,vectorD,midpointEdge)
+        call greatCircleDistance(vectorC,vectorD,edgeLength)
+        
+        !get distance (in rad) between two midpoints
+        call greatCircleDistance(midpointCenterLine,midpointEdge,distance)
+       
+        !fraction
+        fraction = distance/edgeLength        
+        fractions(n)=fraction
+        
+        !debug
+        !print*,n,' fraction:',fraction
+        !print*,'midpoint vectors:'
+        !print*,(midpointCenterLine(k),k=1,3)
+        !print*,(midpointEdge(k), k=1,3)
+        !print*,'distance:',distance
+        !print*,'edge ',n,' Length:',edgeLength
+        
+        if( plotfile_output .eqv. .true. ) then
+          ! output to cellCenterLineMidpoints.dat 
+          write(21,'(3f12.8)')(midpointCenterLine(k),k=1,3)
+          ! output to cellEdgeMidpoints.dat
+          write(22,'(3f12.8)')(midpointEdge(k),k=1,3)                
+          ! output to cellCenterLineMidpoints.mat
+          write(31,'(3f12.8)')(midpointCenterLine(k),k=1,3)
+          ! output to cellEdgeMidpoints.mat
+          write(32,'(3f12.8)')(midpointEdge(k),k=1,3)                        
+          ! output to cellCenterLines.dat
+          write(23,'(4f12.8)') (vectorA(k),k=1,3), fraction
+          write(23,'(4f12.8)') (vectorB(k),k=1,3), fraction
+          ! output to cellCenterLines.mat
+          write(33,'(4f12.8)') (vectorA(k),k=1,3), fraction
+          write(33,'(4f12.8)') (vectorB(k),k=1,3), fraction
+        endif
+      enddo !n
+
+      !for face average
+      fractionavg = 0.0
+      do n=1, cellNeighbors(vertex,0)
+        fractionavg = fractionavg + fractions(n)
+      enddo
+      fractionavg = fractionavg/cellNeighbors(vertex,0)
+      
       end
 

@@ -1,6 +1,6 @@
 !=====================================================================
 !
-!       m e m b r a n e S p h e r e  1 . 0
+!       m e m b r a n e S p h e r e  1 . 1
 !       --------------------------------------------------
 !
 !      Daniel Peter
@@ -27,12 +27,13 @@
 !   time                       - given time step
 !
 ! returns: forceTerm1
-      double precision colatitude,longitude,time
-      double precision timeTerm1, widthTerm
+      implicit none
+      double precision:: colatitude,longitude,time
+      double precision:: timeTerm1, widthTerm
       
-      forceTerm1= timeTerm1(time)*widthTerm(colatitude)
+      forceTerm1 = timeTerm1(time)*widthTerm(colatitude)
       return
-      end
+      end function
 
       
 !-----------------------------------------------------------------------
@@ -45,10 +46,12 @@
 !   time                       - given time step
 !
 ! returns: forceTerm2
+      use precisions
       use verbosity
       implicit none
-      double precision colatitude,longitude,time
-      double precision timeTerm2, widthTerm
+      double precision,intent(in):: colatitude,longitude,time
+      double precision:: widthTerm
+      real(WP):: timeTerm2
       
       ! approximative this term is too small to have an influence beyond this time
       ! if( time .gt. 7000.0d0) then
@@ -56,13 +59,9 @@
       !   return
       ! endif
       
-      forceTerm2= timeTerm2(time)*widthTerm(colatitude)
-      
-      !debug
-      if(DEBUG)print*,"force:",colatitude,longitude,time,forceTerm2
-      
+      forceTerm2 = timeTerm2(time)*widthTerm(colatitude)      
       return
-      end      
+      end function      
       
       
 !-----------------------------------------------------------------------
@@ -75,16 +74,17 @@
 !   time                       - given time step
 !
 ! returns: forceTerm2
-      double precision colatitude,longitude,time
-      double precision timeTerm2, widthTerm
+      implicit none
+      double precision:: colatitude,longitude,time
+      double precision:: widthTerm
       
-      if( abs( time - 0.0) .lt. 0.0000001) then
+      if( abs(time) < 1.e-7) then
         initialShapeTerm= widthTerm(colatitude)
       else
         initialShapeTerm=0.0
       endif
       return
-      end      
+      end function      
       
       
 !-----------------------------------------------------------------------
@@ -98,17 +98,14 @@
 ! returns: timeTerm1
       use propagationStartup;use verbosity
       implicit none
-      double precision colatitude,longitude,time,sigma2
-      double precision sqrt2pi/2.506628274631d0/
+      double precision:: colatitude,longitude,time,sigma2
+      double precision,parameter:: sqrt2pi = 2.506628274631d0
       
       
       sigma2=timeParameterSigma*timeParameterSigma
       timeTerm1 = dexp(-time*time/(sigma2+sigma2))/(sqrt2pi*timeParameterSigma)
-      
-      !debug
-      if(DEBUG) print*,"time term1:",time,timeTerm1
       return
-      end
+      end function
 
 !-----------------------------------------------------------------------
       function timeTerm2(time)
@@ -119,19 +116,17 @@
 !   time                       - given time step
 !
 ! returns: timeTerm2
-      use propagationStartup; use verbosity
+      use precisions
+      use propagationStartup,only: timeParameterSigma
       implicit none
-      real(WP):: timeTerm2,time,sigma2
+      real(WP),intent(in):: time
+      real(WP):: timeTerm2,sigma2
       real(WP),parameter:: sqrt2pi = 2.506628274631_WP
       
       sigma2 = timeParameterSigma*timeParameterSigma
-      timeTerm2 =(-time/sigma2)*exp(-time*time/(sigma2+sigma2))/(sqrt2pi*timeParameterSigma)
-      !debug
-      !if(DEBUG) then
-      !  if( time .eq. 100.0) print*,"time term2:", time, timeTerm2
-      !endif
+      timeTerm2 = (-time/sigma2)*exp(-time*time/(sigma2+sigma2))/(sqrt2pi*timeParameterSigma)
       return
-      end      
+      end function      
         
 !-----------------------------------------------------------------------
       double precision function widthTerm(theta)
@@ -142,19 +137,15 @@
 !   theta               - epicentral distance of position of displacement location to source
 !                            ( given in radian)
 ! returns: widthTerm
-      use propagationStartup; use verbosity
+      use propagationStartup,only: muSquare,muTwo
       implicit none
-      double precision:: theta, mu2, col2
+      double precision,intent(in):: theta
+      double precision:: col2
       
-      mu2=widthParameterMu*widthParameterMu
       col2 = theta*theta
-      widthTerm = dexp(-col2/(mu2+mu2))/mu2
-
-      !debug
-      if(DEBUG) print*,"width term:",theta, widthTerm
-      
+      widthTerm = dexp(-col2/(muTwo))/muSquare
       return
-      end  
+      end function  
       
 !-----------------------------------------------------------------------
       function forceTerm2Source(refVertex,time,sourceVertex)
@@ -167,11 +158,12 @@
 !   sourceVertex  - position of source
 !
 ! returns: forceTerm2Source
-      use precision; use verbosity
+      use precisions
       implicit none
-      integer:: sourceVertex, refVertex
-      real(WP):: forceTerm2Source,time,timeTerm2,widthTermSource
-      external::timeTerm2,widthTermSource
+      integer,intent(in):: sourceVertex, refVertex
+      real(WP):: forceTerm2Source
+      real(WP):: time
+      real(WP),external:: timeTerm2,widthTermSource
       
       ! approximative: this term is too small to have an influence beyond this time
       ! so for speeding up calculations return here
@@ -180,21 +172,9 @@
       !   return
       ! endif
       
-      forceTerm2Source = timeTerm2(time)*widthTermSource(refVertex,sourceVertex)
-           
-      !debug
-      if(DEBUG) then
-        if(refVertex .eq. sourceVertex .and. forceTerm2Source .ne. 0.0) print*,"forceterm2source:",time,forceTerm2Source,refVertex
-        ! check if Nan
-        if( forceTerm2Source .ne. forceTerm2Source)then
-          print*,'forceTerm:',forceTerm2Source
-          print*,time,refVertex,sourceVertex,timeTerm2(time),widthTermSource(refVertex,sourceVertex)
-          call stopProgram( 'forceTerm2Source is NaN      ')
-        endif
-      endif
-      
+      forceTerm2Source = timeTerm2(time)*widthTermSource(refVertex,sourceVertex)           
       return
-      end     
+      end function     
        
 !-----------------------------------------------------------------------
       function widthTermSource(refVertex,sourceLocationVertex)
@@ -206,39 +186,24 @@
 !   sourceLocationVertex               -  vertex index of source
 !
 ! returns: widthTermSource
-      use propagationStartup; use cells; use verbosity
+      use propagationStartup; use cells
       implicit none
-      real(WP):: widthTermSource,colatitude, longitude
-      integer:: sourceLocationVertex, refVertex
-      real(WP):: theta,mu2, col2
+      integer,intent(in):: sourceLocationVertex, refVertex
+      real(WP):: widthTermSource,colatitude,longitude
+      real(WP):: theta,col2
       real(WP):: vectorS(3),vectorRef(3)
       
       ! parameter
-      mu2=widthParameterMu*widthParameterMu
+      !mu2=widthParameterMu*widthParameterMu
       
       ! distance to source in radian
       vectorS(:) = vertices(sourceLocationVertex,:)
       vectorRef(:) = vertices(refVertex,:)
       call greatCircleDistance(vectorS,vectorRef,theta)
       
-      !debug
-      if(DEBUG) then
-        if( theta .gt. PI) print*,'widthTermSource has impossible theta',theta
-      endif
-      
       col2 = theta*theta
-      widthTermSource = exp(-col2/(mu2+mu2))/mu2
+      widthTermSource = exp(-col2/(muTwo))/muSquare
       
-      !debug
-      if(DEBUG) then
-        if(widthTermSource .ne. widthTermSource) then
-          print*,'width: not a number:',sourceLocationVertex,refVertex
-          print*,'wdith:',vectorS(:),vectorRef(:),theta
-          call stopProgram( 'abort widthTermSource - NaN    ')
-        endif
-        !if(refVertex .eq. sourceLocationVertex .and. widthTermSource .ne. 0.0) print*,"width term source:",refVertex,widthTermSource        
-      endif
-
       ! single cell source
       !if( refVertex .eq. sourceLocationVertex ) then
       !  widthTermSource=1.0d0
@@ -247,7 +212,7 @@
       !endif
 
       return
-      end  
+      end function 
 
 !-----------------------------------------------------------------------
       function forceAdjointSource(refVertex,step)
@@ -261,8 +226,10 @@
 ! returns: forceAdjointSource
       use propagationStartup; use adjointVariables; use cells; use verbosity
       implicit none
-      integer:: refVertex,step,i
-      real(WP):: forceAdjointSource,distance,factor,dx
+      integer,intent(in):: refVertex,step
+      integer:: i
+      real(WP):: forceAdjointSource
+      real(WP):: distance,factor,dx
       logical:: isNeighbor
       logical,parameter:: extendedSource = .false.
       logical,parameter:: gaussian       = .false.
@@ -271,9 +238,9 @@
       
       ! calculate adjoint source term: based upon a single cell displacement
       if( refVertex .eq. adjointSourceVertex) then
-        forceAdjointSource=adjointSource(2,step)
+        forceAdjointSource = adjointSource(2,step)
       else
-        forceAdjointSource=0.0_WP
+        forceAdjointSource = 0.0_WP
       endif
 
       ! extend adjoint source to multiple cells
@@ -295,10 +262,6 @@
           ! extend to a multiple of the cell distances
           if( distance .le. 4.0*dx ) then
             forceAdjointSource=factor*adjointSource(2,step)  
-            ! debug
-            if(DEBUG) then
-              if( step .eq. 1) print*,'force adjoint: ',refVertex    
-            endif
           endif
         endif
                 
@@ -316,8 +279,9 @@
           endif
         endif
       endif
+      
       return
-      end
+      end function
 
 !-----------------------------------------------------------------------
       function forceTermExact(refVertex,time,sourceLat,sourceLon)
@@ -330,37 +294,27 @@
 !   sourcelat/lon  - position of source (in degree)
 !
 ! returns: forceTerm2Source
-      use precision; use verbosity; use cells
+      use verbosity; use cells
+      use propagationStartup,only: muSquare,muTwo
       implicit none
       integer:: sourceVertex, refVertex
-      real(WP):: forceTermExact,time,timeTerm2,width,sourceLat,sourceLon,theta
-      external::timeTerm2   
-      real(WP):: vectorS(3),vectorRef(3),mu2,col2
+      real(WP):: forceTermExact,time,width,sourceLat,sourceLon,theta
+      real(WP):: vectorS(3),vectorRef(3),col2
+      real(WP),external:: timeTerm2   
             
       ! distance to source in radian
       call getVector(sourceLat,sourceLon,vectorS(1),vectorS(2),vectorS(3))
       vectorRef(:) = vertices(refVertex,:)
       call greatCircleDistance(vectorS,vectorRef,theta)      
+      if(theta > PI .or. theta < 0.0) then
+        print*,"strange forcetermExact:",theta,time,forceTermExact,refVertex,width
+      endif
             
-      mu2=WidthParameterMu*WidthParameterMu
       col2 = theta*theta
-      width = exp(-col2/(mu2+mu2))/mu2
+      width = exp(-col2/muTwo)/muSquare
 
       ! force
-      forceTermExact = timeTerm2(time)*width
-           
-      !debug
-      if(DEBUG) then
-        if(theta .gt. PI) then
-          print*,"forcetermExact:",time,forceTermExact,refVertex,theta,width
-        endif
-        ! check if Nan
-        if( forceTermExact .ne. forceTermExact)then
-          print*,'forceTerm:',forceTermExact
-          print*,time,refVertex,sourceLat,sourceLon
-          call stopProgram( 'forceTermExact is NaN      ')
-        endif
-      endif      
+      forceTermExact = timeTerm2(time)*width           
       return
-      end     
+      end function    
              

@@ -18,8 +18,8 @@ VERBOSITY                        = .true.
 ! Reference seismogram e.g. seismo.L150.withoutDelta.dat
 ! observed seismogram e.g. seismo.L150.    0.0    45.0.dat
 ! ----------------------------------------------------------------
-REFERENCE FILE                   = OUTPUT/seismo.L150.withoutDelta.dat
-PERTURBED FILE                   = OUTPUT/seismo.L150.   0.0.  45.0.dat
+REFERENCE FILE                   = OUTPUT/seismo.hom.dat
+PERTURBED FILE                   = OUTPUT/seismo.het.dat
 
 ! filter 
 ! (just in case of filtering: around which wave period one wants to filter)
@@ -33,7 +33,8 @@ CPHASE                           = L150
 !  for the calculation of the time lag)
 ! for seismograms e.g. -1000.0 seconds
 ! ----------------------------------------------------------------
-START TIME                       = -1000.0
+START TIME                       = 13500.0
+ENDING TIME                      = 17000.0
 
 ! file output
 ! ----------------------------------------------------------------

@@ -11,6 +11,8 @@ run ./make or specify the desired executable
 
 ./make timelag
 
+./make heterogeneousPhaseshift
+
 which will produce the executables. 
 
 

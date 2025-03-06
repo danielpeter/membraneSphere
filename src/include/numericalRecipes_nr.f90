@@ -1994,9 +1994,9 @@
         INTERFACE
           SUBROUTINE polint(xa,ya,x,y,dy)
           USE nrtype
-          REAL(SP), DIMENSION(:), INTENT(IN) :: xa,ya
-          REAL(SP), INTENT(IN) :: x
-          REAL(SP), INTENT(OUT) :: y,dy
+          REAL(DP), DIMENSION(:), INTENT(IN) :: xa,ya
+          REAL(DP), INTENT(IN) :: x
+          REAL(DP), INTENT(OUT) :: y,dy
           END SUBROUTINE polint
         END INTERFACE
         INTERFACE
@@ -2081,13 +2081,13 @@
         INTERFACE
           FUNCTION qromb(func,a,b)
           USE nrtype
-          REAL(SP), INTENT(IN) :: a,b
-          REAL(SP) :: qromb
+          REAL(DP), INTENT(IN) :: a,b
+          REAL(DP) :: qromb
           INTERFACE
             FUNCTION func(x)
             USE nrtype
-            REAL(SP), DIMENSION(:), INTENT(IN) :: x
-            REAL(SP), DIMENSION(size(x)) :: func
+            REAL(DP), DIMENSION(:), INTENT(IN) :: x
+            REAL(DP), DIMENSION(size(x)) :: func
             END FUNCTION func
           END INTERFACE
           END FUNCTION qromb

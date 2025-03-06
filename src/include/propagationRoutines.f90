@@ -1,6 +1,6 @@
 !=====================================================================
 !
-!       m e m b r a n e S p h e r e  1 . 0
+!       m e m b r a n e S p h e r e  1 . 1
 !       --------------------------------------------------
 !
 !      Daniel Peter
@@ -21,51 +21,35 @@
       use propagationStartup; use cells; use phaseVelocityMap; use parallel; use displacements
       use phaseBlockData; use griddomain; use adjointVariables; use verbosity
       implicit none
-      real(WP):: u_t, u_tplus1, u_tminus1,forcing,initialShape,forcingRef
-      real(WP):: D2,time,discreteLaplacian, precalc_discreteLaplacian
-      real(WP):: forceTerm2Source,initialShapeTerm,lat,lon,newdisp
-      integer:: n,i,k,timestep,vertex,index,ioerror
-      external:: initialShapeTerm,discreteLaplacian,precalc_discreteLaplacian,integrand             
-      character*4:: timestr
-      real(WP):: vector(3),vsource(3),vreceiver(3),rotationMatrix(3,3)
-      integer:: forceVertex
+      real(WP):: u_t, u_tplus1, u_tminus1,forcing
+      real(WP):: D2,time,newdisp
+      integer:: n,k,timestep,vertex,index,jrec
+      real(WP),external:: forceTerm2Source,forceTermExact
+      real(WP),external:: discreteLaplacian,precalc_discreteLaplacian     
       
       !initialize
-      displacement(:)    =0.0_WP
-      displacement_old(:)=0.0_WP
-      newdisplacement(:) =0.0_WP
-      
-!      ! recalculate the rotation matrix for the right source indexing in the prescribed array
-!      if( Adjoint_InversionProgram ) then
-!        vsource(:) = vertices(sourceVertex,:)
-!        vreceiver(:)= vertices(receiverVertex,:)
-!        call getInverseRotationMatrix( vsource,vreceiver,rotationMatrix )
-!      endif
-      
+      displacement(:)     = 0.0_WP
+      displacement_old(:) = 0.0_WP
+      newdisplacement(:)  = 0.0_WP
       
       ! time iteration of displacements
       index=0
       do timestep= firsttimestep, lasttimestep
         ! model time
-        time = timestep*dt      
-        !debug 
-        !if(DEBUG) then
-        !  print*,'    time:',rank,time
-        !endif        
-        
-        index=index+1
+        time  = timestep*dt              
+        index = index+1
 
         ! swap displacement arrays
         displacement_old(:) = displacement(:)
-        displacement(:) = newdisplacement(:)
+        displacement(:)     = newdisplacement(:)
                    
         ! propagate only corresponding vertices
         do n=1, numDomainVertices
           ! choose vertex
           if( PARALLELSEISMO ) then
-            vertex=domainVertices(n)
+            vertex = domainVertices(n)
           else
-            vertex=n
+            vertex = n
           endif
           
           ! spherical Laplacian    
@@ -75,93 +59,69 @@
             D2 = discreteLaplacian(vertex)
           endif
           ! calculate new displacement in time
-          u_t = displacement(vertex)
-          u_tminus1 = displacement_old(vertex)
+          u_t        = displacement(vertex)
+          u_tminus1  = displacement_old(vertex)
 
-          ! determine force
+          ! determines force
           if( PRESCRIBEDSOURCE ) then
             ! get the value out of the prescribed force array
-!            if( Adjoint_InversionProgram ) then
-!              ! determine the index in the prescribed array            
-!              vector(:) = vertices(vertex,:)
-!              call rotateVector(rotationMatrix,vector,vector)              
-!              call getSphericalCoordinates(vector,lat,lon)              
-!              call findVertex(lat,lon,forceVertex)
-!
-!              ! use the force, luke.
-!              forcing = forceTermPrescribed(forceVertex,index)                          
-!            else
-              forcing = forceTermPrescribed(n,index)  ! prescribed array goes on till numDomainVertices, see indexing at initialization          
-!            endif            
-          else
-            forcing = forceTerm2Source(vertex,time,sourceVertex)
+            ! prescribed array goes on till numDomainVertices, see indexing at initialization          
+            if( .not. sourceOnFile ) then
+              forcing = forceTermPrescribed(n,index)  
+            else
+              jrec = (n-1)*numofTimeSteps + index
+              read(sourceFileID,rec=jrec) forcing
+            endif
+          else          
+            if( Station_Correction ) then
+              forcing = forceTermExact(vertex,time,desiredSourceLat,desiredSourceLon)          
+            else          
+              forcing = forceTerm2Source(vertex,time,sourceVertex)          
+            endif          
           endif
-
-          ! store for output
-          !if( vertex .eq. receiverVertex) forcingRef = forcing
           
-          ! calculate phase velocity square 
+          ! gets phase velocity square 
           cphase2 = phaseVelocitySquare(vertex)
                            
           !propagation step                                                     
-          u_tplus1=u_t+u_t-u_tminus1+cphase2*dt2*(D2+forcing)
+          u_tplus1 = u_t + u_t - u_tminus1 + cphase2*dt2*(D2+forcing)
                         
           ! iterated displacements
-          newdisplacement(vertex) = u_tplus1
-          
-          !debug
-          if(DEBUG) then
-            !check if NaN
-            if( u_tplus1 .ne. u_tplus1) then
-              !u_tplus1 is not a number
-              print*,'u_tplus1:',u_tplus1
-              print*,u_t, u_tminus1,cphase2,dt2,D2,forcing
-              call stopProgram( 'abort - program phaseshift displacement is NaN     ')
-            endif                          
-          endif
+          newdisplacement(vertex) = u_tplus1          
         enddo
 
+        ! synchronize new displacement arrays          
         if( PARALLELSEISMO ) then
-          ! synchronize new displacement arrays          
           call syncNewdisplacement()
         endif
                             
         ! fill displacement at receiver station into seismogram record of that receiver station
-        !if(DEBUG) print*,'    recording at receiver...',rank,index,time,newdisplacement(receiverVertex)
         ! note: newdisplacement is at time step t+dt        
         if( manyReceivers ) then
           call recordManySeismograms(index,time+dt,referenceRun)
         else
           ! set time in seismogram
-          seismogramReceiver(1,index)=time+dt
+          seismogramReceiver(1,index) = time+dt
         
           ! set displacement
           if( Station_Correction ) then
             !interpolate new displacement for original receiver location
             call interpolateLinear(interpolation_distances,interpolation_triangleLengths,&
                                   interpolation_corners,newdisp)
-            seismogramReceiver(2,index)=newdisp                                      
+            seismogramReceiver(2,index) = newdisp                                      
           else
-            seismogramReceiver(2,index)=newdisplacement(receiverVertex)            
+            seismogramReceiver(2,index) = newdisplacement(receiverVertex)            
           endif
-        endif
-
-        !file output for simulation snapshots
-        if(SIMULATIONOUTPUT) then
-          if( mod(timestep,10) .eq. 0 .and. time .ge. 0.0 .and. MASTER ) then
-            write(timestr,'(i4.4)') timestep
-            open(10,file=datadirectory(1:len_trim(datadirectory))//'simulation.'//timestr//'.dat')        
-            do n=1, numVertices
-              write(10,'(4f18.6)')(vertices(n,k),k=1,3),newdisplacement(n)
-            enddo
-            close(10) 
-          endif          
         endif
         
         ! save displacements at each time step for future adjoint calculation
-        !if( Adjoint_Program .and. .not. ADJOINT_ONTHEFLY ) then
         if( Adjoint_Program ) then
           call storeForwardDisplacements(timestep,index)
+        endif        
+        
+        ! file output for simulation snapshots
+        if(SIMULATIONOUTPUT) then
+          call printWavefield(timestep,time,index)
         endif        
       enddo !timestep      
       end
@@ -340,37 +300,41 @@
 ! with corresponding indices
 !
 ! returns: phaseVelocitySquare array
-      use propagationStartup; use phaseVelocityMap; use parallel
+      use propagationStartup; use phaseVelocityMap; use parallel; use cells
+      use verbosity
       implicit none
       integer:: i
       real(WP):: getPhaseSquare,lat,lon
 
       ! store to file              
       if( MASTER ) then 
+        if( VERBOSE ) then 
+          print*,'  writing to file:'
+          print*,'      ',datadirectory(1:len_trim(datadirectory))//'PhaseMap.dat'
+        endif
         open(10,file=datadirectory(1:len_trim(datadirectory))//'PhaseMap.dat')      
-        open(11,file=datadirectory(1:len_trim(datadirectory))//'PhaseSquareVertices.dat')
       endif  
         
       ! for all grid vertices
+      phaseVelocitySquare(:) = 0.0_WP
       do i=1,numVertices                                        
         ! determine phase square
-        phaseVelocitySquare(i)=getPhaseSquare(i)     
-        
+        phaseVelocitySquare(i) = getPhaseSquare(i)     
+                
         ! file output                  
         if( MASTER ) then 
           call getSphericalCoord_Lat(i,lat,lon)        
-          write(10,*) real(lon),real(lat),sqrt(phaseVelocitySquare(i))          
-          write(11,*) i,real(phaseVelocitySquare(i))          
+          write(10,*) lon,lat,sqrt(phaseVelocitySquare(i)),i
+          !write(11,*) i,real(phaseVelocitySquare(i))          
         endif        
       enddo
       
       ! close files
       if( MASTER ) then
         close(10)
-        close(11)
       endif
       
-      end
+      end subroutine
       
       
 !-----------------------------------------------------------------------
@@ -387,20 +351,20 @@
       use propagationStartup; use phaseVelocityMap; use parallel; use deltaSecondLocation
       use cells; use verbosity
       implicit none
-      integer:: timestep,n
+      integer,intent(in):: n
       real(WP):: vectorV(3),vectorS(3),vectorSnd(3),referencePhaseVelocity
-      real(WP):: getPhaseSquare,distance,cphase,distanceSnd,lat,lon
+      real(WP):: getPhaseSquare,distance,cphase,distanceSnd,lat,lon,csquare
             
       ! set reference velocity        
       referencePhaseVelocity=cphaseRef
             
       ! homogeneous phase map (or delta phase map)
-      getPhaseSquare = cphaseRef*cphaseRef
+      csquare = cphaseRef*cphaseRef
  
       !heterogeneous phase velocities
       if( HETEROGENEOUS ) then         
         cphase = phaseMap(n)
-        getPhaseSquare = cphase*cphase
+        csquare = cphase*cphase
         
         !set as new reference for possible delta scatterers that will follow
         referencePhaseVelocity=cphase
@@ -428,13 +392,11 @@
           else
             if(DELTAFUNCTION .eq. "gaussian") then
               ! some experimental function which looks like a gaussian for distances between 0 and 560 km
-              cphase = (1.0-exp(-distance*distance/62500.0))*referencePhaseVelocity+exp(-distance*distance/62500.0)*(referencePhaseVelocity + deltaPerturbation)
+              cphase = (1.0-exp(-distance*distance/62500.0))*referencePhaseVelocity&
+                + exp(-distance*distance/62500.0)*(referencePhaseVelocity + deltaPerturbation)
             endif
           endif
-          
-          !write vertex output
-          !if(timestep .eq. firsttimestep .and. VERBOSE) then
-          !      write(100,*)'distance:',n,distance,DELTARADIUS,cphase
+          ! console output
           if( MASTER .and. VERBOSE) then
                 print*,'distance scatterer:',n,distance
                 call getSphericalCoord_Lat(n,lat,lon)
@@ -452,12 +414,10 @@
             else
               if(DELTAFUNCTION .eq. "gaussian") then
                 ! some experimental function which looks like a gaussian for distances between 0 and 560 km
-                cphase = (1.0-exp(-distanceSnd*distanceSnd/62500.0))*referencePhaseVelocity+exp(-distanceSnd*distanceSnd/62500.0)*(referencePhaseVelocity + deltaPerturbation)
+                cphase = (1.0-exp(-distanceSnd*distanceSnd/62500.0))*referencePhaseVelocity &
+                  + exp(-distanceSnd*distanceSnd/62500.0)*(referencePhaseVelocity + deltaPerturbation)
               endif
             endif
-            !write vertex output
-            !if(timestep .eq. firsttimestep .and. VERBOSE) then
-            !    !  write(100,*)'distance second scatterer:',n,distanceSnd,DELTARADIUS,cphase
             if( MASTER .and. VERBOSE) then
                   print*,'distance second scatterer:',n,distanceSnd
                   call getSphericalCoord_Lat(n,lat,lon)
@@ -470,11 +430,13 @@
         endif !SECONDDELTA          
 
         ! squared value for phase velocity
-        getPhaseSquare=cphase*cphase            
+        csquare=cphase*cphase            
       endif !DELTA
       
+      ! return value
+      getPhaseSquare = csquare
       return
-      end
+      end function
 
 !-----------------------------------------------------------------------
       subroutine printSeismogram()
@@ -486,12 +448,12 @@
 ! *L* is wave type, *#* is receiver id, *lat* is latitude, *lon* is longitude of delta scatterer
       use parallel;use griddomain;use propagationStartup; use verbosity
       implicit none
-      integer:: i,n,domain,getDomain,strlength,length,ierror
+      integer:: i,n,domain,strlength,length,ierror
       character*6:: latstr,lonstr
       character*3:: recstr
       character*128:: filename
       real(WP):: reclat,reclon
-      external:: getDomain
+      integer,external:: getDomain
 
       write(latstr,'(f6.1)') deltaLat
       write(lonstr,'(f6.1)') deltaLon
@@ -525,9 +487,11 @@
               
               ! create filename
               if(DELTA) then
-                filename=datadirectory(1:strlength)//'seismo.'//cphasetype(1:4)//'.'//latstr//'.'//lonstr//'.'//recstr//'.dat'
+                filename=datadirectory(1:strlength)//'seismo.'//cphasetype(1:4)//&
+                    '.'//latstr//'.'//lonstr//'.'//recstr//'.dat'
               else
-                filename=datadirectory(1:strlength)//'seismo.'//cphasetype(1:4)//'.withoutDelta.'//recstr//'.dat'
+                filename=datadirectory(1:strlength)//'seismo.'//cphasetype(1:4)//&
+                    '.withoutDelta.'//recstr//'.dat'
               endif      
               ! just to remove unneccessary spaces
               filename=trim(filename)        
@@ -544,24 +508,8 @@
           enddo
         else
           ! get right seismogram
-          domain=getDomain(receiverVertex)
-          if( domain .ne. 0) then
-            if( MASTER ) then          
-              ! receive from domain process
-              length=size(seismogramReceiver(:,:))
-              tag = domain
-              !debug
-              if(DEBUG) print*,'getting seismogram from domain:',domain,length              
-              call MPI_Recv(seismogramReceiver,length,MPI_CUSTOM,domain,tag,MPI_COMM_WORLD,status,ierror)
-            else if( rank .eq. domain) then
-              ! send seismogram to master
-              length=size(seismogramReceiver(:,:))
-              tag = rank
-              if(DEBUG) print*,rank,'sending receiver seismogram...'
-              call MPI_Send(seismogramReceiver,length,MPI_CUSTOM,0,tag,MPI_COMM_WORLD,ierror)
-            endif            
-          endif
-        
+          call syncReceiverSeismogram()
+          
           ! output
           if( MASTER ) then
             ! displacement at receiver
@@ -586,9 +534,11 @@
             
             ! create filename
             if(DELTA) then
-              filename=datadirectory(1:strlength)//'seismo.'//cphasetype(1:4)//'.'//latstr//'.'//lonstr//'.'//recstr//'.dat'
+              filename=datadirectory(1:strlength)//'seismo.'//cphasetype(1:4)//&
+                  '.'//latstr//'.'//lonstr//'.'//recstr//'.dat'
             else
-              filename=datadirectory(1:strlength)//'seismo.'//cphasetype(1:4)//'.withoutDelta.'//recstr//'.dat'
+              filename=datadirectory(1:strlength)//'seismo.'//cphasetype(1:4)//&
+                  '.withoutDelta.'//recstr//'.dat'
             endif      
             ! just to remove unneccessary spaces
             filename=trim(filename)        
@@ -611,4 +561,84 @@
           close(100)
         endif
       endif
-      end
+      end subroutine
+      
+!-----------------------------------------------------------------------
+      subroutine printWavefield(timestep,time,index)
+!-----------------------------------------------------------------------
+! prints complete newdisplacement wavefield to file
+!
+! returns: wavefiled in file #output-dir#/simulation.#time#.dat
+      use precisions
+      use cells,only: vertices,numVertices,numTriangleFaces,cellTriangleFace      
+      use parallel,only: MASTER
+      use displacements,only: newdisplacement
+      use propagationStartup,only: datadirectory
+      implicit none
+      integer,intent(in):: timestep,index
+      real(WP),intent(in):: time
+      integer:: n,k
+      character*5:: timestr
+      real(WP):: lat,lon
+      logical,parameter:: FORMAT_VTK         = .true.  ! outputs as vtk file
+      real,parameter:: SIMULATION_STARTTIME = -50.0
+      
+      ! only master process writes to files
+      if( mod(timestep,SIMULATION_TIMESTEPPING) .eq. 0 &
+            .and. time .ge. SIMULATION_STARTTIME .and. MASTER ) then
+        write(timestr,'(i5.5)') index
+        
+        if( .not. FORMAT_VTK ) then
+          open(10,file=datadirectory(1:len_trim(datadirectory))//'simulation.'//timestr//'.dat')        
+          do n = 1, numVertices
+            ! #format: x, y, z, displacement  ( in cartesian coordinates )
+            !write(10,'(4f18.6)') (vertices(n,k),k=1,3),newdisplacement(n)
+
+            ! #format: lon, lat, displacement  ( in spherical coordinates and degrees )
+            call getSphericalCoordinates(vertices(n,:),lat,lon)
+            write(10,*) lon,lat,newdisplacement(n)
+
+          enddo
+          close(10) 
+          print*,'    file written: '//datadirectory(1:len_trim(datadirectory))//'simulation.'//timestr//'.dat'
+        else
+          ! vtk file
+          open(10,file=datadirectory(1:len_trim(datadirectory))//'simulation.'//timestr//'.vtk')
+          
+          write(10,'(a26)') "# vtk DataFile Version 3.1"
+          write(10,'(a14)') "membraneSphere"
+          write(10,'(a5)')  "ASCII"
+          write(10,'(a16)') "DATASET POLYDATA" 
+          !write(10,'(a25)') "DATASET UNSTRUCTURED_GRID" 
+          write(10,'(a6,i,1x,a5)') "POINTS",numVertices,"float"         
+          do n = 1,numVertices
+            write(10,'(3(f16.8))') (vertices(n,k),k=1,3)
+          enddo
+          write(10,*) ""
+          
+          write(10,'(a8,i,i)') "POLYGONS",numTriangleFaces,numTriangleFaces*4
+          !write(10,'(a5,i,i)') "CELLS",numTriangleFaces,numTriangleFaces*4
+          ! VTK starts indexing at 0
+          ! (by that we have to shift the arrays by -1)
+          do n = 1,numTriangleFaces
+            write(10,*) 3,cellTriangleFace(n,1)-1,cellTriangleFace(n,2)-1,cellTriangleFace(n,3)-1
+          enddo
+          write(10,*) ""
+
+          !write(10,'(a10,1x,i)') "CELL_TYPES",numTriangleFaces
+          !write(10,*) (5,k=1,numTriangleFaces)
+          !write(10,*)                    
+          
+          write(10,'(a10,i)') "POINT_DATA",numVertices
+          write(10,'(a26)') "SCALARS displacement float"
+          write(10,'(a20)') "LOOKUP_TABLE default"
+          do n = 1,numVertices
+            write(10,'(f16.8)') newdisplacement(n)
+          enddo
+          write(10,*) ""
+          close(10)
+          
+          print*,'    file written: '//datadirectory(1:len_trim(datadirectory))//'simulation.'//timestr//'.vtk'
+        endif
+      endif                
+      end subroutine

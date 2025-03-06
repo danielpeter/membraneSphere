@@ -1,6 +1,6 @@
 !=====================================================================
 !
-!       m e m b r a n e S p h e r e  1 . 0
+!       m e m b r a n e S p h e r e  1 . 1
 !       --------------------------------------------------
 !
 !      Daniel Peter
@@ -13,7 +13,7 @@
 !=====================================================================
 
 !-----------------------------------------------------------------------
-      subroutine readGSHPhasemap(fileName)
+      subroutine readGSHPhasemap(fileName,given_as_percent)
 !-----------------------------------------------------------------------
 ! reads in phase map file with format of spherical harmonics and fill the array phaseMap(:)
 ! for the non-adjoint simulation such that the phase map is rotated to the source/receiver on equator setup
@@ -29,15 +29,17 @@
 !
 ! returns: phaseMap() filled with file data 
       use phaseVelocityMap; use propagationStartup; use cells; use adjointVariables
-      use phaseBlockData
+      use phaseBlockData; use verbosity
       implicit none
-      integer:: i,ioerror
       character*128:: fileName
+      logical:: given_as_percent
+      integer:: i,ioerror
       integer:: lmx,lmax,lmaxuser,ialpha,ncoef
-      real(WP):: phasepercent,scale,vphase,lat,lon,Vsource(3),Vreceiver(3),vtmp(3),rot(3,3)
+      real(WP):: phasepercent,scale,vphase,lat,lon
+      real(WP):: Vsource(3),Vreceiver(3),vtmp(3),rot(3,3)
       real(WP):: blockdata
-      character:: nameout*80,chlmax*3,chialpha*1
-      real:: xlon,xlat,x,z
+      character:: nameout*128,chlmax*3,chialpha*1
+      real:: xlon,xlat,x,z,zmin,zmax
       integer:: k,igrid
       parameter(lmx=55)  !maximum harmonic expansion 
       real:: y((lmx+1)**2)    
@@ -61,45 +63,56 @@
       
       ! read phase map
       fileName = trim(fileName)
-      print*,'reading gsh file: '//fileName   
+      if( VERBOSE) then 
+        print*,'reading gsh file: '
+        print*,'  ',trim(fileName)   
+        if( given_as_percent) then
+          print*,'  values given in percentage %'
+        else
+          print*,'  values given in absolute range'      
+        endif
+      endif
       
       !open file      
-      open(10, file= fileName,status='old',iostat=ioerror)
-      if( ioerror .ne. 0) then
-        print*,'  could not open file: '//fileName
-        call stopProgram( 'abort - readGSHPhasemap    ')
-      endif
-  
+      open(10,file=fileName,status='old',iostat=ioerror)
+      if( ioerror .ne. 0) call stopProgram( 'abort - could not open GSHPhasemap    ')
       read(10,*)lmax
-      print*,"  maximum l=",lmax
-      lmaxuser = heterogeneousPixelsize
-      print*,"  interrupt expansion at l=",lmaxuser
 
-      !if(ialpha.eq.0)then
-      ncoef=(lmax+1)**2
-      !elseif(ialpha.le.2)then
-      !  ncoef=(lmax-1)*(2*lmax+6)
-      !else
-      !  ncoef=(lmax-3)*(2*lmax+10)
-      !endif
-
+      cmod(:)=0.0
+      lmaxuser = gsh_maximum_expansion
+      if( lmaxuser > lmax ) call stopProgram('error lmax expansion')
+      
+      ncoef=(lmaxuser+1)**2      
       read(10,*)(cmod(i),i=1,ncoef)
       close(10)
+      if( VERBOSE ) then
+        print*,"  maximum l=",lmax
+        print*,"  interrupt expansion at l=",lmaxuser
+        if( rotate_frame ) print*,"  rotate frame to equator"
+      endif
+            
+      ! debug check values
+      !open(20,file=fileName(1:len_trim(fileName) )//'-readin.check.dat')
+      !write(20,*) lmaxuser, lmax, ncoef
+      !write(20,*) (cmod(i),i=1,ncoef)
+      !close(20)
+      !print*,'  check file:',fileName(1:len_trim(fileName) )//'-readin.check.dat'
       
-      
-      !do k=1,80
-      !  if(fileName(k:k).eq.' ')goto2
-      !enddo
-      !2	continue
-
-      lmax=lmaxuser		! user can filter-lapo 2004-04-03
+      ! sets maxiumum expansion
+      lmax=lmaxuser		
       
       ! file output
       write(chlmax,'(i3.3)')lmax
       write(chialpha,"(i1.1)")ialpha
-      nameout=fileName(1:len_trim(fileName) )//"-"//chlmax//'.spheregrid.xyz'
-      open(20,file=nameout)
+      
+      ! debug phase speed values on grid
+      !nameout=fileName(1:len_trim(fileName) )//"-"//chlmax//'.spheregrid.xyz'
+      !open(20,file=nameout)
+      !open(30,file=fileName(1:len_trim(fileName) )//"-"//chlmax//'.spheregrid.relative.xyz')
 
+      ! phase speeds
+      open(40,file=datadirectory(1:len_trim(datadirectory))//'PhaseMap.percent.dat')
+      
       igrid=0
       if(lmax.gt.lmx) then
         print*,'l too big:',lmax,lmx
@@ -114,7 +127,8 @@
         Vreceiver(:)= vertices(originReceiverVertex,:)
         call getRotationMatrix(Vsource,Vreceiver,rot)
       endif
-      
+      zmin=0.0
+      zmax=0.0
       do i=1,numVertices
         ! vector to vertex
         vtmp(:)=vertices(i,:)
@@ -142,53 +156,52 @@
         call ylmv0(xlat,xlon,lmx,y,wkspc)
         
         z=0.
-        !if(ialpha.eq.0)then
-        !c-------------------------------scalar SH
+        ! scalar SH
         ncoef=(lmax+1)**2
         do k=1,ncoef
           z=z+y(k)*cmod(k)
         enddo
-        !elseif(ialpha.eq.1)then
-        !c-------------------------------generalized SH for second order tensor
-        !  ncoef=(lmax-1)*(2*lmax+6)
-        ! do k=1,ncoef
-        !  z=z-ypp(k)*cmod(k)
-        ! enddo
-        !elseif(ialpha.eq.2)then
-        ! ncoef=(lmax-1)*(2*lmax+6)
-        ! do k=1,ncoef
-	      !   z=z-ytp(k)*cmod(k)
-        ! enddo
-        !elseif(ialpha.eq.3)then
-        !c-------------------------------generalized SH for fourth order tensor
-        !c	   ncoef=(lmax-3)*(2*lmax+10)
-        !   do k=1,ncoef
-        !    z=z+ypppp(k)*cmod(k)
-        !   enddo
-        !elseif(ialpha.eq.4)then
-        ! c	   ncoef=(lmax-3)*(2*lmax+10)
-        ! do k=1,ncoef
-	      !   z=z+ytppp(k)*cmod(k)
-        ! enddo
-        !else
-        !  stop "error in variable ialpha"
-        !endif
-        
         
         ! set corresponding phase velocity
         scale=cphaseRef
-        vphase=z*scale/100.0_WP+cphaseRef
+        if( given_as_percent ) then
+          vphase=z/100.0*scale + cphaseRef
+        else
+          vphase=z*scale + cphaseRef        
+        endif
         phaseMap(i)=vphase        
         
-        write(20,*)xlon,xlat,vphase
+        ! statistics
+        if( z < zmin ) zmin = z
+        if( z > zmax ) zmax = z
+        
+        ! debug file output
+        !write(20,*)xlon,xlat,vphase
+        !write(30,*)xlon,xlat,z
+        
+        ! file output
+        if( given_as_percent ) then
+          write(40,*)xlon,xlat,z
+        else
+          write(40,*)xlon,xlat,z*100.0        
+        endif
       enddo
+      close(40)
       
-      ! close output-file
-      close(20)
+      ! debug close output-file
+      !close(20)
+      !close(30)
+      if( VERBOSE ) then
+        print*,'  total points readin: ',igrid
+        print*,'    values minimum/maximum: ',zmin,zmax
+        print*,'  phase map stored as: '
+        print*,'    ',datadirectory(1:len_trim(datadirectory))//'PhaseMap.percent.dat'
+        ! debug
+        !print*,'  debug phase maps stored as: '
+        !print*,'    ',trim(nameout)
+      endif
       
-      print*,'  total points read in: ',igrid
-      print*,'  phase map stored as: '//nameout
-      end
+      end subroutine
 
       
 !-----------------------------------------------------------------------
@@ -430,13 +443,21 @@
       SUBROUTINE RANG(NSQ,XLAMIN,XLAMAX,XLOMIN,XLOMAX,nsqrs,nsqtot,nlatzones,n,eq_incr)
 !-----------------------------------------------------------------------
 ! FINDS THE COORDINATE RANGE OF SQUARE NUMBER 'NSQ'
-      DIMENSION NSQRS(NLATZONES),NSQTOT(NLATZONES+1)
+      implicit none
+      integer,intent(in):: nlatzones,n,nsq
+      integer,intent(in):: NSQRS(NLATZONES),NSQTOT(NLATZONES+1)
+      real,intent(in):: eq_incr
+      real,intent(out):: xlamin,xlamax,xlomin,xlomax
+      integer:: lazone,nnsq
+      real:: grsize
+      
       !print*,'rang', nlatzones
       LAZONE=2
       DO WHILE (NSQ.GT.NSQTOT(LAZONE))
          LAZONE=LAZONE+1
       ENDDO
       LAZONE=LAZONE-1
+
       NNSQ=NSQ-NSQTOT(LAZONE)
       XLAMIN=90.-LAZONE*eq_incr
       XLAMAX=XLAMIN+eq_incr
@@ -446,37 +467,51 @@
       RETURN
       END
 !-----------------------------------------------------------------------
-      FUNCTION superisqre(LAT,LON,nsqrs,nsqtot,nlatzones,n,eq_incr)
+      integer FUNCTION superisqre(LAT,LON,nsqrs,nsqtot,nlatzones,n,eq_incr)
 !-----------------------------------------------------------------------
 ! FINDS THE NUMBER OF THE SQUARE WHERE (LAT,LON) IS
-      dimension NSQRS(nlatzones),NSQTOT(nlatzones+1)
+      implicit none
+      integer,intent(in):: nlatzones,n,lat,lon
+      integer,intent(in):: NSQRS(nlatzones),NSQTOT(nlatzones+1)
+      real,intent(in):: eq_incr
+      real:: incr
+      integer:: llon,lazone
       !print*,'superisqre',nlatzones
       incr=eq_incr*100.
       LAZONE=(9000-LAT)/incr+1
       IF(LAZONE.GT.nlatzones)LAZONE=nlatzones
+      
       LLON=LON
       IF(LLON.LT.0)LLON=36000+LLON
       superISQRE=(LLON*NSQRS(LAZONE))/36000+1
       superISQRE=superISQRE+NSQTOT(LAZONE)
-      IF(superISQRE.GT.n)ISQRE=n
+      
+      IF(superISQRE.GT.n) superISQRE=n
       RETURN
       END
       
 !-----------------------------------------------------------------------
-      function isqre(LAT,LON,nsqrs,nsqtot,nlatzones,n,eq_incr)
+      integer function isqre(LAT,LON,nsqrs,nsqtot,nlatzones,n,eq_incr)
 !-----------------------------------------------------------------------
 ! FINDS THE NUMBER OF THE SQUARE WHERE (LAT,LON) IS
-      DIMENSION NSQRS(nlatzones),NSQTOT(nlatzones+1)
-      !print*,'isqre',LAT,LON,nlatzonesn,eq_incr
+      implicit none
+      integer,intent(in):: nlatzones,n,lat,lon
+      integer,intent(in):: NSQRS(nlatzones),NSQTOT(nlatzones+1)
+      real,intent(in):: eq_incr
+      real:: incr
+      integer:: llon,lazone
+
       incr=eq_incr*100.
       LAZONE=(9000-LAT)/incr+1
       IF(LAZONE.GT.nlatzones)LAZONE=nlatzones
+      
       LLON=LON
       IF(LLON.LT.0)LLON=36000+LLON
+      
       ISQRE=(LLON*NSQRS(LAZONE))/36000+1
       ISQRE=ISQRE+NSQTOT(LAZONE)
+      
       IF(ISQRE.GT.n) ISQRE=n
-      !print*,'isqre returns:',isqre
       RETURN
       END
       
@@ -524,14 +559,19 @@
 !---------------------------------------------------------------------------
       subroutine ylmv0(xlat,xlon,lmax,y,d)
 !---------------------------------------------------------------------------
-      integer:: lmax,l
-      real:: xlat,xlon,y((lmax+1)**2)
-      double precision:: d(9*(2*lmax+1)),theta,radian,rr4pi
+      implicit none
+      integer,intent(in):: lmax
+      real,intent(in):: xlat,xlon
+      real,intent(out):: y((lmax+1)**2)
+      double precision,intent(out):: d(9*(2*lmax+1))
+      integer:: l,k,ind,m
+      double precision:: theta
       complex:: cfac,dfac
-      data radian/57.2957795/,rr4pi/0.28209479/
+      double precision,parameter:: radian = 57.2957795
+      double precision,parameter:: rr4pi  = 0.28209479
       
-      theta=(90.d0-dble(xlat))/radian
-      dfac=cexp(cmplx(0.,xlon/radian))
+      theta = dble((90.d0- xlat)/radian)
+      dfac = cexp(cmplx(0.,xlon/radian))
       k=0
       do l=0,lmax
          call rotmx2(0,l,theta,d,1,2*l+1)
@@ -557,18 +597,20 @@
       subroutine rotmx2(nmax,l,theta,d,id1,id2)
 !---------------------------------------------------------------------------
       implicit double precision (a-h,o-z)
-      integer:: nmax,l,id1,id2
-      double precision:: theta, d(id1,id2),big,small,dlbig,dlsml,pi,th
-      
-!     data big,small,dlbig,dlsml/1.d35,1.d-35,35.d0,-35.d0/
+      integer,intent(in):: nmax,l,id1,id2
+      double precision,intent(in):: theta
+      double precision,intent(inout):: d(id1,id2)
+      double precision:: big,small,dlbig,dlsml,th
       data big,small,dlbig,dlsml/1.d25,1.d-25,25.d0,-25.d0/
-      data pi/3.14159265358979d0/
+      double precision,parameter:: pi = 3.14159265358979d0
+      double precision,parameter:: EPS = 1.e-8
       
       dfloat(n)=n
       th=theta
+      if( abs(th-pi) < EPS ) th = pi
       if((th .gt. pi).or.(th .lt. 0.0d0)) then
-        print*,'illegal arg in rotmx2:',th
-        call stopProgram( 'illegal arg in rotmx2      ')
+        print*,'illegal arg in rotmx2:',th,pi
+        call stopProgram( 'illegal rotmx2      ')
       endif
       
       if(l.ne.0) goto 350
@@ -746,3 +788,171 @@
       return
       end
 
+!-----------------------------------------------------------------------
+      subroutine makeCheckerboard()
+!-----------------------------------------------------------------------
+! constructs a phaseMap with the spherical harmonics L=20, M=10
+!
+! returns: phaseMap() filled with file data 
+      use phaseVelocityMap; use propagationStartup; use cells
+      use parallel; use verbosity
+      implicit none
+      integer:: i,l,m,igrid
+      character:: chL*2,chM*2
+      real(WP):: vphase,xcolat,xlon,z,zmin,zmax,lat_degree,lon_degree
+      double precision:: colatitude,longitude,harmonical,generalizedLegendre,Nfactor
+      double precision:: associatedLegendre
+      integer:: factorial
+      external:: generalizedLegendre,factorial,associatedLegendre
+
+      ! checks that only master is executing this
+      if( .not. MASTER ) return
+
+      ! file output
+      write(chL,'(i2.2)') MAP_DEGREE_L
+      write(chM,'(i2.2)') MAP_DEGREE_M      
+      open(20,file=datadirectory(1:len_trim(datadirectory))//&
+                    'PhaseMap.L'//chL//'-M'//chM//'.dat')
+      open(40,file=datadirectory(1:len_trim(datadirectory))//&
+                    'PhaseMap.L'//chL//'-M'//chM//'.percent.dat')
+      
+      igrid=0      
+      l = MAP_DEGREE_L
+      m = MAP_DEGREE_M
+
+      ! gets maximum
+      zmax = 0.0
+      do i=1,numVertices
+        ! get colat/lon of vertex    
+        call getSphericalCoord(i,xcolat,xlon)
+        colatitude = xcolat
+        harmonical = associatedLegendre(l,m,dcos(colatitude))
+        if( dabs(harmonical) > zmax ) zmax = dabs(harmonical)
+      enddo      
+      Nfactor = 1.0d0/zmax      
+      if( MASTER .and. VERBOSE ) print*,'normalization: ',Nfactor
+      
+      ! creates phase map
+      zmax = 0.0
+      zmin=0.0
+      do i=1,numVertices
+        igrid=igrid+1      
+        ! get colat/lon of vertex    
+        call getSphericalCoord(i,xcolat,xlon)
+        lat_degree = 90.0 - xcolat*180./PI
+        lon_degree = xlon*180./PI
+        
+        !calculate the real part of spherical harmonic function
+        z = 0.0
+        colatitude = xcolat
+        longitude = xlon
+        
+        !harmonical = generalizedLegendre(l,m,colatitude)
+        harmonical = associatedLegendre(l,m,dcos(colatitude))
+        
+        ! scale to [-1,1]           
+        harmonical = harmonical*Nfactor
+        
+        !print*,'colat/lat',colatitude,longitude
+        !print*,'  harmonical = ',harmonical
+        
+        if( m .ne. 0) then
+          harmonical = harmonical*dsin( m*longitude)
+        endif
+        z = harmonical
+        
+        ! scale amplitude
+        z = MAP_PERCENT_AMPLITUDE * z
+
+        !print*,'  perturbation = ',z
+        
+        ! set corresponding phase velocity
+        ! with perturbation given_as_percent 
+        vphase=z/100.0_WP*cphaseRef + cphaseRef
+        phaseMap(i)=vphase        
+        
+        ! statistics
+        if( z < zmin ) zmin = z
+        if( z > zmax ) zmax = z
+        
+        ! file output
+        write(20,*)lon_degree,lat_degree,phaseMap(i)
+        ! given_as_percent
+        write(40,*)lon_degree,lat_degree,z
+      enddo
+      
+      ! close output-file
+      close(20)
+      close(40)
+      if( MASTER .and. VERBOSE ) then
+        print*,'  total points readin: ',igrid
+        print*,'    percent values minimum/maximum: ',zmin,zmax
+        print*,'    phase velocity min/max:',zmin/100.0*cphaseRef+cphaseRef,&
+                                      zmax/100.0*cphaseRef+cphaseRef
+        print*,'  phase maps stored as: '
+        print*,'    ',datadirectory(1:len_trim(datadirectory))//&
+                    'PhaseMap.L'//chL//'-M'//chM//'.dat'
+      endif
+      
+      end subroutine
+
+!-----------------------------------------------------------------------
+!      subroutine rotatePhaseMap()
+!-----------------------------------------------------------------------
+! rotates phase map from frame source/receiver to (1,0,0)/(0,1,0)/(0,0,1)
+!
+! returns: rotated cell index
+!      use propagationStartup;use phaseVelocityMap
+!      implicit none
+!      double precision,allocatable,dimension(:):: rotPhaseMap
+!      integer i,index,ierror
+!      double precision Vsource(3),Vreceiver(3),vtmp(3)
+!      double precision rot(3,3),lat,lon
+!        
+!      allocate(rotPhaseMap(numVertices),stat=ierror)
+!      if( ierror .gt. 0 ) then
+!        print*,'error in allocating rotPhaseMap array'
+!        stop 'abort - rotatePhaseMap'
+!      endif
+! 
+!      ! determine rotation matrix from source/receiver to (1,0,0)/... frame
+!      Vsource(:)=vertices(originSourceVertex,:)
+!      Vreceiver(:)=vertices(originReceiverVertex,:)      
+!      call getInverseRotationMatrix(Vsource,Vreceiver,rot)
+!                         
+!      ! create rotated phase map
+!      do i=1,numVertices
+!        index=i
+!        vtmp(:)=vertices(i,:)
+!        call rotateVector(rot,vtmp,vtmp)
+!        call getSphericalCoordinates(vtmp,lat,lon)
+!        call findVertex(lat,lon,index)
+!
+!        !call getRotatedIndex(index)
+!        !print*,'   index:',i,index
+!        !print*,'   phase value:',phaseMap(i)
+!        !print*,'   rotated value:',rotPhaseMap(index)
+!        if( index .lt. 0 .or. index .gt. numVertices) then
+!          print*,'   rotated index violates boundaries:',index, i
+!          stop 'abort - rotatePhaseMap'
+!        endif
+!        
+!        if( rotPhaseMap(index) .lt. 0.000000001) then
+!          rotPhaseMap(index)=phaseMap(i)
+!        else
+!          print*,'phase map rotation: ',i,' already mapped to', index, rotPhaseMap(index)
+!          rotPhaseMap(index)=phaseMap(i)
+!          !stop
+!        endif
+!      enddo
+!      
+!      ! copy it over
+!      phaseMap=rotPhaseMap
+!      
+!      ! output
+!      open(10,file='tmpRotatedPhaseMap.dat')
+!      do i=1, numVertices
+!        write(10,*) i, phaseMap(i)
+!      enddo
+!      close(10)
+!      end subroutine

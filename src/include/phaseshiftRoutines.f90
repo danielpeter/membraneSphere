@@ -1,6 +1,6 @@
 !=====================================================================
 !
-!       m e m b r a n e S p h e r e  1 . 0
+!       m e m b r a n e S p h e r e  1 . 1
 !       --------------------------------------------------
 !
 !      Daniel Peter
@@ -101,7 +101,8 @@
 ! determine phaseshifts and next location of scatterer
 !
 ! finite-difference iteration: information in carl tape thesis2003, chap 5, (5.7)
-      use propagationStartup; use cells; use phaseVelocityMap; use parallel; use displacements
+      use propagationStartup; use cells; use phaseVelocityMap
+      use parallel; use displacements
       use loop; use phaseBlockData; use griddomain; use verbosity
       implicit none
       logical:: looping,available
@@ -126,7 +127,8 @@
         available=.false.
         if( .not. manyReceivers ) then
           ! see if file is there
-          datafile=datadirectory(1:len_trim(datadirectory))//'seismo.'//cphasetype(1:4)//'.withoutDelta.dat'          
+          datafile=datadirectory(1:len_trim(datadirectory))//'seismo.'//&
+                            cphasetype(1:4)//'.withoutDelta.dat'
           datafile=trim(datafile)
           inquire(file=datafile,exist=available)          
           if( .not. available ) then
@@ -145,7 +147,8 @@
           endif
         endif  
         !else
-          !datafile=datadirectory(1:len_trim(datadirectory))//'seismo.'//cphasetype(1:4)//'.withoutDelta.360.dat'
+          !datafile=datadirectory(1:len_trim(datadirectory))//'seismo.'//&
+          !                         cphasetype(1:4)//'.withoutDelta.360.dat'
         !endif
         
         ! both seismograms are available, get phaseshift 
@@ -190,7 +193,7 @@
             ! let all processes pass to simulate scattered seismograms
             call MPI_Barrier( MPI_COMM_WORLD, ierror )
             if( ierror .ne. 0) then
-              call stopProgram( "abort - processSolutions() MPI_Barrier failed    ")      
+              call stopProgram( "abort - processSolutions() MPI_Barrier failed    ")
             endif
 
             ! synchronize reference seismograms
@@ -210,19 +213,22 @@
 ! determines the phase shift between reference and scattered seismograms
 !
 ! returns: new phaseshift array entry
-      use cells; use loop; use phaseVelocityMap; use traveltime; use filterType; use verbosity
+      use cells; use loop; use phaseVelocityMap; use traveltime
+      use filterType; use verbosity
       use parallel;use propagationStartup
       implicit none
       integer:: i,index,recvVertex,n, filenameBaseLength,ioerror
       character*128:: filename,fileReference
-      real(WP):: vperturbation,phaseVelocityRef,realdeltaLat,realdeltaLon,getKernelValue,correctedLat,correctedLon
+      real(WP):: vperturbation,phaseVelocityRef,realdeltaLat,realdeltaLon,&
+                getKernelValue,correctedLat,correctedLon
       real(WP):: recvLat,recvLon,vsource(3),vreceiver(3),vdelta(3),mat(3,3),startTime
       external:: getKernelValue
 
       ! in parallel simulation, only master needs to calculate the phaseshift
       if( PARALLELSEISMO ) then
         if( manyReceivers ) then
-          ! update the receivers seismograms of the master (receivers may lie in the other domains as well)
+          ! update the receivers seismograms of the master (receivers 
+          ! may lie in the other domains as well)
           !print*,'collecting receivers seismograms...',rank,referenceRun
           call collectReceiversSeismogram(referenceRun)
         endif
@@ -263,14 +269,17 @@
         ! get time lag
         call getTimelag(t_lag,filename,fileReference,startTime)
         ! kernel value term
-        kernel=getKernelValue(deltaVertex,heterogeneous,t_lag,phaseVelocityRef,arrivalTime,vperturbation)
+        kernel=getKernelValue(deltaVertex,heterogeneous,t_lag,&
+                                phaseVelocityRef,arrivalTime,vperturbation)
         
         if( ANALYTICAL_CORRELATION) then
           ! bw_width must be set by earlier call to getTimelag()
           ! analytic time lag
-          call getAnalyticTimelag(t_lagAnalytic,filename,fileReference,startTime,bw_width,BUTTERWORTH_POWER,bw_waveperiod,FILTERSEISMOGRAMS)
+          call getAnalyticalTimelag(t_lagAnalytic,filename,fileReference,&
+                startTime,bw_width,BUTTERWORTH_POWER,bw_waveperiod,FILTERSEISMOGRAMS)
           ! kernel value term
-          kernelAnalytic=getKernelValue(deltaVertex,heterogeneous,t_lagAnalytic,phaseVelocityRef,arrivalTime,vperturbation)  
+          kernelAnalytic=getKernelValue(deltaVertex,heterogeneous,t_lagAnalytic,&
+                phaseVelocityRef,arrivalTime,vperturbation)  
         endif
         
         ! get actual vertex position
@@ -280,18 +289,20 @@
         call getSphericalCoord_Lat(receiverVertex,recvLat,recvLon)
         
         ! output
-        write(100,'(2f8.2, 2e16.6, i10,5f12.6)') real(realdeltaLon),real(realdeltaLat),kernel,kernelAnalytic,&
-                                          receiverVertex, t_lag,t_lagAnalytic,vperturbation,recvLat,recvLon
+        write(100,'(2f8.2, 2e16.6, i10,5f12.6)') real(realdeltaLon),&
+                  real(realdeltaLat),kernel,kernelAnalytic,&
+                  receiverVertex, t_lag,t_lagAnalytic,vperturbation,recvLat,recvLon
         ! rotate into equatorial plane
         if( rotate_frame ) then        
-          call getVector( realdeltaLat,realdeltaLon,vdelta(1),vdelta(2),vdelta(3) )                  
+          call getVector( realdeltaLat,realdeltaLon,vdelta(1),vdelta(2),vdelta(3) )
           call rotateVector(mat,vdelta,vdelta)  
           call getSphericalCoordinates(vdelta,realdeltaLat,realdeltaLon)
         
           ! print to file                
           !print '(2f8.2, f12.6, i10)',real(realdeltaLon),real(realdeltaLat),kernel, deltaVertex    
-          write(101,'(2f8.2, 2e16.6, i10,5f12.6)') real(realdeltaLon),real(realdeltaLat),kernel,kernelAnalytic,&
-                                        receiverVertex, t_lag,t_lagAnalytic,vperturbation,recvLat,recvLon
+          write(101,'(2f8.2, 2e16.6, i10,5f12.6)') real(realdeltaLon),real(realdeltaLat),&
+                      kernel,kernelAnalytic,&
+                      receiverVertex, t_lag,t_lagAnalytic,vperturbation,recvLat,recvLon
         endif
       else              
         ! get actual perturbation vertex position
@@ -326,20 +337,23 @@
           !endif  
           
           ! kernel value term
-          kernel=getKernelValue(deltaVertex,heterogeneous,t_lag,phaseVelocityRef,arrivalTime,vperturbation)
+          kernel=getKernelValue(deltaVertex,heterogeneous,t_lag,phaseVelocityRef,&
+                                arrivalTime,vperturbation)
           
           !if( ANALYTICAL_CORRELATION) then
           !  ! analytic time lag
-          !  call getAnalyticTimelag(t_lagAnalytic,filename,fileReference,startTime,bw_width,BUTTERWORTH_POWER,bw_waveperiod,FILTERSEISMOGRAMS)
+          !  call getAnalyticalTimelag(t_lagAnalytic,filename,fileReference,startTime,&
+          !     bw_width,BUTTERWORTH_POWER,bw_waveperiod,FILTERSEISMOGRAMS)
           !  ! kernel value term
-          !  kernelAnalytic=getKernelValue(deltaVertex,heterogeneous,t_lagAnalytic,phaseVelocityRef,arrivalTime,vperturbation)  
+          !  kernelAnalytic=getKernelValue(deltaVertex,heterogeneous,t_lagAnalytic,&
+          !                             phaseVelocityRef,arrivalTime,vperturbation)  
           !endif
                     
           ! get receiver position 
           if( manyKernels) then
-            call getSphericalCoord_Lat(kernelsReceivers(currentKernel,n),recvLat,recvLon)          
+            call getSphericalCoord_Lat(kernelsReceivers(currentKernel,n),recvLat,recvLon)
           else
-            call getSphericalCoord_Lat(receivers(n),recvLat,recvLon)                    
+            call getSphericalCoord_Lat(receivers(n),recvLat,recvLon) 
           endif
           
           ! relativ position of delta towards receiver
@@ -354,8 +368,11 @@
             recvVertex=receivers(n)
           endif
           
-          !print '(2f8.2,2f12.6,i10,5f12.6)',real(correctedLon),real(correctedLat),kernel,kernelAnalytic,recvVertex,t_lag,t_lagAnalytic,vperturbation,recvLat,recvLon      
-          write(100,'(2f8.2, 2e16.6, i10,5f12.6)',iostat=ioerror) real(correctedLon),real(correctedLat),kernel,kernelAnalytic,recvVertex,t_lag,t_lagAnalytic,vperturbation,recvLat,recvLon
+          !print '(2f8.2,2f12.6,i10,5f12.6)',real(correctedLon),real(correctedLat),&
+          !  kernel,kernelAnalytic,recvVertex,t_lag,t_lagAnalytic,vperturbation,recvLat,recvLon
+          write(100,'(2f8.2, 2e16.6, i10,5f12.6)',iostat=ioerror) &
+              real(correctedLon),real(correctedLat),kernel,kernelAnalytic,&
+              recvVertex,t_lag,t_lagAnalytic,vperturbation,recvLat,recvLon
           if( ioerror .ne. 0) then
             print*,'error writing to file:',ioerror
             call stopProgram( 'abort - calculatePhaseshifts   ')
@@ -363,21 +380,22 @@
           
           ! rotate into equatorial plane
           if( rotate_frame ) then
-            call getVector( correctedLat,correctedLon,vdelta(1),vdelta(2),vdelta(3) )                  
+            call getVector( correctedLat,correctedLon,vdelta(1),vdelta(2),vdelta(3) )
             call rotateVector(mat,vdelta,vdelta)  
-            call getSphericalCoordinates(vdelta,correctedLat,correctedLon)          
+            call getSphericalCoordinates(vdelta,correctedLat,correctedLon)
             ! print to file                
-            !print '(2f8.2, f12.6, i10)',real(realdeltaLon),real(realdeltaLat),kernel, deltaVertex    
-            write(101,'(2f8.2, 2e16.6, i10,5f12.6)') real(correctedLon),real(correctedLat),kernel,kernelAnalytic,recvVertex,t_lag,t_lagAnalytic,vperturbation,recvLat,recvLon
+            !print '(2f8.2, f12.6, i10)',real(realdeltaLon),real(realdeltaLat),kernel, deltaVertex
+            write(101,'(2f8.2, 2e16.6, i10,5f12.6)') &
+              real(correctedLon),real(correctedLat),kernel,kernelAnalytic,&
+              recvVertex,t_lag,t_lagAnalytic,vperturbation,recvLat,recvLon
           endif
         enddo
       endif
       close(100)
-      close(101)                                                                                 
+      close(101)
 
       ! filter around 75 s and get kernels
       !call filterShort()
-                                                      
       end
       
 !-----------------------------------------------------------------------   
@@ -386,7 +404,8 @@
 ! determines the filenames of reference and actual file and opens the ttkernel*.dat files
 !
 ! returns: new phaseshift array entry
-      use cells; use loop; use phaseVelocityMap; use traveltime; use filterType; use verbosity
+      use cells; use loop; use phaseVelocityMap; use traveltime
+      use filterType; use verbosity
       use parallel;use propagationStartup
       implicit none
       character*3:: rankstr,recstr,kernelstr
@@ -401,9 +420,11 @@
         latstr=trim(latstr)
         lonstr=trim(lonstr)
         cphasetype=trim(cphasetype)
-        filename=datadirectory(1:len_trim(datadirectory))//'seismo.'//cphasetype(1:4)//'.'//latstr//'.'//lonstr//'.dat'
+        filename=datadirectory(1:len_trim(datadirectory))//'seismo.'//&
+                        cphasetype(1:4)//'.'//latstr//'.'//lonstr//'.dat'
         filename=trim(filename)
-        fileReference=datadirectory(1:len_trim(datadirectory))//'seismo.'//cphasetype(1:4)//'.withoutDelta.dat'
+        fileReference=datadirectory(1:len_trim(datadirectory))//'seismo.'//&
+                        cphasetype(1:4)//'.withoutDelta.dat'
         fileReference=trim(fileReference)
       endif
       !if( manyReceivers ) then
@@ -416,30 +437,38 @@
       if( manyKernels) then
         write(rankstr,'(i3.3)') rank
         write(kernelstr,'(i3.3)') int(kernelStartDistance+currentKernel-1)
-        ttkernelfile=datadirectory(1:len_trim(datadirectory))//'ttkernel'//kernelstr//'.rank'//rankstr//'.dat'
+        ttkernelfile=datadirectory(1:len_trim(datadirectory))//'ttkernel'//&
+              kernelstr//'.rank'//rankstr//'.dat'
         open(100,file=ttkernelfile,position='APPEND',iostat=ioerror)
         if( ioerror .ne. 0) then
-          print*,'could not open'//datadirectory(1:len_trim(datadirectory))//'ttkernel'//kernelstr//'.rank'//rankstr//'.dat file'
+          print*,'could not open'//datadirectory(1:len_trim(datadirectory))//&
+              'ttkernel'//kernelstr//'.rank'//rankstr//'.dat file'
           call stopProgram( 'abort - prepareForKernel     ')
         endif
-        ttkernelRotatedfile=datadirectory(1:len_trim(datadirectory))//'ttkernel'//kernelstr//'.rot.rank'//rankstr//'.dat'
+        ttkernelRotatedfile=datadirectory(1:len_trim(datadirectory))//&
+                    'ttkernel'//kernelstr//'.rot.rank'//rankstr//'.dat'
         open(101,file=ttkernelRotatedfile,position='APPEND',iostat=ioerror)      
         if( ioerror .ne. 0) then
-          print*,'could not open '//datadirectory(1:len_trim(datadirectory))//'ttkernel'//kernelstr//'.rot.rank'//rankstr//'.dat file'
+          print*,'could not open '//datadirectory(1:len_trim(datadirectory))//&
+              'ttkernel'//kernelstr//'.rot.rank'//rankstr//'.dat file'
           call stopProgram( 'abort - prepareForKernel     ')
         endif
       else
         write(rankstr,'(i3.3)') rank
-        ttkernelfile=datadirectory(1:len_trim(datadirectory))//'ttkernel.rank'//rankstr//'.dat'
+        ttkernelfile=datadirectory(1:len_trim(datadirectory))//'ttkernel.rank'//&
+                      rankstr//'.dat'
         open(100,file=ttkernelfile,position='APPEND',iostat=ioerror)
         if( ioerror .ne. 0) then
-          print*,'could not open'//datadirectory(1:len_trim(datadirectory))//'ttkernel.rank'//rankstr//'.dat file'
+          print*,'could not open'//datadirectory(1:len_trim(datadirectory))//&
+                  'ttkernel.rank'//rankstr//'.dat file'
           call stopProgram( 'abort - prepareForKernel     ')
         endif
-        ttkernelRotatedfile=datadirectory(1:len_trim(datadirectory))//'ttkernel.rot.rank'//rankstr//'.dat'
-        open(101,file=ttkernelRotatedfile,position='APPEND',iostat=ioerror)      
+        ttkernelRotatedfile=datadirectory(1:len_trim(datadirectory))//&
+                'ttkernel.rot.rank'//rankstr//'.dat'
+        open(101,file=ttkernelRotatedfile,position='APPEND',iostat=ioerror)
         if( ioerror .ne. 0) then
-          print*,'could not open '//datadirectory(1:len_trim(datadirectory))//'ttkernel.rot.rank'//rankstr//'.dat file'
+          print*,'could not open '//datadirectory(1:len_trim(datadirectory))//&
+                'ttkernel.rot.rank'//rankstr//'.dat file'
           call stopProgram( 'abort - prepareForKernel     ')
         endif
       endif      
@@ -451,7 +480,8 @@
 ! determines the startTime and arrivalTime
 !
 ! returns: startTime
-      use cells; use loop; use phaseVelocityMap; use traveltime; use filterType; use verbosity
+      use cells; use loop; use phaseVelocityMap; use traveltime
+      use filterType; use verbosity
       use parallel;use propagationStartup
       implicit none
       character*128:: fileReference
@@ -460,14 +490,20 @@
       ! start time
       if( manyReceivers ) then
         if( manyKernels ) then          
-          seismo(1,:)=kernelsReceiversSeismogramRef(currentKernel,numofReceivers+1,:) ! time
-          seismo(2,:)=kernelsReceiversSeismogramRef(currentKernel,1,:)                ! displacement of first receiver
-          call getStartTimeSeismogram(seismo,lasttimestep-firsttimestep+1,seismo(1,lasttimestep-firsttimestep+1),dt,startTime) 
+          ! time
+          seismo(1,:)=kernelsReceiversSeismogramRef(currentKernel,numofReceivers+1,:)
+          ! displacement of first receiver
+          seismo(2,:)=kernelsReceiversSeismogramRef(currentKernel,1,:)  
+          call getStartTimeSeismogram(seismo,lasttimestep-firsttimestep+1,&
+              seismo(1,lasttimestep-firsttimestep+1),dt,startTime) 
           !kernelsStartTime(currentKernel)=startTime
         else
-          seismo(1,:)=receiversSeismogramRef(numofReceivers+1,:) ! time
-          seismo(2,:)=receiversSeismogramRef(1,:)                ! displacement of first receiver
-          call getStartTimeSeismogram(seismo,lasttimestep-firsttimestep+1,seismo(1,lasttimestep-firsttimestep+1),dt,startTime)         
+          ! time
+          seismo(1,:)=receiversSeismogramRef(numofReceivers+1,:) 
+          ! displacement of first receiver
+          seismo(2,:)=receiversSeismogramRef(1,:)  
+          call getStartTimeSeismogram(seismo,lasttimestep-firsttimestep+1,&
+              seismo(1,lasttimestep-firsttimestep+1),dt,startTime)         
         endif
       else
         call getStartTime(fileReference,startTime)
@@ -476,11 +512,13 @@
       ! arrival time
       if( manyKernels ) then
           ! calculate the analytical arrival time
-          call greatCircleDistance(vertices(sourceVertex,:),vertices(kernelsReceivers(currentKernel,1),:),distance)
+          call greatCircleDistance(vertices(sourceVertex,:),&
+                    vertices(kernelsReceivers(currentKernel,1),:),distance)
           arrivalTime=distance*EARTHRADIUS/cphaseRef
           ! output
           if( MASTER .and. beVerbose ) then
-            call greatCircleDistance(vertices(sourceVertex,:),vertices(kernelsReceivers(currentKernel,1),:),distance)
+            call greatCircleDistance(vertices(sourceVertex,:),&
+                      vertices(kernelsReceivers(currentKernel,1),:),distance)
             print*,'kernel distance: ',distance*180.0/PI
             print*,'    arrival time:',arrivalTime
             print*,'    start time for fourier transformation:',startTime
@@ -488,7 +526,8 @@
           endif
       else
         ! calculate the analytical arrival time
-        call greatCircleDistance(vertices(sourceVertex,:),vertices(receiverVertex,:),distance)
+        call greatCircleDistance(vertices(sourceVertex,:),vertices(receiverVertex,:),&
+                                distance)
         arrivalTime=distance*EARTHRADIUS/cphaseRef      
         ! output
         if( MASTER .and. beVerbose ) then
@@ -531,35 +570,41 @@
         if(index .eq. 1) then
           if( manyKernels) then
             write(kernelstr,'(i3.3)') int(kernelStartDistance+currentKernel-1)
-            kernelfile=datadirectory(1:length)//cphasetype(1:len_trim(cphasetype))//'_'//kernelstr//'.dat'
+            kernelfile=datadirectory(1:length)//cphasetype(1:len_trim(cphasetype))//&
+                          '_'//kernelstr//'.dat'
           else
             kernelfile=datadirectory(1:length)//'ttkernel.dat'            
           endif
           open(100,file=kernelfile,iostat=ioerror)
-          if( ioerror .ne. 0) call stopProgram('abort - collectData could not open ttkernel-file    ')            
+          if( ioerror .ne. 0) &
+            call stopProgram('abort - collectData could not open ttkernel-file    ')
         else
           if( manyKernels) then
             write(kernelstr,'(i3.3)') int(kernelStartDistance+currentKernel-1)
-            kernelfile=datadirectory(1:length)//cphasetype(1:len_trim(cphasetype))//'_'//kernelstr//'.rot.dat'
+            kernelfile=datadirectory(1:length)//cphasetype(1:len_trim(cphasetype))//&
+                        '_'//kernelstr//'.rot.dat'
           else
             kernelfile=datadirectory(1:length)//'ttkernel.rot.dat'
           endif
           open(100,file=kernelfile,iostat=ioerror)          
-          if( ioerror .ne. 0) call stopProgram('abort - collectData could not open ttkernel-file    ')            
+          if( ioerror .ne. 0) &
+            call stopProgram('abort - collectData could not open ttkernel-file    ')
         endif
         
         if( manyKernels ) then
-          call greatCircleDistance(vertices(sourceVertex,:),vertices(kernelsReceivers(currentKernel,1),:),distance)
+          call greatCircleDistance(vertices(sourceVertex,:),&
+                      vertices(kernelsReceivers(currentKernel,1),:),distance)
           distance=distance*180.0/PI
         else
-          call greatCircleDistance(vertices(sourceVertex,:),vertices(receiverVertex,:),distance)
+          call greatCircleDistance(vertices(sourceVertex,:),&
+                      vertices(receiverVertex,:),distance)
           distance=distance*180.0/PI
         endif
         
         if(index .eq. 1) then
           write(100,*) '# total phase shift data ',distance
         else
-          write(100,*) '# total phase shift data - rotated kernel',distance          
+          write(100,*) '# total phase shift data - rotated kernel',distance 
         endif
         write(100,*) '# lon lat phaseshiftKernel relativePhaseshift absolutePhaseshift'
         
@@ -569,9 +614,10 @@
           write(rankstr,'(i3.3)') i
           if( index .eq. 1) then
             if( manyKernels) then
-              datafile=datadirectory(1:length)//'ttkernel'//kernelstr//'.rank'//rankstr//'.dat'
+              datafile=datadirectory(1:length)//'ttkernel'//kernelstr//&
+                        '.rank'//rankstr//'.dat'
             else
-              datafile=datadirectory(1:length)//'ttkernel.rank'//rankstr//'.dat'              
+              datafile=datadirectory(1:length)//'ttkernel.rank'//rankstr//'.dat'
             endif
             open(200,file=datafile,iostat=ioerror)
             if( ioerror .ne. 0) then
@@ -581,9 +627,10 @@
             endif
           else
             if( manyKernels ) then
-              datafile=datadirectory(1:length)//'ttkernel'//kernelstr//'.rot.rank'//rankstr//'.dat'            
+              datafile=datadirectory(1:length)//'ttkernel'//kernelstr//&
+                            '.rot.rank'//rankstr//'.dat'            
             else
-              datafile=datadirectory(1:length)//'ttkernel.rot.rank'//rankstr//'.dat'                          
+              datafile=datadirectory(1:length)//'ttkernel.rot.rank'//rankstr//'.dat'
             endif
             open(200,file=datafile,iostat=ioerror)
             if( ioerror .ne. 0) then
@@ -599,14 +646,17 @@
           
           ! collect data
           do while( ioerror .eq. 0)
-            read(200,'(2f8.2, 2e16.6, i10,5f12.6)',iostat=ioerror) lon,lat,kernelfromFile,kernelAnalyticFromFile,&
-                                      recvVertex, t_lagfromFile,t_lagAnalyticfromFile,vperturbation,recvLat,recvLon            
+            read(200,'(2f8.2, 2e16.6, i10,5f12.6)',iostat=ioerror) &
+              lon,lat,kernelfromFile,kernelAnalyticFromFile,&
+              recvVertex, t_lagfromFile,t_lagAnalyticfromFile,&
+              vperturbation,recvLat,recvLon
             if( ioerror .eq. 0) then
               n=n+1
               !phaseshifts(n,1)=lon
               !phaseshifts(n,2)=lat
               !phaseshifts(n,3)=kernel      
-              write(100,'(2f8.2,e16.6,2e12.4)') lon,lat,kernelfromFile,t_lagfromFile/arrivalTime,t_lagfromFile    
+              write(100,'(2f8.2,e16.6,2e12.4)') lon,lat,kernelfromFile,&
+                t_lagfromFile/arrivalTime,t_lagfromFile    
             endif            
           enddo
           close(200)
@@ -627,7 +677,7 @@
       ! clean up reference files
       ! for all processes, they should be available in same directory
       !if( manyReceivers ) then
-      !  fileReference=datadirectory(1:length)//'seismo.'//cphasetype(1:4)//'.withoutDelta. 01.dat'        
+      !  fileReference=datadirectory(1:length)//'seismo.'//cphasetype(1:4)//'.withoutDelta. 01.dat'
       !  do i=1,size(receivers)
       !    ! determine filenames
       !    write(recstr,'(i3.2)') int(i)
@@ -637,5 +687,3 @@
       !  enddo
       !endif
       end
-      
-      

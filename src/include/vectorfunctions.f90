@@ -1,6 +1,6 @@
 !=====================================================================
 !
-!       m e m b r a n e S p h e r e  1 . 0
+!       m e m b r a n e S p h e r e  1 . 1
 !       --------------------------------------------------
 !
 !      Daniel Peter
@@ -18,7 +18,7 @@
 ! calculates the point in the middle of the two endpoints marked by the
 ! given vectors 1 & 2
 ! return: vector to middle point
-      use precision
+      use precisions
       implicit none
       real(WP):: vector1(3),vector2(3),middle(3)
        
@@ -28,23 +28,29 @@
       end
       
 !-----------------------------------------------------------------------
-      subroutine centralpoint(vector1, vector2, vector3, central)
+      subroutine getCentralpoint(vector1, vector2, vector3, central)
 !-----------------------------------------------------------------------
 ! calculates the point in the center of the three endpoints marked by
 ! the given vectors 1, 2 & 3
+!
+! (see also: Carl's thesis, eq. (4.3) on page 38 )
 ! return: vector to central point
-      use precision
+      use precisions
       implicit none
       real(WP):: vector1(3),vector2(3),vector3(3),central(3),vTmpA(3),vTmpB(3),vlength
       
+      ! using the formula with one vectorproduct
       call vectordiff(vector3,vector1,vTmpA)
       call vectordiff(vector2,vector1,vTmpB)
       call vectorproduct(vTmpA,vTmpB,central)
       
-      call scalarproduct(central,central,vlength)
-      vlength = sqrt(vlength)
+      ! normalize vector
+      !call scalarproduct(central,central,vlength)
+      !vlength = sqrt(vlength)      
+      !call vectorscale(central,vlength,central)
       
-      call vectorscale(central,vlength,central)
+      vlength = sqrt(central(1)**2 + central(2)**2 + central(3)**2 )
+      central(:) = central(:) / vlength
       
       ! compare with this calculation
       !central(1) = (vector1(1) + vector2(1)+vector3(1))/3.0
@@ -59,7 +65,7 @@
 ! calculates the vector product of the
 ! given vectors 1 & 2
 ! return: vector product
-      use precision
+      use precisions
       implicit none
       real(WP):: vector1(3),vector2(3),product(3)
       
@@ -74,7 +80,7 @@
 ! calculates the scalar product of the
 ! given vectors 1 & 2
 ! return: scalar product
-      use precision
+      use precisions
       implicit none
       real(WP):: vector1(3),vector2(3),scalar
       
@@ -92,7 +98,7 @@
 !    difference          - vector difference
 !
 ! return: difference vector
-      use precision
+      use precisions
       implicit none
       real(WP):: vector1(3),vector2(3),difference(3)
       
@@ -112,7 +118,7 @@
 !    addition             - resulting vector
 !
 ! return: addition vector
-      use precision
+      use precisions
       implicit none
       real(WP):: vector1(3),vector2(3),addition(3)
       
@@ -127,7 +133,7 @@
 ! multiplies the vector with a given scale factor
 ! 
 ! return: scaled vector
-      use precision
+      use precisions
       implicit none
       real(WP):: vector1(3),scaledvector(3),scale
       
@@ -142,7 +148,7 @@
 ! normalizes vector to unit length 1
 ! 
 ! return: normalized vector
-      use precision
+      use precisions
       implicit none
       real(WP):: vector(3), vectorlength
       
@@ -157,7 +163,7 @@
 !
 ! returns: distance
 ! check formula: http://mathworld.wolfram.com/Point-PlaneDistance.html
-      use precision
+      use precisions
       implicit none
       real(WP):: vector1(3),vector2(3),vector3(3), vCheck(3)
       real(WP):: normale(3), tmpA(3), tmpB(3),tmpC(3)
@@ -186,7 +192,7 @@
 ! given by the two vectors
 !
 ! return: distance
-      use precision
+      use precisions
       implicit none
       real(WP):: vector1(3),vector2(3),vTmp(3),distance
       
@@ -206,7 +212,7 @@
 !   vector - vector on which the length is calculated
 !
 ! return: vectorlength
-      use precision
+      use precisions
       implicit none
       real(WP):: vectorlength,vector(3),scalar
       
@@ -239,7 +245,7 @@
 !   central    - vector which takes the central point vector     
 !
 ! return: central vector
-       use precision; use verbosity
+       use precisions; use verbosity
        implicit none
        integer:: ordered        
        real(WP):: vectors(5,3),central(3),vRef(3),vTmpA(3), vTmpB(3), vTmpC(3)
@@ -270,9 +276,6 @@
             ! get vector length between these two	      
             side = distance(vRef,vTmpA)
     
-            !debug
-            if(DEBUG) print *,side
-            
             !determine min and max of lengths
             if( side .gt. maxside) then
                     maxside = side
@@ -282,9 +285,6 @@
                     minside = side
             endif
           enddo  
-          !debug
-          if(DEBUG)print*, 'sides: ',minside, maxside
-    
           ! get the points which are far neighbors
           count = -1
           do i=2,5
@@ -305,7 +305,7 @@
        endif !ordered
               
        !debug
-       if(DEBUG)print *,'far neighbors ', farNeighbors(1), farNeighbors(2)
+       !print *,'far neighbors ', farNeighbors(1), farNeighbors(2)
         
        ! get middle point of far side
        do i=1,3
@@ -315,9 +315,7 @@
        call midpoint(vTmpB,vTmpC,sideMiddle)
 
        !debug 
-       if(DEBUG) then
-        write(*,'(3f12.8)') sideMiddle(1),sideMiddle(2),sideMiddle(3)
-       endif
+       ! write(*,'(3f12.8)') sideMiddle(1),sideMiddle(2),sideMiddle(3)
        
        ! calculate the central point
        call vectordiff(sideMiddle,vRef,central) !central points R->middleside
@@ -338,7 +336,7 @@
 !    vector   - vector to project
 !
 ! return: projected vector
-      use precision; use verbosity
+      use precisions; use verbosity
       implicit none
       integer:: k,nCount
       real(WP):: vertices(nCount,3), vector(3), vectorlength, vNormale(3)
@@ -407,7 +405,7 @@
 !
 ! return: index of vertex in vertices array which is closest 
 !            to the desired location
-      use precision; use verbosity
+      use precisions; use verbosity
       implicit none
       real(WP):: vertices(32,3), vDestination(3),vTmp(3),distance, minimum, tmpDist
       integer:: n, k, vertex
@@ -425,14 +423,10 @@
         if( tmpDist .lt. minimum) then
           minimum = tmpDist 
           vertex = n
-        endif
-      
+        endif      
       enddo
       
-      getClosestPoint = vertex
-      
-      !debug
-      if(DEBUG)print *,'closest vertex', vertex      
+      getClosestPoint = vertex      
       return
       end
       
@@ -497,16 +491,16 @@
       use cells
       implicit none
       integer::  vertex,k
-      real(WP):: latitude, longitude,vectorlength,vector(3)
+      real(WP):: latitude,longitude,vectorlength,vector(3)
       
       !get corresponding vertex vector
       vector(:) = vertices(vertex,:)
             
       !check if point is on sphere
-      if( abs(vectorlength(vector) - 1.0) .gt. 1.0e-4 ) then
-         print*,vertex,'vector not normalized ', vectorlength(vector)
-         stop 'abort-getSphericalCoord_Lat length'
-      endif
+      !if( abs(vectorlength(vector) - 1.0) .gt. 1.0e-4 ) then
+      !   print*,vertex,'vector not normalized ', vectorlength(vector)
+      !   stop 'abort-getSphericalCoord_Lat length'
+      !endif
      
       !calculate spherical coordinates
       call getSphericalCoordinates(vector,latitude,longitude)      
@@ -523,7 +517,7 @@
 !    vector    - vector in cartesian coordinates of point
 !    latitude, longitude - spherical coordinates to determine
 ! return: latitude [-90,90], longitude [0, 360[ in degree
-      use precision
+      use precisions
       implicit none
       real(WP):: vector(3),x,y,z,latitude,longitude
       
@@ -537,16 +531,14 @@
       latitude = asin(z)
           
       ! convert to degrees    
-      longitude = 180.0_WP*longitude/PI
-      latitude = 180.0_WP*latitude/PI
+      longitude = RAD2DEGREE*longitude
+      latitude  = RAD2DEGREE*latitude
       
-      ! check
-      if( longitude .lt. 0.0_WP) then
+      ! return only positive longitudes
+      if( longitude < 0.0) then
         longitude = longitude + 360.0_WP        
-      endif
-      
-      
-      end      
+      endif            
+      end subroutine
       
 !-----------------------------------------------------------------------
       subroutine getVector(latitude,longitude,x,y,z)
@@ -559,12 +551,12 @@
 !    x,y,z    - cartesian coordinates of point
 !    latitude, longitude - spherical coordinates (lat[-90/90] lon[0/360] in degree)
 ! return: x,y,z
-      use precision
+      use precisions
       implicit none
       real(WP):: x,y,z,latitude,longitude,colat,lon
       
-      lon = longitude/180.0_WP*PI
-      colat = PI/2.0_WP - latitude/180.0_WP*PI
+      lon = DEGREE2RAD*longitude
+      colat = PI/2.0_WP - DEGREE2RAD*latitude
       
       x=cos(lon)*sin(colat)
       y=sin(lon)*sin(colat)
@@ -584,7 +576,7 @@
 !
 ! return: angles in radian
 ! (formula:http://mathworld.wolfram.com/SphericalTrigonometry.html)  
-      use precision
+      use precisions
       implicit none
       real(WP):: vectorA(3),vectorB(3),vectorC(3), angle,normalAB(3),normalAC(3),normalBC(3)
       real(WP):: normalResult(3), vectorlength,scalar
@@ -611,7 +603,7 @@
 !
 ! return: haversine - great circle distance on unit sphere
 ! (formula:http://mathforum.org/library/drmath/view/51879.html)    
-      use precision
+      use precisions
       implicit none
       real(WP):: vector1(3),vector2(3),dlon,dlonhalf,dlat,dlathalf,lon1,lon2,lat1,lat2
       real(WP):: haversine,a
@@ -626,9 +618,9 @@
       
       !haversine formula
       dlon = lon2 - lon1
-      dlonhalf= dlon/2.0_WP
+      dlonhalf= dlon*0.5_WP
       dlat = lat2 - lat1
-      dlathalf = dlat/2.0_WP
+      dlathalf = dlat*0.5_WP
       a = sin(dlathalf)*sin(dlathalf)+cos(lat1)*cos(lat2)*sin(dlonhalf)*sin(dlonhalf)
       haversine = 2.0_WP*atan2(sqrt(a), sqrt(1.0_WP-a)) 
       return
@@ -652,8 +644,8 @@
       integer:: vertex,vertexMin,n
       
       !pick vector on unit sphere      
-      lat=desiredLat*PI/180.0_WP
-      lon=desiredLon*PI/180.0_WP
+      lat = DEGREE2RAD*desiredLat
+      lon = DEGREE2RAD*desiredLon
       vectorS(1) = cos(lat)*cos(lon)
       vectorS(2) = cos(lat)*sin(lon)
       vectorS(3) = sin(lat)
@@ -690,7 +682,7 @@
 !     rotVector - rotated vector
 !
 ! returns: rotated vector
-      use precision
+      use precisions
       implicit none
       real(WP):: vector(3),rotVector(3),rot(3,3),tmp(3)
       integer:: i,j
@@ -711,7 +703,7 @@
 !-----------------------------------------------------------------------
 ! calculates the matrix multiplication
 ! returns: rotated vector
-      use precision
+      use precisions
       implicit none
       real(WP):: mat1(3,3),mat2(3,3),mat(3,3),tmp(3,3)
       integer:: i,j,k
@@ -740,7 +732,7 @@
 !       rotationMatrix        - matrix to return
 !
 ! returns: rotation matrix
-      use precision
+      use precisions
       implicit none
       real(WP):: vsource(3),vreceiver(3),rotationMatrix(3,3)
       real(WP):: Vnormal1(3),Vnormal2(3),tauX,tauY,tauZ,vectorlength
@@ -788,7 +780,7 @@
 !       invRotationMatrix        - matrix to return
 !
 ! returns: inverse rotation matrix
-      use precision
+      use precisions
       implicit none
       real(WP):: vsource(3),vreceiver(3),invRotationMatrix(3,3)
       real(WP):: Vnormal1(3),Vnormal2(3),tauX,tauY,tauZ,vectorlength
@@ -882,10 +874,10 @@
       use cells
       implicit none
       integer:: midpoint,sourceVertex,receiverVertex
-      double precision:: latDelta,lonDelta,dlat,dlon
-      double precision:: Vmid(3),Vsource(3),Vreceiver(3),Vnormal1(3),Vnormal2(3),vtmp(3)
-      double precision:: vectorlength,tauX,tauY,tauZ,rot(3,3),rotInv(3,3),lat,lon,tmp,rotX(3,3),rotY(3,3),rotZ(3,3)
-      double precision:: sourceLat,sourceLon,receiverLat,receiverLon
+      real(WP):: latDelta,lonDelta,dlat,dlon
+      real(WP):: Vmid(3),Vsource(3),Vreceiver(3),Vnormal1(3),Vnormal2(3),vtmp(3)
+      real(WP):: vectorlength,tauX,tauY,tauZ,rot(3,3),rotInv(3,3),lat,lon,tmp,rotX(3,3),rotY(3,3),rotZ(3,3)
+      real(WP):: sourceLat,sourceLon,receiverLat,receiverLon
       
       sourceLat=0.0
       sourceLon=60.0
@@ -953,7 +945,7 @@
 !   secondvertex            - vertex index of second location
 !
 ! return: new SecondLat,SecondLon,SecondVertex for second delta location
-      use precision
+      use precisions
       implicit none
       real(WP):: lat,lon,secondlat,secondlon,distance
       integer:: secondvertex
@@ -976,7 +968,7 @@
 !   arraylength - n length of array
 ! 
 ! returns: normalized array
-      use precision
+      use precisions
       implicit none
       integer:: arraylength,i
       real(WP):: array(arraylength),maximum
@@ -1009,17 +1001,17 @@
 !   lon1,lat1 - longitude/latitude point 1 (in degree)
 !   lon2,lat2 - for point 2
 !   distance - great circle distance between point 1 and point 2
+!
 ! return: great circle distance (in degree)
-      use precision
+      use precisions
       implicit none
-      real:: lon,lonhalf,lat,lathalf,lon1,lon2,lat1,lat2,a,distance,toradian
-      real:: radlat1,radlat2,radlon1,radlon2
+      real(WP):: lon,lonhalf,lat,lathalf,lon1,lon2,lat1,lat2,a,distance
+      real(WP):: radlat1,radlat2,radlon1,radlon2
       ! convert to radian
-      toradian=PI/180.0
-      radlat1=lat1*toradian
-      radlat2=lat2*toradian
-      radlon1=lon1*toradian
-      radlon2=lon2*toradian
+      radlat1=DEGREE2RAD*lat1
+      radlat2=DEGREE2RAD*lat2
+      radlon1=DEGREE2RAD*lon1
+      radlon2=DEGREE2RAD*lon2
       
       !haversine formula
       lon = radlon2 - radlon1
@@ -1036,7 +1028,7 @@
       distance = 2.0*atan2(sqrt(a),sqrt(1.0-a)) 
       
       ! convert to degrees
-      distance = distance*180.0/PI
+      distance = RAD2DEGREE*distance
       
       ! check if Nan
       if( distance .ne. distance) then
@@ -1059,7 +1051,7 @@
 !     vector1,vector2 - point vectors in cartesian coordinates
 !
 ! return: great circle distance (in radian)
-      use precision
+      use precisions
       implicit none
       real(WP):: vector1(3), vector2(3)
       real(WP):: lon,lonhalf,lat,lathalf,lon1,lon2,lat1,lat2,a
@@ -1104,9 +1096,10 @@
 !     vector1,vector2 - point vectors in cartesian coordinates
 !
 ! return: great circle distance in radian
+      use precisions
       implicit none
-      double precision vector1(3), vector2(3)
-      double precision scalar, vectorlength
+      real(WP):: vector1(3), vector2(3)
+      real(WP):: scalar, vectorlength
       integer               k
       
       if( abs(vector1(1)*vector1(1)+vector1(2)*vector1(2)+              &
@@ -1120,7 +1113,7 @@
       
       call scalarproduct( vector1,vector2,scalar)
       
-      greatCircleDistance_alternate = dacos( scalar)
+      greatCircleDistance_alternate = dble( acos( scalar) )
       return
       end
       
@@ -1131,7 +1124,7 @@
 ! and vector2
 ! 
 ! return: midpoint vector (on the sphere)
-      use precision
+      use precisions
       implicit none
       real(WP):: vector1(3),vector2(3),midpoint(3),normale(3)
       real(WP):: distance, vectorlength
@@ -1188,7 +1181,7 @@
 !      midpoint(2)=vY
 !      midpoint(3)=vZ
 !      !debug
-!      print*,'mid angle',midAngle/3.1415*180
+!      print*,'mid angle',midAngle*RAD2DEGREE
 !
 !      !debug
 !      !another possibility
@@ -1196,4 +1189,95 @@
 !      call normalize(midpoint)
 !
       end
+      
+!-----------------------------------------------------------------------
+      subroutine determineTimeStep()
+!-----------------------------------------------------------------------     
+! determines the time step size according to approximative formula
+! done by C. Tape (paragraph 5.5)
+!
+! input:
+!     cphaseRef          - phase velocity
+!     subdivisions  - grid level
+!     timestepsize  - model time step
+!     averageCellDistance - grid spacing
+!
+! returns: dt in seconds, averageCellDistance in km
+      use propagationStartup; use cells
+      implicit none
+      real(WP),parameter:: sqrt2=1.414213562373095_WP
+
+      ! initialize number of time steps
+      numofTimeSteps = 0            
+            
+      ! timestep width relation (Tape, chap. 5, (5.9), p. 66) with space steps (table 4.4) [averageCellDistance in km]
+      if( subdivisions .eq. 8) averageCellDistance = 17.3860147304427_WP
+      if( subdivisions .eq. 7) averageCellDistance = 34.7719816287154444_WP
+      if( subdivisions .eq. 6) averageCellDistance = 69.5435806022331491_WP
+      if( subdivisions .eq. 5) averageCellDistance = 139.084100036946921_WP
+      if( subdivisions .eq. 4) averageCellDistance = 278.143713101840262_WP
+      if( subdivisions .eq. 3) averageCellDistance = 556.091606162381709_WP
+      if( subdivisions .eq. 2) averageCellDistance = 1110.61907020550302_WP
+      if( subdivisions .eq. 1) averageCellDistance = 2208.80170795688991_WP
+      if( subdivisions .eq. 0) averageCellDistance = 4320.48077165147788_WP
+
+      ! for routine findVertex
+      distanceQuit = averageCellDistance*0.5/EARTHRADIUS
+            
+      ! calculate mean cphase velocity for delta phase map
+      !if(DELTA ) then
+      !  !reset cphase
+      !  cphase = 0.0_WP
+      !  !delta location source
+      !  !lat=deltaLat*PI/180.0_WP
+      !  !lon=deltaLon*PI/180.0_WP
+      !  !vectorS(1) = cos(lat)*cos(lon)
+      !  !vectorS(2) = cos(lat)*sin(lon)
+      !  !vectorS(3) = sin(lat)
+      !  vectorS(:)= vertices(deltaVertex,:)
+      !  
+      !  ! range of delta locations
+      !  ! calculate mean phase velocity
+      !  do n=1,numVertices
+      !    vectorV(:) =  vertices(n,:)
+      !    distance=EARTHRADIUS*greatCircleDistance(vectorS,vectorV)
+      !    if( distance .gt. DELTARADIUS) then ! changed since DELTARADIUS was defined only after this check
+      !      cphase = cphase+cphaseRef
+      !    else
+      !      cphase = cphase+ (cphaseRef + deltaPerturbation)
+      !    endif
+      !  enddo
+      !  !set cphase to mean value
+      !  cphase = cphase/numVertices
+      !endif
+            
+      ! time step - trial'n error formula (5.8)              
+      dt = averageCellDistance/(cphaseRef*sqrt2)        
+      
+      
+      !if( cphaseref > 4.78 ) dt = dt/2.0
+      
+      end
+      
+!-----------------------------------------------------------------------
+      function rootmeansquare(x,length)
+!-----------------------------------------------------------------------     
+! rms function calculates the root-mean-square value
+! for the values given by vector x 
+!
+! returns: rms of x
+        use precisions
+        implicit none
+        real(WP):: rootmeansquare
+        integer,intent(in):: length
+        real(WP),intent(in):: x(length)
+        real(WP):: sum
+        integer:: i
+        ! see: http://en.wikipedia.org/wiki/Root_mean_square
+        sum = 0.0
+        do i=1,length
+          sum = sum + x(i)*x(i)
+        enddo        
+        rootmeansquare = sqrt(sum/length)        
+      end function
       

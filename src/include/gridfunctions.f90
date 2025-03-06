@@ -1,6 +1,6 @@
 !=====================================================================
 !
-!       m e m b r a n e S p h e r e  1 . 0
+!       m e m b r a n e S p h e r e  1 . 1
 !       --------------------------------------------------
 !
 !      Daniel Peter
@@ -16,11 +16,11 @@
       subroutine constructParallelDomains()
 !-----------------------------------------------------------------------
 ! makes grid domains for parallelization
-      use parallel;use griddomain;use propagationStartup
+      use parallel;use griddomain;use propagationStartup; use cells; use verbosity
       implicit none
-      integer:: range,index,n,domain,numDomainVert(0:nprocesses-1),getDomain,ierror
+      integer:: range,index,n,domain,numDomainVert(0:nprocesses-1),ierror,i
       real(WP):: colat,long
-      external:: getDomain
+      integer,external:: getDomain
       
       ! domains only make sense for more then 1 processors
       if( nprocesses .lt. 2 ) then
@@ -28,28 +28,32 @@
       endif
       
       ! construct domains      
-      !count vertices in each domain
-      !if(MASTER) open(11,file='vertexdomains.dat')
+      ! count vertices in each domain
       numDomainVert(:)=0
       do n=1,numVertices
         domain = getDomain(n)
-        numDomainVert(domain)=numDomainVert(domain)+1
-        !if(MASTER) write(11,*) n, domain
+        numDomainVert(domain) = numDomainVert(domain)+1
       enddo      
-      !if(MASTER) close(11)
-      
-      ! allocate region information for this process
-      allocate(vertexDomain(numVertices),stat=ierror)
-      if( ierror .gt. 0 ) call stopProgram('abort - constructParallelDomains:error in allocating vertexRegion array   ')
-            
-      !allocate domain
       range = numDomainVert(rank)
       if( range .le. 0 ) then
         print*,rank,': range has no elements',range
         call stopProgram('abort - constructParallelDomains    ')
       endif
+      
+      ! allocate region information for this process
+      if( MASTER .and. VERBOSE ) then
+        print*,'  allocating parallel domain arrays:'
+        print*,'    vertexDomain size   :  ',numVertices*sizeof(i)/1024./1024.,'Mb'
+        print*,'    domainVertices size :  ',range*sizeof(i)/1024./1024.,'Mb'        
+      endif      
+      allocate(vertexDomain(numVertices),stat=ierror)
+      if( ierror .gt. 0 ) call stopProgram('abort - constructParallelDomains:error vertexDomain array   ')
+      vertexDomain(:) = -1      
+      
+      !allocates array which holds all vertices in the boundary to another parallel domain
       allocate(domainVertices(range),stat=ierror)
-      if( ierror .gt. 0 ) call stopProgram('abort - constructParallelDomains: error in allocating domain boundary array   ')
+      if( ierror .gt. 0 ) call stopProgram('abort - constructParallelDomains: error domainVertices array   ')
+      domainVertices(:) = -1
       
       ! divide vertices into domains
       index=0
@@ -67,7 +71,8 @@
           domainVertices(index)=n
         endif
       enddo
-      !check
+      
+      ! check
       if( index .ne. range ) then
         print*,rank,': range in domain wrong',range,index
         call stopProgram('abort - constructParallelDomains    ')
@@ -92,12 +97,10 @@
 ! returns: domain of the grid where vertex is in      
       use parallel;use griddomain
       implicit none
-      real(WP):: colat,long,longitudeIncrement
-      integer:: vertex,n
-      logical:: placed
+      integer,intent(in):: vertex
+      real(WP):: colat,long,longitudeIncrement,latitudeIncrement
+      integer:: n,m
 
-      ! find lat/lon of vertex
-      call getSphericalCoord(vertex,colat,long)
 
       ! determine domains on the sphere
       select case(nprocesses)
@@ -106,146 +109,289 @@
         getDomain=0  
         return
       case(2) ! for 2 processes
+        ! find lat/lon of vertex
+        call getSphericalCoord(vertex,colat,long)
+
         ! domains simply divide into two half-spheres
         if( long .ge. 0.0 .and. long .lt. PI ) then
           getDomain = 0
+          return
         else
           getDomain = 1
+          return
         endif
-        return
       case(4) ! for 4 processes
+        ! find lat/lon of vertex
+        call getSphericalCoord(vertex,colat,long)
+
         ! domains are a the half-sphere split 
         if( long .ge. 0.0 .and. long .lt. PI ) then
           if( colat .lt. PI/2.0) then
             getDomain=0
+            return
           else
             getDomain=1
+            return
           endif
         else
           if( colat .lt. PI/2.0) then
             getDomain=2
+            return
           else
             getDomain=3
+            return
           endif
         endif
-        return
       case(6)
+        ! find lat/lon of vertex
+        call getSphericalCoord(vertex,colat,long)
+
         ! domains are split by colatitude PI/4,3PI/4 and longitude 0,PI/2,PI,3PI/2
         if( colat.lt.(PI/4.0)) then
           getDomain=0
+          return
         else if( colat.gt.(3.0*PI/4.0)) then
           getDomain=1
+          return
         else if( long.ge.0.0 .and. long .lt. (PI/2.0)) then
           getDomain=2
+          return
         else if( long.ge.(PI/2.0) .and. long.lt.PI) then
           getDomain=3
+          return
         else if( long .ge. PI.and.long.lt.(3.0*PI/2.0)) then
           getDomain=4
+          return
         else
           getDomain=5
+          return
         endif
-        return
       case(8)
+        ! find lat/lon of vertex
+        call getSphericalCoord(vertex,colat,long)
+
         ! domains are the quarter-sphere split (equal to spherical octahedron)
+        ! still, this is optimal distribution
         if( long .ge. 0.0 .and. long .lt. PI/2.0 ) then
           if( colat .lt. PI/2.0) then
             getDomain=0
+            return
           else
             getDomain=1
+            return
           endif
         else if( long .ge. PI/2.0 .and. long .lt. PI) then        
           if( colat .lt. PI/2.0) then
             getDomain=2
+            return
           else
             getDomain=3
+            return
           endif
         else if( long .ge. PI .and. long .lt. (3.0*PI/2.0)) then
           if( colat .lt. PI/2.0) then
             getDomain=4
+            return
           else
             getDomain=5
+            return
           endif
         else
           if( colat .lt. PI/2.0) then
             getDomain=6
+            return
           else
             getDomain=7
+            return
           endif        
         endif
-        return        
       case(16)
-        ! domains are the quarter-sphere split (equal to spherical octahedron) and divide into 2 slices
+        ! find lat/lon of vertex
+        call getSphericalCoord(vertex,colat,long)
+
+        ! domains are the quarter-sphere split and divide into 2 slices
+        ! though, no more optimal
         if( long .ge. 0.0 .and. long .lt. 0.25*PI ) then
           if( colat .lt. 0.5*PI) then
             getDomain=0
+            return
           else
             getDomain=1
+            return
           endif
         else if( long .ge. 0.25*PI .and. long .lt. 0.5*PI) then        
           if( colat .lt. 0.5*PI) then
             getDomain=2
+            return
           else
             getDomain=3
+            return
           endif
-        else if( long .ge. 0.5*PI .and. long.lt.0.75*PI)then
+        else if( long .ge. 0.5*PI .and. long .lt. 0.75*PI)then
           if( colat .lt. 0.5*PI) then
             getDomain=4
+            return
           else
             getDomain=5
+            return
           endif
-        else if(long.ge.0.75*PI.and.long.lt.PI)then
+        else if(long .ge. 0.75*PI .and. long .lt. PI)then
           if( colat .lt. 0.5*PI) then
             getDomain=6
+            return
           else
             getDomain=7
+            return
           endif        
-        else if(long.ge.PI.and.long.lt.1.25*PI)then
+        else if(long .ge. PI .and. long .lt. 1.25*PI)then
           if( colat .lt. 0.5*PI) then
             getDomain=8
+            return
           else
             getDomain=9
+            return
           endif        
-        else if(long.ge.1.25*PI.and.long.lt.1.5*PI)then
+        else if(long .ge. 1.25*PI .and. long .lt. 1.5*PI)then
           if( colat .lt. 0.5*PI) then
             getDomain=10
+            return
           else
             getDomain=11
+            return
           endif        
-        else if(long.ge.1.5*PI.and.long.lt.1.75*PI)then
+        else if(long .ge. 1.5*PI .and. long .lt. 1.75*PI)then
           if( colat .lt. 0.5*PI) then
             getDomain=12
+            return
           else
             getDomain=13
+            return
           endif        
         else 
           if( colat .lt. 0.5*PI) then
             getDomain=14
+            return
           else
             getDomain=15
+            return
           endif        
         endif
-        return
-      case default
-        ! split just longitude
-        if( MASTER ) print*,'grid is split into a non-optimized grid...'
-        
-        longitudeIncrement=360.0_WP/nprocesses        
-        placed=.false.
-        do n=0,nprocesses-1
-          if( (long .ge. longitudeIncrement*n ) .and. ( long .lt. longitudeIncrement*(n+1) )) then
-            getDomain=n
-            placed=.true.
+      case(32)
+        ! find lat/lon of vertex
+        call getSphericalCoord(vertex,colat,long)
+
+        ! splits sphere in eight first, then halves the latitudes and longitudes of each domain
+        longitudeIncrement=PI/4.0 
+        latitudeIncrement=PI/4.0                 
+        if( colat >= 0.0 .and. colat < latitudeIncrement ) then
+          n=1
+          do m=1,7
+            if( long >= (m-1)*longitudeIncrement .and. long < m*longitudeIncrement ) then
+              ! starts with index 0 for master, then up to nprocesses - 1   
+              getDomain = (n-1)*8 + m - 1
+              return
+            endif
+          enddo
+          if( long >= 7*longitudeIncrement ) then
+            m=8
+            ! starts with index 0 for master, then up to nprocesses - 1   
+            getDomain = (n-1)*8 + m - 1
             return
+          endif          
+        else if( colat >= latitudeIncrement .and. colat < 2*latitudeIncrement ) then
+          n=2
+          do m=1,7
+            if( long >= (m-1)*longitudeIncrement .and. long < m*longitudeIncrement ) then
+              ! starts with index 0 for master, then up to nprocesses - 1   
+              getDomain = (n-1)*8 + m - 1
+              return
+            endif
+          enddo
+          if( long >= 7*longitudeIncrement ) then
+            m=8
+            ! starts with index 0 for master, then up to nprocesses - 1   
+            getDomain = (n-1)*8 + m - 1
+            return
+          endif          
+        else if( colat >= 2*latitudeIncrement .and. colat < 3*latitudeIncrement ) then
+          n=3
+          do m=1,7
+            if( long >= (m-1)*longitudeIncrement .and. long < m*longitudeIncrement ) then
+              ! starts with index 0 for master, then up to nprocesses - 1   
+              getDomain = (n-1)*8 + m - 1
+              return
+            endif
+          enddo
+          if( long >= 7*longitudeIncrement ) then
+            m=8
+            ! starts with index 0 for master, then up to nprocesses - 1   
+            getDomain = (n-1)*8 + m - 1
+            return
+          endif          
+        else if( colat >= 3*latitudeIncrement ) then
+          n=4
+          do m=1,7
+            if( long >= (m-1)*longitudeIncrement .and. long < m*longitudeIncrement ) then
+              ! starts with index 0 for master, then up to nprocesses - 1   
+              getDomain = (n-1)*8 + m - 1
+              return
+            endif
+          enddo
+          if( long >= 7*longitudeIncrement ) then
+            m=8
+            ! starts with index 0 for master, then up to nprocesses - 1   
+            getDomain = (n-1)*8 + m - 1
+            return
+          endif            
+        endif        
+      case default
+        ! find lat/lon of vertex
+        call getSphericalCoord(vertex,colat,long)
+        
+        ! differs for even/odd number of processes                        
+        ! even number of processes
+        if( mod(nprocesses,2) == 0 ) then        
+          ! even number of processes distrbuted on north- and south-hemnisphere
+          ! grid split into upper/lower part and by longitudes
+          longitudeIncrement=2.0*PI/(nprocesses/2)        
+          if( colat <= PI/2.0 ) then
+            do n=0,(nprocesses/2)-1
+              if( (long .ge. longitudeIncrement*n ) .and. ( long .lt. longitudeIncrement*(n+1) )) then
+                getDomain=n
+                return
+              endif
+            enddo
+          else
+            do n=(nprocesses/2),nprocesses-1
+              if( (long .ge. longitudeIncrement*(n-nprocesses/2) ) .and. ( long .lt. longitudeIncrement*(n+1-nprocesses/2) )) then
+                getDomain=n
+                return
+              endif
+            enddo
           endif
-        enddo
-        if( .not. placed ) then
-          print*,'could not split into domains',nprocesses,vertex,colat,long
-          call stopProgram( 'abort - getDomain    ')
         endif
+
+        ! uneven number of processes
+        if( mod(nprocesses,2) /= 0 ) then
+          ! uneven number of processes
+          ! grid split only by longitudes
+          getDomain=0
+          longitudeIncrement=2.0*PI/nprocesses        
+          do n=0,nprocesses-1
+            if( (long >= longitudeIncrement*n ) .and. ( long < longitudeIncrement*(n+1) )) then
+              getDomain=n
+              return
+            endif
+          enddo
+        endif        
       end select
+          
+      ! reaching this point should not occur
+      print*,'could not split into domains',nprocesses,vertex,colat,long
+      call stopProgram( 'abort - getDomain    ')
       
       return
-      end
+      end function
       
 !-----------------------------------------------------------------------
       subroutine findBoundaries()
@@ -255,9 +401,9 @@
 ! returns: boundaries is filled such that for each domain
 !               boundaries(domain,neighbor,:) is the array of all vertices of that
 !               domain which lay on the boundary to the specific neighbor
-      use parallel;use griddomain; use propagationStartup; use verbosity
+      use parallel;use griddomain; use propagationStartup; use verbosity; use cells
       implicit none
-      integer:: numDomainVert(0:nprocesses,0:nprocesses),index,maxRange,range,n,k,domain,ierror
+      integer:: numDomainVert(0:nprocesses,0:nprocesses),index,maxRange,range,i,n,k,domain,ierror
       logical:: isBoundary
       integer:: getDomain,neighbors(nprocesses-1)
       external:: isBoundary,getDomain
@@ -290,65 +436,51 @@
       enddo
       boundariesMaxRange = maxRange
       
-      ! console output
-      if(VERBOSE .and. MASTER ) then 
-        !debug
-        if(DEBUG) then
-          do k=0,nprocesses-1
-            print*,'boundary vertices in(',k,'/.):',numDomainVert(k,:)
-          enddo        
-        endif
-        print*,'maximal number of boundary vertices',maxRange
-      endif
+      !debug
+      !if(VERBOSE .and. MASTER ) then 
+      !do k=0,nprocesses-1
+      !  print*,'boundary vertices in(',k,'/.):',numDomainVert(k,:)
+      !enddo        
+      !print*,'maximal number of boundary vertices',maxRange          
+      !endif
       
       !allocate array
+      if( MASTER .and. VERBOSE ) then
+        print*,'  allocating boundary array:'
+        print*,'    size :  ',nprocesses*nprocesses*maxRange*sizeof(i)/1024./1024.,'Mb'
+      endif
       allocate(boundaries(0:nprocesses-1,0:nprocesses-1,maxRange),      &
                 sendDisp(maxRange),receiveDisp(maxRange),stat=ierror)
-      if( ierror .gt. 0 ) then
-        print*,'error in allocating boundaries arrays'
-        call stopProgram( 'abort - findBoundaries     ')
-      endif
-      boundaries(:,:,:)=0
+      if( ierror .gt. 0 ) call stopProgram( 'abort - findBoundaries     ')
+      boundaries(:,:,:) = 0
+      sendDisp(:) = 0
+      receiveDisp(:) = 0
       
       ! fill boundaries array
       numDomainVert(:,:)=0
       do n=1,numVertices
         domain=getDomain(n)
-        !check if on bounday
+        ! check if on bounday
         if( isBoundary(n) ) then
-          !get neighbors 
+          ! get neighbors 
           call getVertexNeighbors(n,neighbors)
-          !add corresponding counts
+          ! add corresponding counts
           do k=1,size(neighbors(:))
             if( neighbors(k) .ne. (-1) ) then
               numDomainVert(domain,neighbors(k)) = numDomainVert(domain,neighbors(k))+1
               index = numDomainVert(domain,neighbors(k))
-              !check index
+              ! check index
               if( index .gt. maxRange) then
                 print*,rank,': exceeding range in boundaries',domain,maxRange
                 call stopProgram( 'abort - findBoundaries     ')
               endif
-              !fill boundaries array
+              ! fill boundaries array
               boundaries(domain,neighbors(k),index)=n
             endif
           enddo
         endif
-
-      enddo
-      
-      !debug
-      if(DEBUG) then
-        if( nprocesses.gt.1.and. MASTER) then
-          do n=0,nprocesses-1
-            print*,'boundaries(0/',n,'):',boundaries(0,n,:)
-          enddo
-          do n=0,nprocesses-1
-            print*,'boundaries(1/',n,'):',boundaries(1,n,:)
-          enddo
-        endif
-      endif
-      
-      end
+      enddo      
+      end subroutine
       
 !-----------------------------------------------------------------------
       logical function isBoundary(vertex)
@@ -377,7 +509,7 @@
       enddo
       
       return
-      end
+      end function
       
 !-----------------------------------------------------------------------
       subroutine getVertexNeighbors(vertex,neighbors)
@@ -419,7 +551,7 @@
         endif 
       enddo      
       
-      end    
+      end subroutine  
       
       
 !-----------------------------------------------------------------------
@@ -430,17 +562,18 @@
 ! returns: domainNeighbors array (each element contains the domain number, -1 for no neighbor)
       use parallel;use griddomain; use verbosity
       implicit none
-      integer:: domain,neighbors(nprocesses-1),index,k,ierror
+      integer:: domain,neighbors(nprocesses-1),index,k,ierror,i
       
       !check
       if( nprocesses .eq. 1) return
       
       !init
+      if( MASTER .and. VERBOSE ) then
+        print*,'  allocating domainNeighbors array:'
+        print*,'    size :  ',nprocesses*nprocesses*sizeof(i)/1024./1024.,'Mb'
+      endif      
       allocate(domainNeighbors(0:nprocesses-1,nprocesses-1),stat=ierror)
-      if( ierror .gt. 0 ) then
-        print*,'error in allocating domainNeighbors array'
-        call stopProgram( 'abort - findDomainNeighbors    ')
-      endif
+      if( ierror .gt. 0 ) call stopProgram( 'abort - findDomainNeighbors    ')
       domainNeighbors(:,:)=-1
       
       !find neighbor domains
@@ -461,14 +594,6 @@
         enddo
       enddo
       
-      !debug
-      if(DEBUG) then
-        if( MASTER)then
-          do k=0,nprocesses-1
-            print*,'domain neighbors (',k,'/.):',domainNeighbors(k,:)
-          enddo
-        endif      
-      endif      
-      end
+      end subroutine
       
 

@@ -1,6 +1,6 @@
 !=====================================================================
 !
-!       m e m b r a n e S p h e r e  1 . 0
+!       m e m b r a n e S p h e r e  1 . 1
 !       --------------------------------------------------
 !
 !      Daniel Peter
@@ -13,40 +13,57 @@
 !=====================================================================
 
 !-----------------------------------------------------------------------
-      subroutine determineFFTWindowsize()
+      subroutine determineFFTWindowsize(numofTimeSteps,WindowSIZE)
 !-----------------------------------------------------------------------
 ! determines the length of the fft-seismograms (must be power of 2)
-      use propagationStartup; use verbosity; use filterType; use parallel
+      !use propagationStartup; use verbosity; use filterType; 
+      use parallel,only: MASTER
+      use verbosity,only: VERBOSE
       implicit none
+      integer,intent(in):: numofTimeSteps
+      integer,intent(out):: WindowSIZE
       real:: log2
       
       ! next higher number of power 2
       log2=log(real(numofTimeSteps))/log(2.0)            
       WindowSIZE=2**(ceiling(log2))
       
-      if(MASTER .and. VERBOSE) print*,'    fft window size:',WindowSIZE,numofTimeSteps
+      if(MASTER .and. VERBOSE) print*,'    fft window size =',WindowSIZE,'time steps=',numofTimeSteps
       end
 
 !-----------------------------------------------------------------------
       subroutine determineFilterParameters()
 !-----------------------------------------------------------------------
-      use propagationStartup; use filterType
+      use propagationStartup,only: cphasetype
+      use filterType,only: bw_waveperiod,bw_frequency
+      use precisions
+      implicit none
       ! determine wave period
-      if( cphasetype .eq. 'R40') bw_waveperiod=40.0432_WP  ! wave period in seconds
-      if( cphasetype .eq. 'R50') bw_waveperiod=50.0271_WP
-      if( cphasetype .eq. 'R60') bw_waveperiod=60.1467_WP
-      if( cphasetype .eq. 'R75') bw_waveperiod=75.3258_WP
+      if( cphasetype .eq. 'R35') bw_waveperiod=WAVEPERIOD_R35
+      if( cphasetype .eq. 'R37') bw_waveperiod=WAVEPERIOD_R37
+      if( cphasetype .eq. 'R40') bw_waveperiod=WAVEPERIOD_R40  ! wave period in seconds
+      if( cphasetype .eq. 'R45') bw_waveperiod=WAVEPERIOD_R45
+      if( cphasetype .eq. 'R50') bw_waveperiod=WAVEPERIOD_R50
+      if( cphasetype .eq. 'R60') bw_waveperiod=WAVEPERIOD_R60
+      if( cphasetype .eq. 'R75') bw_waveperiod=WAVEPERIOD_R75
+      if( cphasetype .eq. 'R100') bw_waveperiod=WAVEPERIOD_R100
+      if( cphasetype .eq. 'R150') bw_waveperiod=WAVEPERIOD_R150
+      if( cphasetype .eq. 'R200') bw_waveperiod=WAVEPERIOD_R200
+      if( cphasetype .eq. 'R250') bw_waveperiod=WAVEPERIOD_R250
+      if( cphasetype .eq. 'R300') bw_waveperiod=WAVEPERIOD_R300
             
-      if( cphasetype .eq. 'L35') bw_waveperiod=35.0599_WP
-      if( cphasetype .eq. 'L50') bw_waveperiod=50.1901_WP      
-      if( cphasetype .eq. 'L75') bw_waveperiod=75.1095_WP
-      if( cphasetype .eq. 'L100') bw_waveperiod=100.8090_WP
-      if( cphasetype .eq. 'L150') bw_waveperiod=150.9190_WP
-      if( cphasetype .eq. 'L200') bw_waveperiod=200.0_WP
-      if( cphasetype .eq. 'L250') bw_waveperiod=250.0_WP      
-      if( cphasetype .eq. 'L300') bw_waveperiod=300.0_WP
-      if( cphasetype .eq. 'L450') bw_waveperiod=450.0_WP
-      if( cphasetype .eq. 'L600') bw_waveperiod=600.0_WP
+      if( cphasetype .eq. 'L35') bw_waveperiod=WAVEPERIOD_L35
+      if( cphasetype .eq. 'L37') bw_waveperiod=WAVEPERIOD_L37
+      if( cphasetype .eq. 'L40') bw_waveperiod=WAVEPERIOD_L40
+      if( cphasetype .eq. 'L45') bw_waveperiod=WAVEPERIOD_L45
+      if( cphasetype .eq. 'L50') bw_waveperiod=WAVEPERIOD_L50      
+      if( cphasetype .eq. 'L60') bw_waveperiod=WAVEPERIOD_L60
+      if( cphasetype .eq. 'L75') bw_waveperiod=WAVEPERIOD_L75
+      if( cphasetype .eq. 'L100') bw_waveperiod=WAVEPERIOD_L100
+      if( cphasetype .eq. 'L150') bw_waveperiod=WAVEPERIOD_L150
+      if( cphasetype .eq. 'L200') bw_waveperiod=WAVEPERIOD_L200
+      if( cphasetype .eq. 'L250') bw_waveperiod=WAVEPERIOD_L250     
+      if( cphasetype .eq. 'L300') bw_waveperiod=WAVEPERIOD_L300
       
       ! get (upper) half-bandwidth frequency for filtering
       if( BW_FIXFREQUENCY ) then
@@ -54,31 +71,6 @@
       else
         bw_frequency = BW_PERCENT/((BW_PERCENT+1.0)*bw_waveperiod)      
       endif
-      end
-
-!-----------------------------------------------------------------------
-      subroutine determinePhaseRef()
-!-----------------------------------------------------------------------
-! from phase type (e.g. L150) determine the reference phase speed
-      use propagationStartup; use filterType
-      implicit none
-
-      cphasetype = trim(cphasetype)
-      if( cphasetype .eq. 'R40')cphaseRef=PHASEVELOCITY_R40
-      if( cphasetype .eq. 'R50')cphaseRef=PHASEVELOCITY_R50
-      if( cphasetype .eq. 'R60')cphaseRef=PHASEVELOCITY_R60
-      if( cphasetype .eq. 'R75')cphaseRef=PHASEVELOCITY_R75
-      if( cphasetype .eq. 'L35')cphaseRef=PHASEVELOCITY_L35
-      if( cphasetype .eq. 'L50')cphaseRef=PHASEVELOCITY_L50              
-      if( cphasetype .eq. 'L75')cphaseRef=PHASEVELOCITY_L75
-      if( cphasetype .eq. 'L100')cphaseRef=PHASEVELOCITY_L100
-      if( cphasetype .eq. 'L150')cphaseRef=PHASEVELOCITY_L150
-      if( cphasetype .eq. 'L200')cphaseRef=PHASEVELOCITY_L200
-      if( cphasetype .eq. 'L250')cphaseRef=PHASEVELOCITY_L250
-      if( cphasetype .eq. 'L300')cphaseRef=PHASEVELOCITY_L300
-      if( cphasetype .eq. 'L450')cphaseRef=PHASEVELOCITY_L450
-      if( cphasetype .eq. 'L600')cphaseRef=PHASEVELOCITY_L600
-
       end
 
 
@@ -104,71 +96,27 @@
       ! attention of seismo arrays: zero padding of length WindowSIZE at the end to get corresponding length of cross-correlation
       !allocate(seismoTmp(2,xcorrlength),stat=ierror)
       !if( ierror .ne. 0) call stopProgram( 'abort - dofilterSeismogram       ')
-      
-      if(DEBUG) then
-        if( seismoLength .gt. xcorrlength) then
-          print*,'error window lengths',seismoLength,WindowSIZE,xcorrlength
-          call stopProgram( 'abort - dofilterSeismogram     ')
-        endif
-      endif
-      
-      !initialize
-      seismoTmp(:,:)=0.0
-      
-      ! debug output
-      if( fileOutput ) then
-        open(10,file=datadirectory(1:len_trim(datadirectory))//'tmpdoFilter_SeismoBefore.dat')
-        do i=1,seismoLength
-          write(10,*) seismo(1,i),seismo(2,i)
-        enddo
-        close(10)
-      endif            
-      
+                  
       ! determine startingTime
       endtime=seismo(1,seismoLength)
       call getStartTimeSeismogram(seismo,seismoLength,endtime,dt,startingTime)
       
       ! read in seismograms from startingTime
+      seismoTmp(:,:)=0.0      
       call captureSeismogram(seismo,seismoLength,seismoTmp,xcorrlength,startingTime,entries,endtime)
-
-      ! debug output
-      if( fileOutput ) then
-        open(10,file=datadirectory(1:len_trim(datadirectory))//'tmpdoFilter_SeismoBetween2.dat')
-        do i=1,seismoLength
-          write(10,*) seismo(1,i),seismo(2,i)
-        enddo
-        close(10)
-      endif            
       
+      ! console output
       if( beVerbose ) then
         print*,'    captured seismogram:'
-        print*,'      dt:',dt
-        print*,'      first entry:',seismoTmp(1,1),seismoTmp(2,1)
-        print*,'      last entry:',seismoTmp(1,entries),seismoTmp(2,entries)
-        print*,'      entry read:',entries
-        print*,'      last time readin:',seismoTmp(1,entries),'seismo:',endtime
+        print*,'      dt                  : ',dt
+        print*,'      time first entry      : ',seismoTmp(1,1) !,seismoTmp(2,1)
+        print*,'      time last entry      : ',seismoTmp(1,entries) !,seismoTmp(2,entries)
+        print*,'      entries read        : ',entries
+        print*,'      last time readin     : ',seismoTmp(1,entries) !,'seismo:',endtime
       endif
                   
-      ! debug output
-      if( fileOutput) then
-        open(10,file=datadirectory(1:len_trim(datadirectory))//'tmpdoFilter_read.dat')
-        do i=1,xcorrlength
-          write(10,*) seismoTmp(1,i),seismoTmp(2,i)
-        enddo
-        close(10)
-      endif
-
       ! apply hanning window  to smooth seismograms ends
       call taperSeismogram(seismoTmp,xcorrlength,entries,beVerbose)
-
-      ! debug output
-      if( fileOutput) then
-        open(10,file=datadirectory(1:len_trim(datadirectory))//'tmpdoFilter_tapered.dat')
-        do i=1,xcorrlength
-          write(10,*) seismoTmp(1,i),seismoTmp(2,i)
-        enddo
-        close(10)
-      endif
 
       ! smallest sampled frequency
       samplingFreq=1.0_WP/(xcorrlength*dt)
@@ -184,23 +132,33 @@
       ! console output
       if( beVerbose ) then
         print*
-        print*,'filter parameter:'
-        print*,'    sampling frequency:',samplingFreq
-        print*,'    wave period:',bw_waveperiod+MEMBRANECORRECTION
-        print*,'        initial period:',bw_waveperiod
-        print*,'        membrane correction:',MEMBRANECORRECTION
-        print*,'    center frequency:',1.0_WP/(bw_waveperiod+MEMBRANECORRECTION)        
-        print*,'        index:',centerfrequencyIndex
-        print*,'    bandwidth (full/half):',bw_width,bw_width/2
-        print*,'        as frequency:',bw_width*samplingFreq,bw_width/2*samplingFreq
-        print*,'    power:',BUTTERWORTH_POWER
-        print*,'    windowsize:',xcorrlength
+        print*,'  filter parameter:'
+        print*,'    sampling frequency    : ',samplingFreq
+        print*,'    wave period           : ',bw_waveperiod+MEMBRANECORRECTION
+        print*,'      initial period      : ',bw_waveperiod
+        print*,'      membrane correction : ',MEMBRANECORRECTION
+        print*,'    center frequency      : ',1.0_WP/(bw_waveperiod+MEMBRANECORRECTION)        
+        print*,'      index               : ',centerfrequencyIndex
+        print*,'    bandwidth (full/half) : ',bw_width,bw_width/2
+        print*,'        as frequency      : ',bw_width*samplingFreq,bw_width/2*samplingFreq
+        if( BUTTERWORTHFILTER) print*,'    power                 : ',BUTTERWORTH_POWER
+        print*,'    windowsize            : ',xcorrlength
       endif      
 
       ! check if filter frequency is correct
       if( centerfrequencyIndex .lt. 1 .or. centerfrequencyIndex .gt. xcorrlength/2 ) then
         print*,'filter is incorrect...',centerfrequencyIndex,xcorrlength
         call stopProgram('abort filterSeismogram() - incorrect centerfrequencyIndex    ')
+      endif
+
+      ! debug output
+      if( fileOutput .and. MASTER .and. beVerbose) then
+        print*,'printing to file:',datadirectory(1:len_trim(datadirectory))//'Filter_input.dat'
+        open(10,file=datadirectory(1:len_trim(datadirectory))//'Filter_input.dat')
+        do i=1,xcorrlength
+          write(10,*) seismoTmp(1,i),seismoTmp(2,i)
+        enddo
+        close(10)
       endif
       
       ! filter seismograms in frequency domain
@@ -216,8 +174,9 @@
       !call taperSeismogram(seismo,seismoLength,seismoLength,beVerbose)
 
       ! debug output
-      if( fileOutput ) then
-        open(10,file=datadirectory(1:len_trim(datadirectory))//'tmpdoFilter_SeismoAfter.dat')
+      if( fileOutput .and. MASTER .and. beVerbose ) then
+        print*,'printing to file:',datadirectory(1:len_trim(datadirectory))//'Filter_output.dat'
+        open(10,file=datadirectory(1:len_trim(datadirectory))//'Filter_output.dat')
         do i=1,seismoLength
           write(10,*) seismo(1,i),seismo(2,i)
         enddo
@@ -256,114 +215,7 @@
       call filterSeismogram(data1,n,bandwidth,power,centerIndex)
       call filterSeismogram(data2,n,bandwidth,power,centerIndex)
       return
-      
-!      !alternative-----------------------------------------------------------------------------
-!
-!      dn2=1.0_WP/n !Normalization for inverse FFT
-!                                    
-!      ! construct complex array for fourier-transformation
-!      do i=1,n
-!        fftdata1(i)=dcmplx(data1(i),0.0_WP)
-!        fftdata2(i)=dcmplx(data2(i),0.0_WP)
-!      enddo
-!      fftdataTest(:)=fftdata1(:)
-!
-!      ! test fourier transformation
-!      if( fileOutput) then
-!        ! debug output
-!        open(10,file='tmpTTfftTest_before.dat')
-!        do i=1,n
-!          write(10,*) i,real(fftdataTest(i)),aimag(fftdataTest(i))
-!        enddo
-!        close(10)
-!        ! fourier-transform
-!        call four1(fftdataTest,1)
-!        !debug output  
-!        open(10,file='tmpTTfftTest_FFT.dat')
-!        do i=1,n
-!          write(10,*) i,real(fftdataTest(i)),aimag(fftdataTest(i))
-!        enddo
-!        close(10)
-!        ! normalize  
-!        do i=1,n
-!          fftdataTest(i)=fftdataTest(i)*dn2  ! normalization
-!        enddo
-!        ! inverse fourier-transform
-!        call four1(fftdataTest,-1)
-!        ! debug output
-!        open(10,file='tmpTTfftTest_after.dat')
-!        do i=1,n
-!          write(10,*) i,real(fftdataTest(i)),aimag(fftdataTest(i))
-!        enddo
-!        close(10)
-!      endif
-!
-!      ! fourier transform
-!      call four1(fftdata1,1)
-!      call four1(fftdata2,1)
-!
-!      ! debug output
-!      if( fileOutput) then
-!        open(10,file='tmpTTfftdata.dat')
-!        do i=1,n
-!          write(10,*) i,real(fftdata1(i)),aimag(fftdata1(i))
-!        enddo
-!        close(10)
-!      endif
-!
-!      ! apply filter
-!      if( beVerbose) then
-!        if( BUTTERWORTHFILTER) then
-!          print*,'    butterworth bandpass filter'
-!        else
-!          print*,'    bandpass filter to seismos'
-!        endif
-!      endif
-!            
-!      do i=1,n
-!        ! butterworth bandpass filter
-!        if( BUTTERWORTHFILTER) then
-!          butterworth(i)=1.0_WP - 1.0_WP/(1.0_WP+(dble(i*bandwidth)/((dble(i))**2-(dble(centerIndex))**2))**(2*power))
-!        else
-!          ! bandpass filter
-!          if( abs(centerIndex-i) .le. bandwidth/2) then
-!            butterworth(i)=1.0_WP
-!          else
-!            butterworth(i)=0.0_WP
-!          endif
-!        endif
-!        
-!        ! filter data
-!        fftdata1(i)=butterworth(i)*fftdata1(i)*dn2  !with Normalization for inverse FFT
-!        fftdata2(i)=butterworth(i)*fftdata2(i)*dn2
-!      enddo
-!
-!      ! debug output
-!      if( fileOutput ) then
-!        open(10,file='tmpTTfft_filter.dat')
-!        do i=1,n
-!          write(10,*) i,butterworth(i)
-!        enddo
-!        close(10)
-!
-!        open(10,file='tmpTTfftdata_filtered.dat')
-!        do i=1,n
-!          write(10,*) i,real(fftdata1(i))
-!        enddo
-!        close(10)
-!      endif
-!      
-!      !inverse fourier transformation
-!      call four1(fftdata1,-1)
-!      call four1(fftdata2,-1)
-!    
-!      ! take only real part of array
-!      do i=1,n
-!        data1(i)=dreal(fftdata1(i)) 
-!        data2(i)=dreal(fftdata2(i))
-!      enddo
-      
-      end
+      end subroutine
 
 
 !-----------------------------------------------------------------------
@@ -387,6 +239,7 @@
       integer:: i,firstEntry
       double complex::fftdata(dataLength),fftdataTest(dataLength),dn2,scale
       double precision::butterworth
+      logical,parameter:: TEST = .false.
              
       !Normalization for inverse FFT
       dn2=1.0d0/dataLength 
@@ -395,11 +248,12 @@
       fftdata(:)=dcmplx(seismodata(:),0.0d0)
       
       ! test fourier transformation
-      if( fileOutput) then
+      if( TEST .and. fileOutput .and. MASTER ) then
         fftdataTest(:)=fftdata(:)
         
         ! debug output
-        open(10,file=datadirectory(1:len_trim(datadirectory))//'tmpfftTest_before.dat')
+        print*,'  printing to file:',datadirectory(1:len_trim(datadirectory))//'FilterTest_before.dat'
+        open(10,file=datadirectory(1:len_trim(datadirectory))//'FilterTest_before.dat')
         do i=1,dataLength
           write(10,*) i,real(fftdataTest(i)),aimag(fftdataTest(i))
         enddo
@@ -407,7 +261,8 @@
         ! fourier-transform
         call four1(fftdataTest,1)
         !debug output  
-        open(10,file=datadirectory(1:len_trim(datadirectory))//'tmpfftTest_FFT.dat')
+        print*,'  printing to file:',datadirectory(1:len_trim(datadirectory))//'FilterTest_FFT.dat'
+        open(10,file=datadirectory(1:len_trim(datadirectory))//'FilterTest_FFT.dat')
         do i=1,dataLength
           write(10,*) i,real(fftdataTest(i)),aimag(fftdataTest(i))
         enddo
@@ -419,7 +274,8 @@
         ! inverse fourier-transform
         call four1(fftdataTest,-1)
         ! debug output
-        open(10,file=datadirectory(1:len_trim(datadirectory))//'tmpfftTest_after.dat')
+        print*,'  printing to file:',datadirectory(1:len_trim(datadirectory))//'FilterTest_after.dat'
+        open(10,file=datadirectory(1:len_trim(datadirectory))//'FilterTest_after.dat')
         do i=1,dataLength
           write(10,*) i,real(fftdataTest(i)),aimag(fftdataTest(i))
         enddo
@@ -430,8 +286,9 @@
       call four1(fftdata,1)
 
       ! debug output
-      if( fileOutput) then
-        open(10,file=datadirectory(1:len_trim(datadirectory))//'tmpfilterSeismo_data.dat')
+      if( TEST .and. fileOutput .and. MASTER ) then
+        print*,'  printing to file:',datadirectory(1:len_trim(datadirectory))//'FilterSeismo_data.dat'
+        open(10,file=datadirectory(1:len_trim(datadirectory))//'FilterSeismo_data.dat')
         do i=1,dataLength
           write(10,*) i,real(fftdata(i)),aimag(fftdata(i))
         enddo
@@ -448,8 +305,9 @@
       endif
             
       ! debug output
-      if( fileOutput ) then
-        open(10,file=datadirectory(1:len_trim(datadirectory))//'tmpfilterSeismo_datafiltered.dat')        
+      if( TEST .and. fileOutput .and. MASTER ) then
+        print*,'  printing to file:',datadirectory(1:len_trim(datadirectory))//'FilterSeismo_datafiltered.dat'
+        open(10,file=datadirectory(1:len_trim(datadirectory))//'FilterSeismo_datafiltered.dat')        
         write(10,*) "# filterSeismogram"
         write(10,*) "# index realData imagData filter"        
       endif
@@ -481,7 +339,7 @@
         !fftdata(i)=dcmplx(butterworth*real(fftdata(i))/real(fftdata(i))*real(scale),butterworth*aimag(fftdata(i))/aimag(fftdata(i))*aimag(scale))
         
         ! debug output
-        if( fileOutput ) then
+        if( TEST .and. fileOutput .and. MASTER ) then
           write(10,*) i,real(fftdata(i)),aimag(fftdata(i)),butterworth
         endif
         
@@ -490,28 +348,20 @@
       enddo
 
       ! debug output
-      if( fileOutput ) then
+      if( TEST .and. fileOutput .and. MASTER ) then
         close(10)
       endif
       
-      !inverse fourier transformation
+      ! applies inverse fourier transformation
       call four1(fftdata,-1)
     
-      ! take only real part of array
-      !if( fileOutput ) open(10,file='tmpTTreturn.dat')
-      !do i=1,dataLength
-      !  seismodata(i)=dreal(fftdata(i))
-      !  if( fileOutput ) write(10,*) i, seismodata(i) 
-      !enddo
-      !if( fileOutput ) close(10)
-      
+      ! returns trace, as real part of the filtered data array   
       if( WP .eq. 4 ) then
         seismodata(:)=real(fftdata(:))
       else
         seismodata(:)=dreal(fftdata(:))      
-      endif
-      
-      end
+      endif      
+      end subroutine
 
 
 !-----------------------------------------------------------------------
@@ -525,7 +375,7 @@
 !  entries                     - non-zero entries of seismograms
 !
 ! returns: tapered seismo & seismoRef
-      use verbosity; use precision 
+      use verbosity; use precisions 
       implicit none
       integer::seismoLengthRef,entries,ileft,irigth,hannwindow
       real(WP)::seismo(2,seismoLengthRef),seismoRef(2,seismoLengthRef)
@@ -585,7 +435,7 @@
 !  startingTime          - read in from this time on
 !
 ! returns: filled seismo & seismoRef, entries, endtime
-      use precision
+      use precisions
       implicit none
       integer:: seismoLength,seismoLengthRef,entries
       real(WP):: startingTime,endtime
@@ -639,6 +489,6 @@
         endif
       enddo
       entries=index      
-      end
       
+      end subroutine
       

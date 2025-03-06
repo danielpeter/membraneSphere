@@ -1,6 +1,6 @@
 !=====================================================================
 !
-!       m e m b r a n e S p h e r e  1 . 0
+!       m e m b r a n e S p h e r e  1 . 1
 !       --------------------------------------------------
 !
 !      Daniel Peter
@@ -80,7 +80,7 @@ propagation.f90  -  forward modeling of membrane waves
     
     Visualization of the seismograms can be done with the GNUPLOT application.
     The scripts/ folder holds a bash-script for visualization of the
-    phase map with GMT. Scripts has to be called from within the scripts/ folder.
+    phase map with GMT.
       
 
 adjointMethod.f90  -  kernel construction by membrane waves
@@ -111,6 +111,18 @@ timelag.f90  -  phase shift/time shift of two seismograms
     the filter parameters) are taken from commonModules.f90.
 
     The time shift result is written to the console.
+
+heterogeneousPhaseshift.f90 - synthetic phase-shift calculations
+
+    This program outputs a synthetic database of phase-shift measurements
+    for any heterogeneous input model.
+    
+    Given a source/station file specified in the Parameter_Input file, 
+    it numerically calculates the phase shift
+    for each particular setup, based on cross-correlations between a
+    reference trace (PREM) and the synthetic trace for any heterogeneous
+    background phase-velocity model.
+    
 
 ------------------------------------------------------------------------
 infos about the folders:

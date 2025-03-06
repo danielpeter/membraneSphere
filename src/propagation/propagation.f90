@@ -1,6 +1,6 @@
 !=====================================================================
 !
-!       m e m b r a n e S p h e r e  1 . 0
+!       m e m b r a n e S p h e r e  1 . 1
 !       --------------------------------------------------
 !
 !      Daniel Peter
@@ -55,14 +55,19 @@
       character*1::     rankstr, dstr
       character*4::     timestr
       logical:: looping
-      external:: initialShapeTerm,discreteLaplacian,precalc_discreteLaplacian,integrand             
+      external:: initialShapeTerm,discreteLaplacian,precalc_discreteLaplacian             
       
       !-----------------------------------------------------------------------
       ! parameters      
       ! most parameters concerning wave propagation set in file Parameter_Input 
       ! (& default values in commonModules.f90)
       !-----------------------------------------------------------------------
-
+      
+      !print*,'Welcome to membrane waves on a spherical shell'
+      !print*,'----------------------------------------------'
+      !print*,'           infos: dpeter@erdw.ethz.ch         '
+      !print*      
+  
       ! initialization of parameters and arrays
       call initialize()
       

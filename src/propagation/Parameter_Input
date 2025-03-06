@@ -1,0 +1,111 @@
+! Parameter Input - initial model parameters
+! ----------------------------------------------------------------
+!
+!    This is the parameter file
+!    Put variable names first and actual value after 35th column
+!
+! ----------------------------------------------------------------
+!
+!<-          35 character       ->
+!
+
+! Physical Model
+! ----------------------------------------------------------------
+! subfolding level
+LEVEL                            = 6
+
+! time iteration limits 
+! (default: firsttime=-1000 to have a "good" source; lasttime=4188 seconds for L150 to reach antipode) 
+FIRSTTIME                        = -1000.0
+LASTTIME                         = 4180.0           
+
+! homogeneous phase velocity: for love wave 35s use "L35","L50","L75","L150","L300/rayleigh 40s "R40"
+CPHASE                           = L150
+
+
+! Geometry
+! ----------------------------------------------------------------
+! locations: source & receiver location 
+! (source latitude/longitude in degree, e.g. north pole 90/0, tibetian 0/60)
+! (receiver latitude/longitude in degree, e.g. tibetian 60/150)     
+! (!!source will be rotated to equator at 0¼ latitude/ 0¼ longitude when only 1 receiver station used!!)
+! (!!receiver will be rotated into equatorial plane with 0¼ latitude when only 1 receiver station used!!)
+SOURCE                           = 0.0 0.0
+RECEIVER                         = 0.0 90.0
+
+! many receivers: use many receiver stations & number of receiver stations (e.g. 360 stations, located around the same latitude)
+MANYRECEIVERS                    = .false.
+MANYNUMOFRECEIVERS               = 720
+
+! many kernels: compute many kernels & kernel for epicentral distances from start to end (e.g. 20.0 179.0)
+! (read in kernel receiver stations (from data directory given below './tmpReceiverStations***.dat') )
+MANYKERNELS                      = .false.
+KRNEPI                           = 20.0 22.0
+IMPORTKERNELSRECEIVERS           = .false.
+
+! Scatterer
+! ----------------------------------------------------------------
+! delta phase velocity map: (use it: true/false), location radius (in km) & type,
+! (remember: mean cell center distance for grid level 6 is about 70 km, delta shape type (gaussian/plateau) )
+! delta peturbation size (to reference phase velocity in km/s: positive-higher velocity, negative-lower velocity),
+! starting location of delta location center (latitude/longitude in degree: f.e. -60 45) 
+! (notice: heterogeneous map will always rotate the world such that source/receiver are on equator) 
+DELTA                            = .false.
+DRADIUS                          = 0.1
+DTYPE                            = plateau
+DPERTURBATION                    = +0.1
+DLOCATION                        = -90.0 45.0
+
+! looping delta locations,starting latitude when moving to next longitude / ending latitude (incrementing by +1¼), 
+! afterwards move to next longitude / end loop after last longitude;
+! increment step (in degrees) of moving the delta location in latitude and longitude
+MOVEDELTA                        = .false.
+DLATSTART                        = 0
+DLATEND                          = 90
+DLONEND                          = 45
+DINCREMENT                       = 1.0
+
+! second delta phase velocity location (use it: true/false)
+SECONDDELTA                      = .false.
+
+
+! heterogeneous model
+! ----------------------------------------------------------------
+! heterogeneous phase velocity map 
+! (notice: a heterogeneous map will always rotate the world such that source/receiver are on equator) 
+HETEROGENEOUS                    = .false.
+
+! crustal phase map (values in percent): you have two possiblities
+!   (a) choose a block file e.g. 'L150.crust.2degree.3.pcn.blk'
+!   then blk/inv_pixelsize must be set to the size of the blocks (e.g. 3 for a 3x3 degree pixel size)
+!   (b) choose a general spherical harmonics file e.g. 'L150.crust.2degree.gsh' (of CRUST 2x2degree) 
+!   then blk/inv_pixelsize must be set to the degree of expansion you want (e.g. 12 for expansion up to degree 12)
+! wave reference to which the crustal phase map refers to 
+BLKFILE                          = '../phasedata/L150.crust.2degree.3.pcn.blk' 
+BLK/INV_PIXELSIZE                = 3
+BLKVELOCITYREFERENCE             = L150
+
+! for executable heterogeneousInversion only:
+! set to a given data set and matrix size
+! (e.g. L0150, size 3 degree, output datafile has root name L0150.born.3.***)
+! blk/inv_pixelsize value is set the size of the grid blocks (see above) of the inversion grid
+INV_DATA                         = '~/SUWA/ETLDATA/wei_sum.02.L0150.1.txt'
+INV_OUTPUT                       = 'OUTPUT/L0150.born.3'
+
+
+! file output & misc
+! ----------------------------------------------------------------
+! data directory for seismogram files 
+DATADIRECTORY                    = 'OUTPUT/' 
+
+! optional adjoint kernel file name
+ADJOINTKERNEL                    = 'adjointKernel.dat' 
+
+! verbosity: console output 
+VERBOSE                          = .true.
+
+! simulation: displacement data outputted to files for distinct timesteps
+SIMULATIONOUTPUT                 = .false.
+
+! parallel calculation of each single simulation or distribute to all available processors
+PARALLELSEISMO                   = .false.

@@ -1,0 +1,32 @@
+# Configure time
+aclocal.m4
+autom4te.cache
+config.log
+config.status
+config.h
+
+# Build time
+bin/
+lib/
+obj/
+*.mod
+*__genmod.f90
+*.o
+
+# documentation
+doc/*.aux
+doc/*.bbl
+doc/*.blg
+doc/*.brf
+doc/*.log
+doc/*.out
+doc/*.toc
+
+# Trash files
+.*swp
+.*swo
+.*swn
+*~
+*.pyc
+.DS_Store
+

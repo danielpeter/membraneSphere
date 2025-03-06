@@ -1,0 +1,670 @@
+! numerical recipies functions
+
+!-----------------------------------------------------------------------
+! (http://www.library.cornell.edu/nr/cbookf90pdf.html, see chapter B12)
+
+! correl.f90
+! new single and double precision routines (daniel peter,22.5.2005)
+      function correl_sp(data1,data2)
+      USE nrtype; USE nrutil, ONLY : assert,assert_eq
+      USE nr, ONLY : realft
+      IMPLICIT NONE
+      REAL(SP), DIMENSION(:), INTENT(INOUT) :: data1,data2
+      REAL(SP), DIMENSION(size(data1)) :: correl_sp
+      COMPLEX(SPC), DIMENSION(size(data1)/2) :: cdat1,cdat2
+      INTEGER(I4B) :: no2,n
+
+      !print*,'processing correlation...'      
+      n=assert_eq(size(data1),size(data2),'correl_sp')
+      call assert(iand(n,n-1)==0, 'n must be a power of 2 in correl_sp')
+      no2=n/2
+      
+      call realft(data1,1,cdat1)
+      call realft(data2,1,cdat2)
+      
+      cdat1(1)=cmplx(real(cdat1(1))*real(cdat2(1))/no2, &
+        aimag(cdat1(1))*aimag(cdat2(1))/no2, kind=spc)
+      cdat1(2:)=cdat1(2:)*conjg(cdat2(2:))/no2      
+      call realft(correl_sp,-1,cdat1)
+      
+      END FUNCTION correl_sp
+
+
+      function correl_dp(data1,data2)
+      USE nrtype; USE nrutil, ONLY : assert,assert_eq
+      USE nr, ONLY : realft
+      IMPLICIT NONE
+      REAL(DP), DIMENSION(:), INTENT(INOUT) :: data1,data2
+      REAL(DP), DIMENSION(size(data1)) :: correl_dp
+      COMPLEX(DPC), DIMENSION(size(data1)/2) :: cdat1,cdat2
+      INTEGER(I4B) :: no2,n
+      
+      !print*,'checking...'
+      n=assert_eq(size(data1),size(data2),'correl_dp')
+      call assert(iand(n,n-1)==0, 'n must be a power of 2 in correl_dp')
+      no2=n/2
+      
+      !print*,'fourier transform...'
+      call realft(data1,1,cdat1)
+      call realft(data2,1,cdat2)
+      
+      cdat1(1)=cmplx(dreal(cdat1(1))*dreal(cdat2(1))/no2,dimag(cdat1(1))*dimag(cdat2(1))/no2, kind=dpc)
+      cdat1(2:)=cdat1(2:)*conjg(cdat2(2:))/no2
+      
+      !print*,'back fourier transform...'
+      call realft(correl_dp,-1,cdat1)
+      
+      END FUNCTION correl_dp
+
+
+!-----------------------------------------------------------------------
+! four1.f90
+
+      SUBROUTINE four1_sp(data,isign)
+      USE nrtype; USE nrutil, ONLY : arth,assert
+      USE nr, ONLY : fourrow
+      IMPLICIT NONE
+      COMPLEX(SPC), DIMENSION(:), INTENT(INOUT) :: data
+      INTEGER(I4B), INTENT(IN) :: isign
+! Replaces a complex array data by its discrete Fourier transform, if isign is input as 1; 
+! or replaces data by its inverse discrete Fourier transform times the size of data, if isign 
+! is input as −1. The size of data must be an integer power of 2. Parallelism is achieved 
+! byinternallyreshapingtheinput arraytotwodimensions. (Usethisversionif fourrowis 
+! faster thanfourcolonyour machine.)      
+      COMPLEX(SPC), DIMENSION(:,:), ALLOCATABLE :: dat,temp
+      COMPLEX(DPC), DIMENSION(:), ALLOCATABLE :: w,wp
+      REAL(DP), DIMENSION(:), ALLOCATABLE :: theta
+      INTEGER(I4B) :: n,m1,m2,j
+      n=size(data)
+      call assert(iand(n,n-1)==0, 'n must be a power of 2 in four1_sp')
+      m1=2**ceiling(0.5_sp*log(real(n,sp))/0.693147_sp)
+      m2=n/m1
+      allocate(dat(m1,m2),theta(m1),w(m1),wp(m1),temp(m2,m1))
+      dat=reshape(data,shape(dat))
+      call fourrow(dat,isign)
+      theta=arth(0,isign,m1)*TWOPI_D/n
+      wp=cmplx(-2.0_dp*sin(0.5_dp*theta)**2,sin(theta),kind=dpc)
+      w=cmplx(1.0_dp,0.0_dp,kind=dpc)
+      do j=2,m2
+        w=w*wp+w
+        dat(:,j)=dat(:,j)*w
+      end do
+      temp=transpose(dat)
+      call fourrow(temp,isign)
+      data=reshape(temp,shape(data))
+      deallocate(dat,w,wp,theta,temp)
+      END SUBROUTINE four1_sp
+
+      subroutine four1_dp(data,isign)
+      USE nrtype; USE nrutil, ONLY : arth,assert
+      USE nr, ONLY : fourrow
+      IMPLICIT NONE
+      COMPLEX(DPC), DIMENSION(:), INTENT(INOUT) :: data
+      INTEGER(I4B), INTENT(IN) :: isign
+      COMPLEX(DPC), DIMENSION(:,:), ALLOCATABLE :: dat,temp
+      COMPLEX(DPC), DIMENSION(:), ALLOCATABLE :: w,wp
+      REAL(DP), DIMENSION(:), ALLOCATABLE :: theta
+      INTEGER(I4B) :: n,m1,m2,j
+      n=size(data)
+      call assert(iand(n,n-1)==0, 'n must be a power of 2 in four1_dp')
+      m1=2**ceiling(0.5_sp*log(real(n,sp))/0.693147_sp)
+      m2=n/m1
+      allocate(dat(m1,m2),theta(m1),w(m1),wp(m1),temp(m2,m1))
+      dat=reshape(data,shape(dat))
+      call fourrow(dat,isign)
+      theta=arth(0,isign,m1)*TWOPI_D/n
+      wp=cmplx(-2.0_dp*sin(0.5_dp*theta)**2,sin(theta),kind=dpc)
+      w=cmplx(1.0_dp,0.0_dp,kind=dpc)
+      do j=2,m2
+        w=w*wp+w
+        dat(:,j)=dat(:,j)*w
+      end do
+      temp=transpose(dat)
+      call fourrow(temp,isign)
+      data=reshape(temp,shape(data))
+      deallocate(dat,w,wp,theta,temp)
+      END SUBROUTINE four1_dp
+
+!-----------------------------------------------------------------------
+! fourrow.f90
+
+      SUBROUTINE fourrow_sp(data,isign)
+      USE nrtype; USE nrutil, ONLY : assert,swap
+      IMPLICIT NONE
+      COMPLEX(SPC), DIMENSION(:,:), INTENT(INOUT) :: data
+      INTEGER(I4B), INTENT(IN) :: isign
+! Replaceseachrow(constantfirstindex)ofdata(1:M,1:N)byitsdiscreteFouriertrans- 
+! form(transformonsecondindex), if isignis input as 1; or replaces eachrowof data 
+! byNtimesitsinversediscreteFourier transform, if isignisinput as −1. Nmust bean 
+! integer power of 2. ParallelismisM-foldonthefirst indexof data.       
+      INTEGER(I4B) :: n,i,istep,j,m,mmax,n2
+      REAL(DP) :: theta
+      COMPLEX(SPC), DIMENSION(size(data,1)) :: temp
+      COMPLEX(DPC) :: w,wp
+      COMPLEX(SPC) :: ws
+      n=size(data,2)
+      call assert(iand(n,n-1)==0, 'n must be a power of 2 in fourrow_sp')
+      n2=n/2
+      j=n2
+      do i=1,n-2
+        if (j > i) call swap(data(:,j+1),data(:,i+1))
+        m=n2
+        do
+          if (m < 2 .or. j < m) exit
+          j=j-m
+          m=m/2
+        end do
+        j=j+m
+      end do
+      mmax=1
+      do
+        if (n <= mmax) exit
+        istep=2*mmax
+        theta=PI_D/(isign*mmax)
+        wp=cmplx(-2.0_dp*sin(0.5_dp*theta)**2,sin(theta),kind=dpc)
+        w=cmplx(1.0_dp,0.0_dp,kind=dpc)
+        do m=1,mmax
+          ws=w
+          do i=m,n,istep
+            j=i+mmax
+            temp=ws*data(:,j)
+            data(:,j)=data(:,i)-temp
+            data(:,i)=data(:,i)+temp
+          end do
+          w=w*wp+w
+        end do
+        mmax=istep
+      end do
+      END SUBROUTINE fourrow_sp
+
+      SUBROUTINE fourrow_dp(data,isign)
+      USE nrtype; USE nrutil, ONLY : assert,swap
+      IMPLICIT NONE
+      COMPLEX(DPC), DIMENSION(:,:), INTENT(INOUT) :: data
+      INTEGER(I4B), INTENT(IN) :: isign
+      INTEGER(I4B) :: n,i,istep,j,m,mmax,n2
+      REAL(DP) :: theta
+      COMPLEX(DPC), DIMENSION(size(data,1)) :: temp
+      COMPLEX(DPC) :: w,wp
+      COMPLEX(DPC) :: ws
+      n=size(data,2)
+      call assert(iand(n,n-1)==0, 'n must be a power of 2 in fourrow_dp')
+      n2=n/2
+      j=n2
+      do i=1,n-2
+        if (j > i) call swap(data(:,j+1),data(:,i+1))
+        m=n2
+        do
+          if (m < 2 .or. j < m) exit
+          j=j-m
+          m=m/2
+        end do
+        j=j+m
+      end do
+      mmax=1
+      do
+        if (n <= mmax) exit
+        istep=2*mmax
+        theta=PI_D/(isign*mmax)
+        wp=cmplx(-2.0_dp*sin(0.5_dp*theta)**2,sin(theta),kind=dpc)
+        w=cmplx(1.0_dp,0.0_dp,kind=dpc)
+        do m=1,mmax
+          ws=w
+          do i=m,n,istep
+            j=i+mmax
+            temp=ws*data(:,j)
+            data(:,j)=data(:,i)-temp
+            data(:,i)=data(:,i)+temp
+          end do
+          w=w*wp+w
+        end do
+        mmax=istep
+      end do
+      END SUBROUTINE fourrow_dp
+
+!-----------------------------------------------------------------------
+! realft.f90
+
+      SUBROUTINE realft_sp(data,isign,zdata)
+      USE nrtype; USE nrutil, ONLY : assert,assert_eq,zroots_unity
+      USE nr, ONLY : four1
+      IMPLICIT NONE
+      REAL(SP), DIMENSION(:), INTENT(INOUT) :: data
+      INTEGER(I4B), INTENT(IN) :: isign
+      COMPLEX(SPC), DIMENSION(:), OPTIONAL, TARGET :: zdata
+! Whenisign=1, calculates theFourier transformof aset of Nreal-valueddatapoints, 
+! inputinthearraydata. Iftheoptional argumentzdataisnotpresent, thedataarereplaced 
+! bythepositivefrequencyhalf of its complexFourier transform. The real-valued first and 
+! last components of the complex transform are returned as elements data(1)and data(2), 
+! respectively. If thecomplexarrayzdataof lengthN/2ispresent, dataisunchangedand 
+! thetransformisreturnedinzdata. Nmustbeapowerof 2. If isign= −1, thisroutine 
+! calculatestheinversetransformof acomplexdataarrayif itisthetransformof real data. 
+! (Resultinthiscasemustbemultipliedby2/N.) Thedatacanbesuppliedeither indata, 
+! withzdataabsent, or inzdata. 
+      INTEGER(I4B) :: n,ndum,nh,nq
+      COMPLEX(SPC), DIMENSION(size(data)/4) :: w
+      COMPLEX(SPC), DIMENSION(size(data)/4-1) :: h1,h2
+      COMPLEX(SPC), DIMENSION(:), POINTER :: cdata
+      COMPLEX(SPC) :: z
+      REAL(SP) :: c1=0.5_sp,c2
+      n=size(data)
+      call assert(iand(n,n-1)==0, 'n must be a power of 2 in realft_sp')
+      nh=n/2
+      nq=n/4
+      if (present(zdata)) then
+        ndum=assert_eq(n/2,size(zdata),'realft_sp')
+        cdata=>zdata
+        if (isign == 1) cdata=cmplx(data(1:n-1:2),data(2:n:2),kind=spc)
+      else
+        allocate(cdata(n/2))
+        cdata=cmplx(data(1:n-1:2),data(2:n:2),kind=spc)
+      end if
+      if (isign == 1) then
+        c2=-0.5_sp
+        call four1(cdata,+1)
+      else
+        c2=0.5_sp
+      end if
+      w=zroots_unity(sign(n,isign),n/4)
+      w=cmplx(-aimag(w),real(w),kind=spc)
+      h1=c1*(cdata(2:nq)+conjg(cdata(nh:nq+2:-1)))
+      h2=c2*(cdata(2:nq)-conjg(cdata(nh:nq+2:-1)))
+      cdata(2:nq)=h1+w(2:nq)*h2
+      cdata(nh:nq+2:-1)=conjg(h1-w(2:nq)*h2)
+      z=cdata(1)
+      if (isign == 1) then
+        cdata(1)=cmplx(real(z)+aimag(z),real(z)-aimag(z),kind=spc)
+      else
+        cdata(1)=cmplx(c1*(real(z)+aimag(z)),c1*(real(z)-aimag(z)),kind=spc)
+        call four1(cdata,-1)
+      end if
+      if (present(zdata)) then
+        if (isign /= 1) then
+          data(1:n-1:2)=real(cdata)
+          data(2:n:2)=aimag(cdata)
+        end if
+      else
+        data(1:n-1:2)=real(cdata)
+        data(2:n:2)=aimag(cdata)
+        deallocate(cdata)
+      end if
+      END SUBROUTINE realft_sp
+
+
+      SUBROUTINE realft_dp(data,isign,zdata)
+      USE nrtype; USE nrutil, ONLY : assert,assert_eq,zroots_unity
+      USE nr, ONLY : four1
+      IMPLICIT NONE
+      REAL(DP), DIMENSION(:), INTENT(INOUT) :: data
+      INTEGER(I4B), INTENT(IN) :: isign
+      COMPLEX(DPC), DIMENSION(:), OPTIONAL, TARGET :: zdata
+      INTEGER(I4B) :: n,ndum,nh,nq
+      COMPLEX(DPC), DIMENSION(size(data)/4) :: w
+      COMPLEX(DPC), DIMENSION(size(data)/4-1) :: h1,h2
+      COMPLEX(DPC), DIMENSION(:), POINTER :: cdata
+      COMPLEX(DPC) :: z
+      REAL(DP) :: c1=0.5_dp,c2
+      n=size(data)
+      call assert(iand(n,n-1)==0, 'n must be a power of 2 in realft_dp')
+      nh=n/2
+      nq=n/4
+      if (present(zdata)) then
+        ndum=assert_eq(n/2,size(zdata),'realft_dp')
+        cdata=>zdata
+        if (isign == 1) cdata=cmplx(data(1:n-1:2),data(2:n:2),kind=spc)
+      else
+        allocate(cdata(n/2))
+        cdata=cmplx(data(1:n-1:2),data(2:n:2),kind=spc)
+      end if
+      if (isign == 1) then
+        c2=-0.5_dp
+        call four1(cdata,+1)
+      else
+        c2=0.5_dp
+      end if
+      w=zroots_unity(sign(n,isign),n/4)
+      w=cmplx(-aimag(w),real(w),kind=dpc)
+      h1=c1*(cdata(2:nq)+conjg(cdata(nh:nq+2:-1)))
+      h2=c2*(cdata(2:nq)-conjg(cdata(nh:nq+2:-1)))
+      cdata(2:nq)=h1+w(2:nq)*h2
+      cdata(nh:nq+2:-1)=conjg(h1-w(2:nq)*h2)
+      z=cdata(1)
+      if (isign == 1) then
+        cdata(1)=cmplx(real(z)+aimag(z),real(z)-aimag(z),kind=dpc)
+      else
+        cdata(1)=cmplx(c1*(real(z)+aimag(z)),c1*(real(z)-aimag(z)),kind=dpc)
+        call four1(cdata,-1)
+      end if
+      if (present(zdata)) then
+        if (isign /= 1) then
+          data(1:n-1:2)=real(cdata)
+          data(2:n:2)=aimag(cdata)
+        end if
+      else
+        data(1:n-1:2)=real(cdata)
+        data(2:n:2)=aimag(cdata)
+        deallocate(cdata)
+      end if
+      END SUBROUTINE realft_dp
+
+!-----------------------------------------------------------------------
+! twofft.f90
+
+      SUBROUTINE twofft(data1,data2,fft1,fft2)
+      USE nrtype; USE nrutil, ONLY : assert,assert_eq
+      USE nr, ONLY : four1
+      IMPLICIT NONE
+      REAL(SP), DIMENSION(:), INTENT(IN) :: data1,data2
+      COMPLEX(SPC), DIMENSION(:), INTENT(OUT) :: fft1,fft2
+      INTEGER(I4B) :: n,n2
+      COMPLEX(SPC), PARAMETER :: C1=(0.5_sp,0.0_sp), C2=(0.0_sp,-0.5_sp)
+      COMPLEX, DIMENSION(size(data1)/2+1) :: h1,h2
+      n=assert_eq(size(data1),size(data2),size(fft1),size(fft2),'twofft')
+      call assert(iand(n,n-1)==0, 'n must be a power of 2 in twofft')
+      fft1=cmplx(data1,data2,kind=spc)
+      call four1(fft1,1)
+      fft2(1)=cmplx(aimag(fft1(1)),0.0_sp,kind=spc)
+      fft1(1)=cmplx(real(fft1(1)),0.0_sp,kind=spc)
+      n2=n/2+1
+      h1(2:n2)=C1*(fft1(2:n2)+conjg(fft1(n:n2:-1)))
+      h2(2:n2)=C2*(fft1(2:n2)-conjg(fft1(n:n2:-1)))
+      fft1(2:n2)=h1(2:n2)
+      fft1(n:n2:-1)=conjg(h1(2:n2))
+      fft2(2:n2)=h2(2:n2)
+      fft2(n:n2:-1)=conjg(h2(2:n2))
+      END SUBROUTINE twofft
+
+
+!-----------------------------------------------------------------------
+! numerical recipies
+! dfridr.f90      
+      FUNCTION dfridr(func,x,h,err)
+      USE nrtype; USE nrutil, ONLY : assert,geop,iminloc
+      IMPLICIT NONE
+      REAL(DP), INTENT(IN) :: x,h
+      REAL(DP), INTENT(OUT) :: err
+      REAL(DP) :: dfridr
+      INTERFACE
+        FUNCTION func(x)
+        USE nrtype
+        IMPLICIT NONE
+        REAL(DP), INTENT(IN) :: x
+        REAL(DP) :: func
+        END FUNCTION func
+      END INTERFACE
+      INTEGER(I4B),PARAMETER :: NTAB=10
+      REAL(SP), PARAMETER :: CON=1.4_sp
+      REAL(SP), PARAMETER :: CON2=CON*CON
+      REAL(SP), PARAMETER :: BIG=huge(x) ! maybe problem on different compilers (e.g. XLF): BIG=huge(real(x))
+      REAL(SP), PARAMETER :: SAFE=2.0
+      INTEGER(I4B) :: ierrmin,i,j
+      REAL(SP) :: hh
+      REAL(SP), DIMENSION(NTAB-1) :: errt,fac
+      REAL(SP), DIMENSION(NTAB,NTAB) :: a
+      !call assert(h /= 0.0, 'dfridr arg')
+      hh=h
+      a(1,1)=(func(x+hh)-func(x-hh))/(2.0_sp*hh)
+      err=BIG
+      fac(1:NTAB-1)=geop(CON2,CON2,NTAB-1)
+      do i=2,NTAB
+        hh=hh/CON
+        a(1,i)=(func(x+hh)-func(x-hh))/(2.0_sp*hh)
+        do j=2,i
+          a(j,i)=(a(j-1,i)*fac(j-1)-a(j-1,i-1))/(fac(j-1)-1.0_sp)
+        end do
+        errt(1:i-1)=max(abs(a(2:i,i)-a(1:i-1,i)),abs(a(2:i,i)-a(1:i-1,i-1)))
+        ierrmin=iminloc(errt(1:i-1))
+        if (errt(ierrmin) <= err) then
+          err=errt(ierrmin)
+          dfridr=a(1+ierrmin,i)
+        end if
+        if (abs(a(i,i)-a(i-1,i-1)) >= SAFE*err) RETURN
+      end do
+      END FUNCTION dfridr
+
+      FUNCTION spline_func(x)
+      USE nrtype 
+      IMPLICIT NONE
+      REAL(DP), DIMENSION(:),INTENT(IN) :: x
+      REAL(DP), DIMENSION(size(x)) :: spline_func
+      integer:: i
+      double precision:: splineRepresentation
+      external:: splineRepresentation
+      
+      do i=1,size(x)
+        spline_func(i) = splineRepresentation(x(i))
+      enddo
+      END FUNCTION spline_func
+
+
+
+      FUNCTION qsimp(func,a,b)
+      USE nrtype; USE nrutil, ONLY : nrerror
+      USE nr, ONLY : trapzd
+      IMPLICIT NONE
+      REAL(DP), INTENT(IN) :: a,b
+      REAL(DP) :: qsimp
+      INTERFACE
+        FUNCTION func(x)
+        USE nrtype
+        REAL(DP), DIMENSION(:), INTENT(IN) :: x
+        REAL(DP), DIMENSION(size(x)) :: func
+        END FUNCTION func
+      END INTERFACE
+      INTEGER(I4B), PARAMETER :: JMAX=20
+      REAL(DP), PARAMETER :: EPS=1.0e-6_dp
+      INTEGER(I4B) :: j
+      REAL(DP) :: os,ost,st
+      ost=0.0
+      os= 0.0
+      do j=1,JMAX
+        call trapzd(func,a,b,st,j)
+        qsimp=(4.0_dp*st-ost)/3.0_sp
+        if (j > 5) then
+          if (abs(qsimp-os) < EPS*abs(os) .or. &
+            (qsimp == 0.0 .and. os == 0.0)) RETURN
+        end if
+        os=qsimp
+        ost=st
+      end do
+      call nrerror('qsimp: too many steps')
+      END FUNCTION qsimp
+          
+      SUBROUTINE trapzd(func,a,b,s,n)
+      USE nrtype; USE nrutil, ONLY : arth
+      IMPLICIT NONE
+      REAL(DP), INTENT(IN) :: a,b
+      REAL(DP), INTENT(INOUT) :: s
+      INTEGER(I4B), INTENT(IN) :: n
+      INTERFACE
+        FUNCTION func(x)
+        USE nrtype
+        REAL(DP), DIMENSION(:), INTENT(IN) :: x
+        REAL(DP), DIMENSION(size(x)) :: func
+        END FUNCTION func
+      END INTERFACE
+      REAL(DP) :: del,fsum
+      INTEGER(I4B) :: it
+      if (n == 1) then
+        s=0.5_dp*(b-a)*sum(func( (/ a,b /) ))
+      else
+        it=2**(n-2)
+        del=(b-a)/it
+        fsum=sum(func(arth(a+0.5_dp*del,del,it)))
+        s=0.5_dp*(s+del*fsum)
+      end if
+      END SUBROUTINE trapzd
+      
+!-------------------------------------------------------------------------------------------------------
+! cubic spline routines for respresentation of a discrete function
+!
+! handling: first call the... 
+! subroutine DRSPLN: calculates the coefficients of the representation
+!
+! then find the function values by...
+! function DRSPLE: calculates the function value at a specific location
+
+!      SUBROUTINE DRSPLN
+!$PROG DRSPLN
+      SUBROUTINE DRSPLN(I1,I2,X,Y,Q,F)
+!
+! !$C$C$C$C$ CALLS ONLY LIBRARY ROUTINES C$C$C$C$C$
+!
+!   SUBROUTINE RSPLN COMPUTES CUBIC SPLINE INTERPOLATION COEFFICIENTS
+!C   FOR Y(X) BETWEEN GRID POINTS I1 AND I2 SAVING THEM IN Q.  THE
+!C   INTERPOLATION IS CONTINUOUS WITH CONTINUOUS FIRST AND SECOND
+!C   DERIVITIVES.  IT AGREES EXACTLY WITH Y AT GRID POINTS AND WITH THE
+!C   THREE POINT FIRST DERIVITIVES AT BOTH END POINTS (I1 AND I2).
+!C   X MUST BE MONOTONIC BUT IF TWO SUCCESSIVE VALUES OF X ARE EQUAL
+!C   A DISCONTINUITY IS ASSUMED AND SEPERATE INTERPOLATION IS DONE ON
+!C   EACH STRICTLY MONOTONIC SEGMENT.  THE ARRAYS MUST BE DIMENSIONED AT
+!C   LEAST - X(I2), Y(I2), Q(3,I2), AND F(3,I2).  F IS WORKING STORAGE
+!C   FOR RSPLN.
+!C                                                     -RPB
+      implicit double precision(A-H,O-Z)
+      DOUBLE PRECISION X,Y,Q,F
+      DIMENSION X(1),Y(1),Q(3,1),F(3,1),YY(3)
+      EQUIVALENCE (YY(1),Y0)
+      DATA SMALL/1.D-10/,YY/0.D0,0.D0,0.D0/
+      J1=I1+1
+      Y0=0.D0
+!C   BAIL OUT IF THERE ARE LESS THAN TWO POINTS TOTAL.
+      IF(I2-I1)13,17,8
+ 8    A0=X(J1-1)
+!C   SEARCH FOR DISCONTINUITIES.
+      DO 3 I=J1,I2
+      B0=A0
+      A0=X(I)
+      IF(DABS((A0-B0)/DMAX1(A0,B0)).LT.SMALL) GO TO 4
+ 3    CONTINUE
+ 17   J1=J1-1
+      J2=I2-2
+      GO TO 5
+ 4    J1=J1-1
+      J2=I-3
+!C   SEE IF THERE ARE ENOUGH POINTS TO INTERPOLATE (AT LEAST THREE).
+ 5    IF(J2+1-J1)9,10,11
+!C   ONLY TWO POINTS.  USE LINEAR INTERPOLATION.
+ 10   J2=J2+2
+      Y0=(Y(J2)-Y(J1))/(X(J2)-X(J1))
+      DO 15 J=1,3
+      Q(J,J1)=YY(J)
+ 15   Q(J,J2)=YY(J)
+      GO TO 12
+!C   MORE THAN TWO POINTS.  DO SPLINE INTERPOLATION.
+ 11   A0=0.
+      H=X(J1+1)-X(J1)
+      H2=X(J1+2)-X(J1)
+      Y0=H*H2*(H2-H)
+      H=H*H
+      H2=H2*H2
+!C   CALCULATE DERIVITIVE AT NEAR END.
+      B0=(Y(J1)*(H-H2)+Y(J1+1)*H2-Y(J1+2)*H)/Y0
+      B1=B0
+!C   EXPLICITLY REDUCE BANDED MATRIX TO AN UPPER BANDED MATRIX.
+      DO 1 I=J1,J2
+      H=X(I+1)-X(I)
+      Y0=Y(I+1)-Y(I)
+      H2=H*H
+      HA=H-A0
+      H2A=H-2.D0*A0
+      H3A=2.D0*H-3.D0*A0
+      H2B=H2*B0
+      Q(1,I)=H2/HA
+      Q(2,I)=-HA/(H2A*H2)
+      Q(3,I)=-H*H2A/H3A
+      F(1,I)=(Y0-H*B0)/(H*HA)
+      F(2,I)=(H2B-Y0*(2.D0*H-A0))/(H*H2*H2A)
+      F(3,I)=-(H2B-3.D0*Y0*HA)/(H*H3A)
+      A0=Q(3,I)
+ 1    B0=F(3,I)
+!C   TAKE CARE OF LAST TWO ROWS.
+      I=J2+1
+      H=X(I+1)-X(I)
+      Y0=Y(I+1)-Y(I)
+      H2=H*H
+      HA=H-A0
+      H2A=H*HA
+      H2B=H2*B0-Y0*(2.D0*H-A0)
+      Q(1,I)=H2/HA
+      F(1,I)=(Y0-H*B0)/H2A
+      HA=X(J2)-X(I+1)
+      Y0=-H*HA*(HA+H)
+      HA=HA*HA
+!C   CALCULATE DERIVITIVE AT FAR END.
+      Y0=(Y(I+1)*(H2-HA)+Y(I)*HA-Y(J2)*H2)/Y0
+      Q(3,I)=(Y0*H2A+H2B)/(H*H2*(H-2.D0*A0))
+      Q(2,I)=F(1,I)-Q(1,I)*Q(3,I)
+!C   SOLVE UPPER BANDED MATRIX BY REVERSE ITERATION.
+      DO 2 J=J1,J2
+      K=I-1
+      Q(1,I)=F(3,K)-Q(3,K)*Q(2,I)
+      Q(3,K)=F(2,K)-Q(2,K)*Q(1,I)
+      Q(2,K)=F(1,K)-Q(1,K)*Q(3,K)
+ 2    I=K
+      Q(1,I)=B1
+!C   FILL IN THE LAST POINT WITH A LINEAR EXTRAPOLATION.
+ 9    J2=J2+2
+      DO 14 J=1,3
+ 14   Q(J,J2)=YY(J)
+!C   SEE IF THIS DISCONTINUITY IS THE LAST.
+ 12   IF(J2-I2)6,13,13
+!C   NO.  GO BACK FOR MORE.
+ 6    J1=J2+2
+      IF(J1-I2)8,8,7
+!C   THERE IS ONLY ONE POINT LEFT AFTER THE LATEST DISCONTINUITY.
+ 7    DO 16 J=1,3
+ 16   Q(J,I2)=YY(J)
+!C   FINI.
+ 13   RETURN
+      END
+
+
+!C       FUNCTION DRSPLE
+!C$PROG DRSPLE
+      DOUBLE PRECISION FUNCTION DRSPLE(I1,I2,X,Y,Q,S)
+!C
+!C C$C$C$C$C$ CALLS ONLY LIBRARY ROUTINES C$C$C$C$C$
+!C
+!C   RSPLE RETURNS THE VALUE OF THE FUNCTION Y(X) EVALUATED AT POINT S
+!C   USING THE CUBIC SPLINE COEFFICIENTS COMPUTED BY RSPLN AND SAVED IN
+!C   Q.  IF S IS OUTSIDE THE INTERVAL (X(I1),X(I2)) RSPLE EXTRAPOLATES
+!C   USING THE FIRST OR LAST INTERPOLATION POLYNOMIAL.  THE ARRAYS MUST
+!C   BE DIMENSIONED AT LEAST - X(I2), Y(I2), AND Q(3,I2).
+!C
+!C                                                     -RPB
+      IMPLICIT DOUBLE PRECISION(A-H,O-Z)
+      DIMENSION X(1),Y(1),Q(3,1)
+      DOUBLE PRECISION X,Y,Q,S
+      DATA I/1/
+      II=I2-1
+!C   GUARANTEE I WITHIN BOUNDS.
+      I=MAX0(I,I1)
+      I=MIN0(I,II)
+!C   SEE IF X IS INCREASING OR DECREASING.
+      IF(X(I2)-X(I1))1,2,2
+!C   X IS DECREASING.  CHANGE I AS NECESSARY.
+ 1    IF(S-X(I))3,3,4
+ 4    I=I-1
+      IF(I-I1)11,6,1
+ 3    IF(S-X(I+1))5,6,6
+ 5    I=I+1
+      IF(I-II)3,6,7
+!C   X IS INCREASING.  CHANGE I AS NECESSARY.
+ 2    IF(S-X(I+1))8,8,9
+ 9    I=I+1
+      IF(I-II)2,6,7
+ 8    IF(S-X(I))10,6,6
+ 10   I=I-1
+      IF(I-I1)11,6,8
+ 7    I=II
+      GO TO 6
+ 11   I=I1
+!C   CALCULATE RSPLE USING SPLINE COEFFICIENTS IN Y AND Q.
+ 6    H=S-X(I)
+      DRSPLE=Y(I)+H*(Q(1,I)+H*(Q(2,I)+H*Q(3,I)))
+      RETURN
+      END
+      
+
+

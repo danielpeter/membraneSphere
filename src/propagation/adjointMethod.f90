@@ -1,0 +1,216 @@
+!=====================================================================
+!
+!       m e m b r a n e S p h e r e  1 . 0
+!       --------------------------------------------------
+!
+!      Daniel Peter
+!      ETH Zurich - Institute of Geophysics
+!      (c) ETH July 2006
+!
+!      Free for non-commercial academic research ONLY.
+!      This program is distributed WITHOUT ANY WARRANTY whatsoever.
+!      
+!=====================================================================
+!
+! Copyright July 2006, by the ETH Zurich.
+!
+! The software shall be used for scientific purposes only, excluding industrial or commercial 
+! purposes.
+!
+! The software is furnished on an "as is" basis and the copyright holder in no way warrants 
+! the software or any of its results and is in no way liable for any use made of the software.  
+! The copyright holder disclaims all warranties, representations, and statements, express or 
+! implied, statutory or otherwise, including, without limitation, any implied warranties of 
+! merchantability or fitness for a particular purpose. In no event shall the copyright holder be 
+! liable for any actual, direct, indirect, special, consequential, or incidental damages, however 
+! caused, including, without limitation, any damages arising out of the use or operation of 
+! the software, loss of use of the software, or damage of any sort to the user.
+!
+! If you use this code for your own research, please send an email
+! to Daniel Peter <dpeter@erdw.ethz.ch> for information.
+!
+! Proper acknowledgement shall be made to the authors of the software in publications and 
+! presentations resulting from the use of this software:
+!
+! Peter, D., C. Tape, L. Boschi and J. H. Woodhouse, 2007. Surface wave tomography: 
+! global membrane waves and adjoint methods, Geophys. J. Int., , 171: p. 1098-1117.
+!
+! Tape, C. H., 2003. Waves on a Spherical Membrane, M.Sc. thesis, University of Oxford, U.K.
+
+!-----------------------------------------------------------------------
+      program adjointMethod
+!-----------------------------------------------------------------------
+! performs a simulation, where no scatterer is present, and calculates the adjoint source.
+! then make a time-reversed simulation and computes the kernel values.
+!
+! adjoint method: information in tromp et al. (2005)
+! finite-difference iteration: information in carl tape thesis (2003), chap 5, (5.7)
+      use propagationStartup; use cells; use phaseVelocityMap; use parallel; use displacements
+      use loop; use phaseBlockData; use griddomain; use adjointVariables;use verbosity
+      implicit none
+      integer:: m,kernel,ierror
+      
+      !-----------------------------------------------------------------------
+      ! parameters      
+      ! most parameters concerning wave propagation set in file Parameter_Input (& commonModules.f90)
+      ! initialize parameters
+      Adjoint_Program                 =.true.   ! we calculate kernels by adjoint method
+      !-----------------------------------------------------------------------
+      ! machine memory holds for 2 GB RAM: 
+      !   level 6: numVertices=122'882, numofTimeSteps~500, double precision 8 byte -> needs ~ 500 MB per wavefield, still o.k.
+      !   level 7: numVertices=491'522, numofTimeSteps~100, dp 8 byte -> needs ~ 3.8 GB ! per wavefield, too big
+
+      ! initialization of parameters and arrays
+      call initialize()
+
+      ! wait until all processes reached this point
+      call MPI_Barrier( MPI_COMM_WORLD, ierror )
+      if( ierror .ne. 0) call stopProgram('abort - MPI_Barrier kernels failed    ')      
+                                         
+      ! prepare for simulation
+      if( MASTER .and. VERBOSE) then
+        print*
+        print*,'running reference simulation...'
+        print*
+      endif
+
+      ! benchmark
+      if( MASTER ) benchstart = MPI_WTIME()      
+
+      ! determine how many kernels
+      if( kernelIteration ) then
+        ! only for homogeneous background earth
+        if( HETEROGENEOUS ) then
+          print*,'many kernels can only be calculated for a homogeneous background earth.'
+          print*,'the receivers are fixed on the equator.'
+          call stopProgram( 'abort - adjointMethod')
+        endif
+        
+        ! determine number of kernels
+        numofKernels=int(kernelEndDistance-kernelStartDistance+1)          
+        if( numofKernels .le. 0) then
+          print*,'kernels cannot be found correctly:',kernelStartDistance,kernelEndDistance
+          call stopProgram( 'abort - adjointMethod')            
+        endif
+        if(MASTER .and. VERBOSE) then
+          print*
+          print*,'iteration for number of kernels:',numofKernels,kernelStartDistance,kernelEndDistance
+          print*
+        endif
+      else
+        numofKernels=1
+      endif
+      
+      do kernel=1,numofKernels
+        if( kernelIteration) call prepareKernel(kernel)        
+        
+        ! do the time iteration
+        if( MASTER .and. VERBOSE) print*,'    forward simulation...'
+        call forwardIteration()        
+
+        ! save seismogram at receiver
+        if( .not. kernelIteration ) call printSeismogram()
+
+        ! benchmark output
+        if( MASTER .and. VERBOSE ) then
+          benchend = MPI_WTIME()
+          print*,'    benchmark seconds:',benchend-benchstart
+          print*
+        endif
+
+        ! determine adjoint source
+        call getAdjointSource()
+
+        ! prepare for simulation
+        if( MASTER .and. VERBOSE ) then
+          print*
+          print*,'running adjoint simulation...'
+          print*
+        endif
+            
+        ! do back-in-time iteration
+        call backwardIteration()      
+                      
+        ! wait until all processes reached this point
+        call MPI_Barrier( MPI_COMM_WORLD, ierror )
+        if( ierror .ne. 0) call stopProgram('abort - MPI_Barrier iterations failed    ')      
+
+        ! compute kernel
+        if( .not. ADJOINT_ONTHEFLY ) call frechetKernel()
+
+        ! wait until all processes reached this point
+        call MPI_Barrier( MPI_COMM_WORLD, ierror )
+        if( ierror .ne. 0) call stopProgram('abort - MPI_Barrier kernels failed    ')      
+
+        ! benchmark
+        if( MASTER .and. VERBOSE) then
+          benchAllEnd = MPI_WTIME()      
+          print*
+          print*,'running time: ',int((benchAllEnd-benchAllStart)/60.0),'min ',mod((benchAllEnd-benchAllStart),60.0),'sec'
+          print*
+        endif
+        
+        ! output to kernel file
+        call storeAdjointKernel()      
+      enddo !kernel
+
+      if( MASTER ) print*,'done.'
+          
+      ! wait until all processes reached this point
+      call MPI_Barrier( MPI_COMM_WORLD, ierror )
+      if( ierror .ne. 0) call stopProgram('abort - final MPI_Barrier failed    ')      
+      
+      ! end parallelization
+      call MPI_FINALIZE(ierror)
+      if( ierror .ne. 0) call stopProgram('abort - finalize failed    ')      
+      
+      end
+
+
+!-----------------------------------------------------------------------
+      subroutine prepareKernel(kernelIncrement)
+!-----------------------------------------------------------------------
+! prepare model for a new simulation with the setup of a new receiver location
+!
+! input:
+!     kernelIncrement     -   integer of degrees to increment the epicentraldistance
+!                                        between source and station
+!
+! returns: newly initialize station setup
+      use adjointVariables; use propagationStartup; use parallel; use cells; use verbosity
+      implicit none
+      integer:: kernelIncrement
+      character*3::kernelstr    
+      real(WP):: lat,lon,distance
+            
+      ! receivers will be placed on the equator
+      desiredReceiverLat = 0.0_WP
+      desiredReceiverLon = kernelStartDistance + kernelIncrement - 1
+      call setupStation( desiredReceiverLat, desiredReceiverLon )
+      
+      ! initialize new model      
+      if( allocated(wavefieldAdjoint) ) deallocate(wavefieldAdjoint)      
+      call initializeWorld()      
+      
+      ! build new source
+      if( allocated(forceTermPrescribed) ) deallocate(forceTermPrescribed)    
+      call initializeSource()
+      
+      ! append kernel number to name of adjoint kernel file 
+      !(originally something like 'adjointKernel.dat' should become e.g. 'adjointKernel.023.dat' for epicentral distance 23 degree )
+      write(kernelstr,'(i3.3)') int(kernelStartDistance+kernelIncrement-1)
+      if( kernelIncrement .eq. 1 ) then
+        adjointKernelName(len_trim(adjointKernelName)-2:len_trim(adjointKernelName)+4)=kernelstr//'.dat'
+      else
+        adjointKernelName(len_trim(adjointKernelName)-6:len_trim(adjointKernelName))=kernelstr//'.dat'      
+      endif
+      
+      if( MASTER .and. VERBOSE) then
+        print*
+        print*,'kernel name:',adjointKernelName
+        print*
+      endif
+
+      end
+      
+      

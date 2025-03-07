@@ -1,11 +1,10 @@
 !=====================================================================
 !
-!       m e m b r a n e S p h e r e  1 . 1
+!       m e m b r a n e S p h e r e
 !       --------------------------------------------------
 !
 !      Daniel Peter
-!      ETH Zurich - Institute of Geophysics
-!      (c) ETH July 2006
+!      (c) 2025
 !
 !      Free for non-commercial academic research ONLY.
 !      This program is distributed WITHOUT ANY WARRANTY whatsoever.
@@ -321,7 +320,17 @@
 
       ! get receiver's velocity seismogram (first time derivative of recorded seismogram at receiver)
       seismo(:)=0.0_WP
-      seismoDisplacement(:)=seismogramReceiver(2,:)            
+      seismoDisplacement(:)=seismogramReceiver(2,:)
+
+      if( MASTER .and. fileOutput) then
+        print*,'  printing to file: '//datadirectory(1:len_trim(datadirectory))//'seismo.displacement.dat'
+        open(10,file=datadirectory(1:len_trim(datadirectory))//'seismo.displacement.dat')
+        do n=1,numofTimeSteps
+          write(10,*) seismoDisplacement(n)
+        enddo
+        close(10)
+      endif
+
       call getFirstDerivative(seismoDisplacement,seismo,dt,numofTimeSteps)
 
       ! file output
@@ -396,8 +405,14 @@
       endif
       call getIntegral(seismo,seismoDisplacement,normFactor,dt,numofTimeSteps)
 
+      ! synchronizes
+      call syncProcesses()
+
       ! check for division by zero
-      if( abs(normFactor) < 1e-6 ) call stopProgram('normalization factor zero   ')
+      if( abs(normFactor) < 1e-6 ) then
+        if( MASTER ) print*,'norm:',normFactor,' index:',window_startindex,window_endindex
+        call stopProgram('normalization factor zero   ')
+      endif
 
       ! normalize source
       adjointSource(2,:) = adjointSource(2,:)/normFactor
@@ -411,12 +426,14 @@
         print*,'    normalization factor: ',normFactor
       
         ! store adjoint source seismogram
-        print*,'  printing to file: '//datadirectory(1:len_trim(datadirectory))//'seismo.adjointSource.dat'
-        open(10,file=datadirectory(1:len_trim(datadirectory))//'seismo.adjointSource.dat')
-        do n=1,numofTimeSteps
-          write(10,*) adjointSource(1,n),adjointSource(2,n)
-        enddo
-        close(10)
+        if( fileOutput ) then
+          print*,'  printing to file: '//datadirectory(1:len_trim(datadirectory))//'seismo.adjointSource.dat'
+          open(10,file=datadirectory(1:len_trim(datadirectory))//'seismo.adjointSource.dat')
+          do n=1,numofTimeSteps
+            write(10,*) adjointSource(1,n),adjointSource(2,n)
+          enddo
+          close(10)
+        endif
       endif
 
                         
@@ -842,10 +859,14 @@
       ! calculate the reference travel time 
       ! attention: for a heterogeneous background it takes here the PREM value as well.
       !                this should be considered when inverting and using these kernels.
-      call determineOrbitDistance(distance,iorbit)
-      arrivalTime=distance*EARTHRADIUS/cphaseRef      
-      
-      ! cell area 
+      !call determineOrbitDistance(distance,iorbit)
+      !arrivalTime=distance*EARTHRADIUS/cphaseRef
+
+      ! gets minor arc distance (in rad)
+      call greatCircleDistance(vertices(sourceVertex,:),vertices(receiverVertex,:),distance)
+      arrivalTime=distance*EARTHRADIUS/cphaseRef
+
+      ! cell area
       vertexCellArea=cellAreas(receiverVertex)
       ! convert cell area into [rad^2]
       vertexCellAreaRad=vertexCellArea/EARTHRADIUS_SQUARED
@@ -1202,6 +1223,7 @@
 !-----------------------------------------------------------------------
       subroutine determineWindowsize(startindex,endindex,range)
 !-----------------------------------------------------------------------
+! if halfwidth_estrom is chosen, then it is
 ! based upon the window size mentioned in Ekstrom et al., 1997: eq. 16 and
 ! denoted parameter J_i which is one half of the window:
 ! the total window includes three cycles of the center period
@@ -1216,9 +1238,7 @@
       real(WP):: arrivalTime,distance
       integer,dimension(1):: loc
       integer:: center,i,default_start,default_end,iorbit
-      
-      ! half of the window (total window includes three cycles)
-      halfwidth = 3.0 * bw_waveperiod / 2.0
+      logical,parameter:: HALFWIDTH_EKSTROM = .false.
 
       ! determines which is the default window's start index   
       loc = maxloc( seismogramReceiver(1,:), MASK = seismogramReceiver(1,:) < WINDOW_START )
@@ -1231,18 +1251,32 @@
       if( default_start > default_end ) default_end = default_start
 
       ! this takes the reference travel time as center of the window
-      call determineOrbitDistance(distance,iorbit)
-      arrivalTime = distance*EARTHRADIUS/cphaseRef      
-      loc = maxloc( seismogramReceiver(1,default_start:default_end), &
+      if( HALFWIDTH_EKSTROM ) then
+        call determineOrbitDistance(distance,iorbit)
+        arrivalTime = distance*EARTHRADIUS/cphaseRef
+        loc = maxloc( seismogramReceiver(1,default_start:default_end), &
                   MASK = seismogramReceiver(1,default_start:default_end) < arrivalTime )
-      center = default_start + loc(1) ! take next higher step index
-      max = seismogramReceiver(2,center)   
-      
-      ! alternative:
-      ! window centers around the time of maximum of the default seismogram
-      !loc = maxloc( abs(seismogramReceiver(2,default_start:default_end)) )
-      !center = default_start + loc(1) - 1       
-          
+        center = default_start + loc(1) ! take next higher step index
+        max = seismogramReceiver(2,center)
+      else
+        ! alternative:
+        ! window centers around the time of maximum of the default seismogram
+        !loc = maxloc( abs(seismogramReceiver(2,default_start:default_end)) )
+        !center = default_start + loc(1) - 1
+
+        ! center of window_start and window_end
+        loc = maxloc( seismogramReceiver(1,default_start:default_end), &
+                  MASK = seismogramReceiver(1,default_start:default_end) < (WINDOW_START+WINDOW_END)/2.0 )
+        center = default_start + loc(1) ! take next higher step index
+      endif
+
+      ! half of the window (total window includes three cycles)
+      if( HALFWIDTH_EKSTROM ) then
+        halfwidth = 3.0 * bw_waveperiod / 2.0
+      else
+        halfwidth = (WINDOW_END - WINDOW_START)/2.0
+      endif
+
       if( MASTER .and. VERBOSE ) then
         print*,'  determining cross-correlation window...'
         print*,'    center time (s) / value            : ',seismogramReceiver(1,center),max

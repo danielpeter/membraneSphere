@@ -1,11 +1,10 @@
 !=====================================================================
 !
-!       m e m b r a n e S p h e r e  1 . 1
+!       m e m b r a n e S p h e r e
 !       --------------------------------------------------
 !
 !      Daniel Peter
-!      ETH Zurich - Institute of Geophysics
-!      (c) ETH July 2006
+!      (c) 2025
 !
 !      Free for non-commercial academic research ONLY.
 !      This program is distributed WITHOUT ANY WARRANTY whatsoever.
@@ -1345,9 +1344,16 @@
       if( USEOVERTIME ) then
         LASTTIME = arrivalTime + SIMULATIONOVERTIMEPERCENT*arrivalTime
         if( LASTTIME > antipodeTime ) LASTTIME = antipodetime
+      else if (WINDOWEDINTEGRATION ) then
+        if( MASTER .and. VERBOSE) then
+          print*,'    orbit: ',iorbit
+        endif
+        LASTTIME = antipodeTime
       else
         LASTTIME = antipodeTime
-      endif      
+      endif
+
+      ! console output
       if( MASTER .and. VERBOSE) then
         print*,'    new simulation time will end at:',LASTTIME
       endif            
@@ -1422,11 +1428,11 @@
         iorbit = iorbit + 1        
         if( mod(iorbit,2 ) == 0 ) then
           ! even orbits
-          distance = (iorbit-1)*2.0*PI - minor_distance
+          distance = ((iorbit)/2.0)*2.0*PI - minor_distance
           arrivalTime = distance*EARTHRADIUS/cphaseRef
         else
           ! odd orbits
-          distance = (iorbit-1)*2.0*PI + minor_distance
+          distance = ((iorbit-1)/2.0)*2.0*PI + minor_distance
           arrivalTime = distance*EARTHRADIUS/cphaseRef
         endif
       enddo      
@@ -1444,7 +1450,6 @@
       use filterType; use verbosity
       implicit none
       real(WP):: theta_radian,tmp
-      logical,parameter:: ADAPT_SOURCE   = .false.
 
       ! calculates width parameter (see Carl Tape Thesis , eq. 3.21 )
       if( .not. FIXED_SOURCEPARAMETER ) then

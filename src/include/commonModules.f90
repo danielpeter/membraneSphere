@@ -1,11 +1,10 @@
 !=====================================================================
 !
-!       m e m b r a n e S p h e r e  1 . 1
+!       m e m b r a n e S p h e r e
 !       --------------------------------------------------
 !
 !      Daniel Peter
-!      ETH Zurich - Institute of Geophysics
-!      (c) ETH July 2006
+!      (c) 2025
 !
 !      Free for non-commercial academic research ONLY.
 !      This program is distributed WITHOUT ANY WARRANTY whatsoever.
@@ -26,6 +25,8 @@
         ! source parameters
         ! fixed_sourceparameter: use fixed source parameters, important when a higher grid level 
         !                       is choosen but the same source should be simulated
+        ! adapt_source: used to change the time parameter sigma in a empirical way to have a maximum
+        !                         energy band at the considered period
         ! TimeParameterSigma: level 4: 164.6128 ; L150: 41.1795264700414 ; L75: 42.9967494824469
         !                                      TimeParameterSigma = 42.0216_WP       
         !                                      good other values: q4: 204.5, q6: 51.125, 42.0216(L150)
@@ -44,9 +45,10 @@
         !     sigma = 60.0 
         !     mu     = 4.e-2 
         ! other comparison: 180. 15.e-2 (bit better...), Carl 204.5/theta_wid=5
-        real(WP) :: TimeParameterSigma              = 60.0          ! L100: 30.0  , L50: 10.0
-        real(WP) :: WidthParameterMu                = 4.0e-2        ! L100: 2.e-2 , L50: 1.e-2
-        logical,parameter :: FIXED_SOURCEPARAMETER  = .true. 
+        real(WP) :: TimeParameterSigma              = 60.0 ! with adapt_source: L150 30.0_WP  ! L100: 30.0  , L50: 10.0 , L150: 60.0
+        real(WP) :: WidthParameterMu                = 0.04 ! with adapt source: L150 0.015_WP ! L100: 2.e-2 , L50: 1.e-2, L150: 0.04
+        logical,parameter :: FIXED_SOURCEPARAMETER  = .true.
+        logical,parameter:: ADAPT_SOURCE            = .false.
         real(WP),parameter :: THETA_WID             = 5.0_WP ! (in degrees)
 
         ! filter parameters
@@ -73,9 +75,9 @@
         !                                   frequency kernel cross-sections)        
         ! ANALYTICAL_CORRELATION: calculates also the analytically derived timelag & 
         !                                                   kernel value
-        logical,parameter :: FILTERINITIALSOURCE    = .false. !.true. for inversions/kernels    
-        logical,parameter :: FILTERSEISMOGRAMS      = .true.         
-        logical,parameter :: BW_FIXFREQUENCY        = .true.     
+        logical,parameter :: FILTERINITIALSOURCE    = .true. !.true. for inversions/kernels
+        logical,parameter :: FILTERSEISMOGRAMS      = .false.
+        logical,parameter :: BW_FIXFREQUENCY        = .true.
         real(WP),parameter :: BW_HALFFREQUENCY     = 2.5e-3  ! default: 2.5e-3; Ekstrom: 2.27e-3
         real(WP),parameter :: BW_PERCENT           = 0.0_WP     
         logical,parameter :: BUTTERWORTHFILTER      = .false.   
@@ -91,9 +93,13 @@
 
         ! adjoint method
         ! time window of signal
-        ! WINDOW_START: for major-arcs R150: 4700.;  R200: 4400.; R250: 4100.; R300: 3800. 
-        logical,parameter:: WINDOWEDINTEGRATION      = .false. 
-        real(WP):: WINDOW_START                      = 0.0 ! in seconds 
+        ! WINDOW_START: for major-arcs R150: 4700.;  R200: 4400.; R250: 4100.; R300: 3800.
+        ! 1. orbit:         0  to   4000   for L150
+        ! 2. orbit:   4000  to   8000
+        ! 3. orbit:   8000  to  13500
+        ! 4. orbit:  13500 to  17000
+        logical,parameter:: WINDOWEDINTEGRATION      = .false.
+        real(WP):: WINDOW_START                      = 0.0 ! in seconds
         real(WP):: WINDOW_END                        = 4300.0 ! in seconds 
         
         
@@ -104,7 +110,7 @@
         !                              computation of finite-difference iteration 
         ! relaxed_grid: takes cell infos from grid files ***.relaxed.dat
         logical,parameter::PRECALCULATED_CELLS       = .true.         
-        logical:: PRESCRIBEDSOURCE                   = .false.              
+        logical:: PRESCRIBEDSOURCE                   = .true.
         logical,parameter:: RELAXED_GRID             = .false.
         logical,parameter:: CORRECT_RATIO            = .false.
 
@@ -141,7 +147,7 @@
         ! checkerboard map parameters
         ! instead of reading in a heterogeneous phase velocity map, it creates
         ! a checkerboard map with corresponding parameters
-        logical,parameter :: DO_CHECKERBOARD          = .true.
+        logical,parameter :: DO_CHECKERBOARD          = .false.
         real(WP),parameter :: MAP_PERCENT_AMPLITUDE  = 2.0    !given in percent, i.e. 5% = 5.0
         integer,parameter :: MAP_DEGREE_L            = 13 ! 9 ! 20
         integer,parameter :: MAP_DEGREE_M            = 7 ! 5 ! 10        
@@ -150,7 +156,6 @@
         integer,parameter :: SIMULATION_TIMESTEPPING = 4  ! takes every fifth timestep for output
         
         !----------------------------------------------------------------------------------------
-        ! user shouldn't need to modify the following ones
         ! PREM values
         ! radius measured in km; phase velocities measured in km/s
         ! high periods 450/600: determined with spline representation for wave period 
@@ -195,10 +200,12 @@
         real(WP), parameter :: PHASEVELOCITY_L50 = 4.49336_WP  
         real(WP), parameter :: PHASEVELOCITY_L60 = 4.53031_WP            
         real(WP), parameter :: PHASEVELOCITY_L75 = 4.57474_WP    
-        real(WP), parameter :: PHASEVELOCITY_L100= 4.64431_WP    
-        !real(WP), parameter :: PHASEVELOCITY_L150= 4.78619_WP ! TW: 4.78619
-        real(WP), parameter :: PHASEVELOCITY_L150= 4.77915_WP ! ETL: 4.77915 first arrival
-        real(WP), parameter :: PHASEVELOCITY_L200= 4.91928_WP          
+        real(WP), parameter :: PHASEVELOCITY_L100= 4.64431_WP
+        ! Trampert & Woodhouse 1995/1996
+        real(WP), parameter :: PHASEVELOCITY_L150= 4.78619_WP ! TW: 4.78619
+        ! Ekström et al. 1997
+        !real(WP), parameter :: PHASEVELOCITY_L150= 4.77915_WP ! ETL: 4.77915 first arrival
+        real(WP), parameter :: PHASEVELOCITY_L200= 4.91928_WP
         real(WP), parameter :: PHASEVELOCITY_L250= 5.07097_WP          
         real(WP), parameter :: PHASEVELOCITY_L300= 5.22906_WP    
         real(WP), parameter :: PHASEVELOCITY_L450= 5.74979_WP 
@@ -211,8 +218,10 @@
         real(WP), parameter :: WAVEPERIOD_L60    = 60.3145_WP
         real(WP), parameter :: WAVEPERIOD_L75    = 75.1095_WP
         real(WP), parameter :: WAVEPERIOD_L100   = 100.8090_WP
-        !real(WP), parameter :: WAVEPERIOD_L150   = 153.462_WP ! TW: 153.462
-        real(WP), parameter :: WAVEPERIOD_L150   = 150.9190_WP ! ETL: 150.9190
+        ! Trampert & Woodhouse 1995/1996
+        real(WP), parameter :: WAVEPERIOD_L150   = 153.462_WP ! TW: 153.462
+        ! Ekström et al. 1997
+        !real(WP), parameter :: WAVEPERIOD_L150   = 150.9190_WP ! ETL: 150.9190
         real(WP), parameter :: WAVEPERIOD_L200    = 200.0_WP
         real(WP), parameter :: WAVEPERIOD_L250    = 250.0_WP
         real(WP), parameter :: WAVEPERIOD_L300    = 300.0_WP

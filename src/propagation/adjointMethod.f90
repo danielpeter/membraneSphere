@@ -1,11 +1,10 @@
 !=====================================================================
 !
-!       m e m b r a n e S p h e r e  1 . 1
+!       m e m b r a n e S p h e r e
 !       --------------------------------------------------
 !
 !      Daniel Peter
-!      ETH Zurich - Institute of Geophysics
-!      (c) ETH July 2006
+!      (c) 2025
 !
 !      Free for non-commercial academic research ONLY.
 !      This program is distributed WITHOUT ANY WARRANTY whatsoever.

@@ -1,11 +1,10 @@
 !=====================================================================
 !
-!       m e m b r a n e S p h e r e  1 . 1
+!       m e m b r a n e S p h e r e
 !       --------------------------------------------------
 !
 !      Daniel Peter
-!      ETH Zurich - Institute of Geophysics
-!      (c) ETH July 2006
+!      (c) 2025
 !
 !      Free for non-commercial academic research ONLY.
 !      This program is distributed WITHOUT ANY WARRANTY whatsoever.
@@ -1212,8 +1211,8 @@ end module
       !  double precision,external:: drsple
       !  end function splineRepresentation
       !end interface
-      logical,parameter:: FINITE_DIFFERENCES = .false.
-      
+      logical,parameter:: FINITE_DIFFERENCES = .true.
+
       ! check
       if( length < 2 ) then
         print*,'derivative undefined!',length,timedelta
@@ -1224,8 +1223,8 @@ end module
       if( FINITE_DIFFERENCES ) then
         do i=2,length-1
           ! central differences scheme
-          seismoOut(i) = ( seismo(i+1)-seismo(i-1) )/(2*timedelta)
-        enddo        
+          seismoOut(i) = ( seismo(i+1)-seismo(i-1) )/(2.0*timedelta)
+        enddo
         seismoOut(1) = ( seismo(2)-seismo(1) )/timeDelta
         seismoOut(length) = ( seismo(length)-seismo(length-1) )/timeDelta      
         return
@@ -1257,9 +1256,10 @@ end module
         !else
           seismoOut(i) = dfridr_spline( X(i),dble(2*timedelta),err )
         !endif
-        
-        ! notifies in case of 10% error
-        if( MASTER .and. VERBOSE) then 
+
+        ! check
+        if( MASTER .and. VERBOSE) then
+          ! notifies in case of 10% error
           if( abs(seismoOut(i)) > 0.1 ) then
             if( abs(err/seismoOut(i)) > 0.1 ) then
               print*,'  derivative has big error:'
@@ -1270,6 +1270,15 @@ end module
           endif
         endif        
       enddo      
+
+      ! check
+      if( MASTER .and. VERBOSE) then
+        if( maxval(abs(seismoOut(:))) < 0.0001 ) then
+          print*,'  check time series min/max:',minval(seismoOut(:)),maxval(seismoOut(:))
+          print*,'    index range              : ',i1,i2
+          print*,'    length:',length
+        endif
+      endif
 
       ! free memory
       deallocate(X,Y,Q,F)
@@ -1326,10 +1335,19 @@ end module
         REAL(DP), DIMENSION(size(location)):: spline_func
         END FUNCTION spline_func
       end interface
-      
+      logical,parameter:: FINITE_DIFFERENCES = .true.
+
       ! initialize
       integral=0.0_WP
-      
+
+      ! simplest finite difference
+      if( FINITE_DIFFERENCES ) then
+        do i=1,length-1
+          integral = integral + (seismo1(i)*seismo2(i)+seismo1(i+1)*seismo2(i+1))/2.0*timedelta
+        enddo
+        return
+      endif
+
       ! for spline representation
       if( .not. allocated(X) ) then
         allocate(X(length),Y(length),Q(3,length),F(3,length),stat=ierror)

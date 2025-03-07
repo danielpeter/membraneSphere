@@ -8,7 +8,7 @@
 !
 !      Free for non-commercial academic research ONLY.
 !      This program is distributed WITHOUT ANY WARRANTY whatsoever.
-!      
+!
 !=====================================================================
 
 !-----------------------------------------------------------------------
@@ -26,7 +26,7 @@
 !   cellFace, numFaces        - cells
 !   cellTriangleFace, numTriangleFaces - triangles
       !use propagationStartup;use cells;use verbosity;use adjointVariables
-      use propagationStartup,only: SIMULATIONOUTPUT      
+      use propagationStartup, only: SIMULATIONOUTPUT
       use cells
       implicit none
       logical,intent(in):: VERBOSE
@@ -36,232 +36,232 @@
       character(len=14):: ending
       real(WP):: lat,lon
 
-      if( VERBOSE ) then
-        print*,'  reading grid data:'
-        print*,'    subdivisions:',subdivisions
+      if ( VERBOSE ) then
+        print *,'  reading grid data:'
+        print *,'    subdivisions:',subdivisions
       endif
-      
-      !initialize      
-      if(RELAXED_GRID) then
+
+      !initialize
+      if (RELAXED_GRID) then
         ending='.relaxed.dat'
       else
         ending='.dat'
-      endif      
+      endif
 
-      numVertices = 0      
+      numVertices = 0
       write(divString,'(i1)') subdivisions
-      
- 100  format(f16.14,2x,f16.14,2x,f16.8)       
- 101  format(f16.10,2x,f16.10,2x,f16.10)      
- 
- 
-      ! read all voronoi cell centre vertices values from file 
+
+ 100  format(f16.14,2x,f16.14,2x,f16.8)
+ 101  format(f16.10,2x,f16.10,2x,f16.10)
+
+
+      ! read all voronoi cell centre vertices values from file
       !(voronoi cell centers are equal to triangle corners)
-      fileName = '../griddata/Dtvert'//divString//ending      
-      if( VERBOSE) print*,fileName
+      fileName = '../griddata/Dtvert'//divString//ending
+      if ( VERBOSE) print *,fileName
       open(1,file=trim(fileName),status='old',iostat=ioerror)
-      if( ioerror .ne. 0) call stopProgram( 'abort - readData File1   ')
+      if ( ioerror /= 0) call stopProgram( 'abort - readData File1   ')
 
       !print *,'getting voronoi cell centre vertices from',fileName
-      numVertices=0
+      numVertices = 0
       ilocal = 0
-      do i=1, MaxVertices
+      do i = 1, MaxVertices
         read(1,*, iostat=ioerror) vertices(i,1), vertices(i,2),vertices(i,3)
-        if( ioerror .ne. 0) exit
+        if ( ioerror /= 0) exit
         numVertices = numVertices +1
         ! find locations
         !call getSphericalCoordinates(vertices(i,:),lat,lon)
-        !if( abs(lon - 90 ) < 0.4 .or. abs(lon - 270) < 0.4 ) then
+        !if ( abs(lon - 90 ) < 0.4 .or. abs(lon - 270) < 0.4 ) then
         !  ilocal = ilocal+1
-        !  print*,'vertex ',ilocal,' :',lat,lon
+        !  print *,'vertex ',ilocal,' :',lat,lon
         !endif
-      enddo     
-      if(VERBOSE)print*,'   number of vertices: ',numVertices
+      enddo
+      if (VERBOSE)print *,'   number of vertices: ',numVertices
       close(1)
       !debug
-      !print*,'vertex',1,(vertices(1,k),k=1,3)
-      
+      !print *,'vertex',1,(vertices(1,k),k=1,3)
+
       !read in the corresponding cell corners
-      fileName = '../griddata/Dvvert'//divString//ending      
-      if(VERBOSE)print*,fileName
+      fileName = '../griddata/Dvvert'//divString//ending
+      if (VERBOSE)print *,fileName
       open(2,file=trim(fileName),status='old',iostat=ioerror)
-      if( ioerror .ne. 0) call stopProgram( 'abort - readData File2   ')
+      if ( ioerror /= 0) call stopProgram( 'abort - readData File2   ')
 
       !print *,'getting voronoi cell corner vertices...'
       numCorners = 0
-      do i=1, MaxTriangles
+      do i = 1, MaxTriangles
         read(2,*,iostat=ioerror) (cellCorners(i,k),k=1,3)
-        if( ioerror .ne. 0) exit
+        if ( ioerror /= 0) exit
         numCorners = numCorners +1
-      enddo     
-      if(VERBOSE)print*,'   number of corners: ',numCorners
-      close(2)      
+      enddo
+      if (VERBOSE)print *,'   number of corners: ',numCorners
+      close(2)
       !debug
-      !print*,'vertex',1,(cellCorners(1,k),k=1,3)
-      
+      !print *,'vertex',1,(cellCorners(1,k),k=1,3)
+
       !read in the corresponding cell neighbors indices
-      fileName = '../griddata/Dnear'//divString//ending      
-      if(VERBOSE)print*,fileName
+      fileName = '../griddata/Dnear'//divString//ending
+      if (VERBOSE)print *,fileName
       open(3,file=trim(fileName),status='old',iostat=ioerror)
-      if( ioerror .ne. 0) call stopProgram( 'abort - readData File3   ')
+      if ( ioerror /= 0) call stopProgram( 'abort - readData File3   ')
 
       !print *,'getting voronoi cell neighbors...'
       numNeighbors = 0
-      do i=1, MaxVertices
+      do i = 1, MaxVertices
         read(3,*) (cellNeighbors(i,k),k=1,6)
         numNeighbors = numNeighbors +1
-      enddo     
-      if(VERBOSE)print*,'   number of neighbors: ',numNeighbors
-      close(3)            
- 
+      enddo
+      if (VERBOSE)print *,'   number of neighbors: ',numNeighbors
+      close(3)
+
       !prepare cellNeighbors info
-      do i=1, numNeighbors
-        if( cellNeighbors(i,1) .eq. cellNeighbors(i,6)) then
+      do i = 1, numNeighbors
+        if ( cellNeighbors(i,1) == cellNeighbors(i,6)) then
           cellNeighbors(i,0) = 5
         else
           cellNeighbors(i,0) = 6
         endif
       enddo
       !debug
-      !print*,'vertex',1,(cellNeighbors(1,k),k=0,6)
-      
+      !print *,'vertex',1,(cellNeighbors(1,k),k=0,6)
+
       !read in the corresponding cell face indices
-      fileName = '../griddata/Dvface'//divString//ending     
-      if(VERBOSE)print*,fileName
+      fileName = '../griddata/Dvface'//divString//ending
+      if (VERBOSE)print *,fileName
       open(4,file=trim(fileName),status='old',iostat=ioerror)
-      if( ioerror .ne. 0) call stopProgram( 'abort - readData File4   ')
+      if ( ioerror /= 0) call stopProgram( 'abort - readData File4   ')
 
       !print *,'getting voronoi cell face indices...'
       numFaces = 0
-      do i=1, MaxVertices
+      do i = 1, MaxVertices
         read(4,*) (cellFace(i,k),k=1,6)
         numFaces = numFaces +1
-      enddo     
-      if(VERBOSE)print*,'   number of faces: ',numFaces
-      close(4)                 
+      enddo
+      if (VERBOSE)print *,'   number of faces: ',numFaces
+      close(4)
 
       !prepare cellNeighbors info
-      do i=1, numFaces
-        if( cellFace(i,1) .eq. cellFace(i,6)) then
+      do i = 1, numFaces
+        if ( cellFace(i,1) == cellFace(i,6)) then
           cellFace(i,0) = 5
         else
           cellFace(i,0) = 6
         endif
       enddo
       !debug
-      !print*,'cellFace',1,(cellFace(1,k),k=0,6)
-                
+      !print *,'cellFace',1,(cellFace(1,k),k=0,6)
+
       ! allocate triangle face array
-      if( Station_Correction .or. SIMULATIONOUTPUT ) then                
+      if ( Station_Correction .or. SIMULATIONOUTPUT ) then
         !read in the corresponding triangle face indices
-        fileName = '../griddata/Dtface'//divString//ending      
-        if( VERBOSE ) print*,fileName
+        fileName = '../griddata/Dtface'//divString//ending
+        if ( VERBOSE ) print *,fileName
         open(5,file=trim(fileName),status='old', iostat=ioerror)
-        if( ioerror .ne. 0) call stopProgram( 'abort - readData Dtface file    ')
+        if ( ioerror /= 0) call stopProgram( 'abort - readData Dtface file    ')
 
         numTriangleFaces = 0
-        do i=1, MaxTriangles
-          if( numTriangleFaces .eq. MaxTriangles) call stopProgram( 'abort-readData triangles    ')
-        
+        do i = 1, MaxTriangles
+          if ( numTriangleFaces == MaxTriangles) call stopProgram( 'abort-readData triangles    ')
+
           read(5,*,iostat=ioerror) (cellTriangleFace(i,k),k=1,3)
-          if( ioerror .ne. 0) exit
+          if ( ioerror /= 0) exit
           numTriangleFaces = numTriangleFaces +1
-        enddo     
-        if(VERBOSE) print*,'   number of triangle faces: ',numTriangleFaces
-        close(5)                  
+        enddo
+        if (VERBOSE) print *,'   number of triangle faces: ',numTriangleFaces
+        close(5)
       endif
-      
+
       end subroutine
 
 
 
-!-----------------------------------------------------------------------     
+!-----------------------------------------------------------------------
       subroutine allocateMesh()
-!-----------------------------------------------------------------------   
-! allocates the arrays which hold the mesh informations  
+!-----------------------------------------------------------------------
+! allocates the arrays which hold the mesh informations
       use cells; use parallel; use verbosity
-      use propagationStartup,only: SIMULATIONOUTPUT      
+      use propagationStartup, only: SIMULATIONOUTPUT
       implicit none
       integer:: ierror
-      
+
       ! sets maximum numbers of triangles and vertices
       ! (see Tape, 2003: table 4.3, p. 40)
       MaxVertices  = 30*(4**subdivisions) + 2
-      MaxTriangles = 60*(4**subdivisions) ! ! from dedecv: 20*(4**(subdivisions+1) - 1) 
-      
-      ! allocate arrays for mesh
-      if( MASTER .and. VERBOSE ) then
-        print*,'  allocating vertices, cellNeighbors, cellFace and cellCorner arrays:'
-        print*,'    max vertices  : ',MaxVertices
-        print*,'    max triangles : ',MaxTriangles
-        print*,'    size                : ',(17*MaxVertices*sizeof(PI)+MaxTriangles*sizeof(PI))/1024./1024.,'Mb'
-      endif      
-      allocate(vertices(MaxVertices,3),cellNeighbors(MaxVertices,0:6),&
-            cellFace(MaxVertices,0:6),cellCorners(MaxTriangles,3),stat=ierror )
-      if( ierror .ne. 0 ) call stopProgram('error in allocating arrays for cell face,..')
+      MaxTriangles = 60*(4**subdivisions) ! ! from dedecv: 20*(4**(subdivisions+1) - 1)
 
-      if( Station_Correction .or. SIMULATIONOUTPUT ) then
-        if( MASTER .and. VERBOSE ) then
-          print*,'  allocating cellTriangleFace array:'
-          print*,'    size                : ',3*MaxTriangles*sizeof(PI)/1024./1024.,'Mb'
-        endif      
+      ! allocate arrays for mesh
+      if ( MASTER .and. VERBOSE ) then
+        print *,'  allocating vertices, cellNeighbors, cellFace and cellCorner arrays:'
+        print *,'    max vertices  : ',MaxVertices
+        print *,'    max triangles : ',MaxTriangles
+        print *,'    size                : ',(17*MaxVertices*sizeof(PI)+MaxTriangles*sizeof(PI))/1024./1024.,'Mb'
+      endif
+      allocate(vertices(MaxVertices,3),cellNeighbors(MaxVertices,0:6), &
+            cellFace(MaxVertices,0:6),cellCorners(MaxTriangles,3),stat=ierror )
+      if ( ierror /= 0 ) call stopProgram('error in allocating arrays for cell face,..')
+
+      if ( Station_Correction .or. SIMULATIONOUTPUT ) then
+        if ( MASTER .and. VERBOSE ) then
+          print *,'  allocating cellTriangleFace array:'
+          print *,'    size                : ',3*MaxTriangles*sizeof(PI)/1024./1024.,'Mb'
+        endif
         allocate( cellTriangleFace(MaxTriangles,3),stat=ierror)
-        if( ierror .ne. 0 ) call stopProgram('error allocating cellTriangleFace')
+        if ( ierror /= 0 ) call stopProgram('error allocating cellTriangleFace')
       endif
       end
 
 
-!-----------------------------------------------------------------------     
+!-----------------------------------------------------------------------
       subroutine allocateData()
-!-----------------------------------------------------------------------   
-! allocates the arrays which are needed for displacement informations  
+!-----------------------------------------------------------------------
+! allocates the arrays which are needed for displacement informations
       use cells; use displacements; use phaseVelocityMap
       use parallel; use verbosity
       implicit none
       integer:: ierror
 
       ! allocates displacement arrays
-      if( MASTER .and. VERBOSE ) then
-        print*,'  allocating displacement, cell and phase velocity arrays:'
-        print*,'    displacements array size :  ',3*numVertices*sizeof(PI)/1024./1024.,'Mb'
-        print*,'    cells array size          :  ',(2*numVertices*7*sizeof(PI)+numVertices*sizeof(PI))/1024./1024.,'Mb'
-        print*,'    phase velocity array size :  ',numVertices*sizeof(PI)/1024./1024.,'Mb'
+      if ( MASTER .and. VERBOSE ) then
+        print *,'  allocating displacement, cell and phase velocity arrays:'
+        print *,'    displacements array size :  ',3*numVertices*sizeof(PI)/1024./1024.,'Mb'
+        print *,'    cells array size          :  ',(2*numVertices*7*sizeof(PI)+numVertices*sizeof(PI))/1024./1024.,'Mb'
+        print *,'    phase velocity array size :  ',numVertices*sizeof(PI)/1024./1024.,'Mb'
       endif
-      allocate(displacement(numVertices),displacement_old(numVertices),&
+      allocate(displacement(numVertices),displacement_old(numVertices), &
               newdisplacement(numVertices), stat=ierror )
-      if( ierror .ne. 0 ) call stopProgram('error in allocating displacement arrays   ')
+      if ( ierror /= 0 ) call stopProgram('error in allocating displacement arrays   ')
       displacement_old(:) = 0.0_WP
       displacement(:)     = 0.0_WP
       newdisplacement(:)  = 0.0_WP
 
-      ! allocate new arrays for precalculated cell attributes  
+      ! allocate new arrays for precalculated cell attributes
       allocate( cellAreas(numVertices),cellEdgesLength(numVertices,0:6),cellCenterDistances(numVertices,0:6), &
               stat=ierror )
-      if( ierror .ne. 0 ) call stopProgram('error in allocating arrays for cell area,..   ')
+      if ( ierror /= 0 ) call stopProgram('error in allocating arrays for cell area,..   ')
       cellAreas(:)        = 0.0_WP
       cellEdgesLength(:,:)     = 0.0_WP
       cellCenterDistances(:,:) = 0.0_WP
 
-      ! allocates phase velocity 
+      ! allocates phase velocity
       allocate( phaseVelocitySquare(numVertices),stat=ierror )
-      if( ierror /= 0 ) call stopProgram('error allocating phaseVelocitySquare   ')
+      if ( ierror /= 0 ) call stopProgram('error allocating phaseVelocitySquare   ')
       phaseVelocitySquare(:)   = 0.0_WP
-      
+
       ! allocates memory for array of heikes&randall ratios (calculated by ../geometry/areas)
-      if( CORRECT_RATIO ) then
+      if ( CORRECT_RATIO ) then
         ! check
-        if( .not. PRECALCULATED_CELLS ) then
-          print*,'laplacian calculation can not take account of midpoint ratios'
+        if (.not. PRECALCULATED_CELLS ) then
+          print *,'laplacian calculation can not take account of midpoint ratios'
           call stopProgram('error correct_ratio   ')
-        endif        
-        if( MASTER .and. VERBOSE ) then
-          print*,'  allocating cellFractions array:'
-          print*,'    size: ',7*numVertices*sizeof(PI)/1024./1024.,'Mb'
+        endif
+        if ( MASTER .and. VERBOSE ) then
+          print *,'  allocating cellFractions array:'
+          print *,'    size: ',7*numVertices*sizeof(PI)/1024./1024.,'Mb'
         endif
         allocate( cellFractions(numVertices,0:6),stat=ierror)
-        if( ierror /= 0 ) call stopProgram('error allocating cellFractions')
+        if ( ierror /= 0 ) call stopProgram('error allocating cellFractions')
         ! initialize
         cellFractions(:,:) = 0.0_WP
       endif
-                        
+
       end subroutine

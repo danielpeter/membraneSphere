@@ -9,7 +9,7 @@
 !
 !      Free for non-commercial academic research ONLY.
 !      This program is distributed WITHOUT ANY WARRANTY whatsoever.
-!      
+!
 !=====================================================================
 */
 /* signal handling (easiest within c-codes)
@@ -19,7 +19,7 @@ to exit gracefully.
 here, we catch the SIGINT interrupt signal and call a fortran routine to stop the program
 
 */
-#include <signal.h> 
+#include <signal.h>
 #include <stdio.h>
 
 
@@ -46,29 +46,29 @@ here, we catch the SIGINT interrupt signal and call a fortran routine to stop th
 //#define F77_NAME(name,NAME) name##_
 
 // fortran routines which will be called when signal is caught
-//extern void finterrupt11_(); 
-//extern void exception_mp_finterrupt2_(); 
-//extern void exception_mp_finterrupt15_();  
-extern void finterrupt2(); 
-extern void finterrupt15();  
+//extern void finterrupt11_();
+//extern void exception_mp_finterrupt2_();
+//extern void exception_mp_finterrupt15_();
+extern void finterrupt2();
+extern void finterrupt15();
 
 // set new SIGINT interrupt routine
-void def_interrupt2() 
-{ 
+void def_interrupt2()
+{
   //printf("setting new interrupt handler \n");
-  sigset(2,finterrupt2); 
-} 
+  sigset(2,finterrupt2);
+}
 // SIGTERM termination
-void def_interrupt15() 
-{ 
-  sigset(15,finterrupt15); 
-} 
+void def_interrupt15()
+{
+  sigset(15,finterrupt15);
+}
 /*
 // SIGSEGV segmentation fault
-void def_interrupt11_() 
-{ 
-  sigset(11,finterrupt11_); 
-} 
+void def_interrupt11_()
+{
+  sigset(11,finterrupt11_);
+}
 */
 
 

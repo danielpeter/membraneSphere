@@ -8,30 +8,30 @@
 !
 !      Free for non-commercial academic research ONLY.
 !      This program is distributed WITHOUT ANY WARRANTY whatsoever.
-!      
+!
 !=====================================================================
 !
 ! Copyright July 2006, by the ETH Zurich.
 !
-! The software shall be used for scientific purposes only, excluding industrial or commercial 
+! The software shall be used for scientific purposes only, excluding industrial or commercial
 ! purposes.
 !
-! The software is furnished on an "as is" basis and the copyright holder in no way warrants 
-! the software or any of its results and is in no way liable for any use made of the software.  
-! The copyright holder disclaims all warranties, representations, and statements, express or 
-! implied, statutory or otherwise, including, without limitation, any implied warranties of 
-! merchantability or fitness for a particular purpose. In no event shall the copyright holder be 
-! liable for any actual, direct, indirect, special, consequential, or incidental damages, however 
-! caused, including, without limitation, any damages arising out of the use or operation of 
+! The software is furnished on an "as is" basis and the copyright holder in no way warrants
+! the software or any of its results and is in no way liable for any use made of the software.
+! The copyright holder disclaims all warranties, representations, and statements, express or
+! implied, statutory or otherwise, including, without limitation, any implied warranties of
+! merchantability or fitness for a particular purpose. In no event shall the copyright holder be
+! liable for any actual, direct, indirect, special, consequential, or incidental damages, however
+! caused, including, without limitation, any damages arising out of the use or operation of
 ! the software, loss of use of the software, or damage of any sort to the user.
 !
 ! If you use this code for your own research, please send an email
-! to Daniel Peter <dpeter@erdw.ethz.ch> for information.
+! to Daniel Peter < dpeter@erdw.ethz.ch> for information.
 !
-! Proper acknowledgement shall be made to the authors of the software in publications and 
+! Proper acknowledgement shall be made to the authors of the software in publications and
 ! presentations resulting from the use of this software:
 !
-! Peter, D., C. Tape, L. Boschi and J. H. Woodhouse, 2007. Surface wave tomography: 
+! Peter, D., C. Tape, L. Boschi and J. H. Woodhouse, 2007. Surface wave tomography:
 ! global membrane waves and adjoint methods, Geophys. J. Int., , 171: p. 1098-1117.
 !
 ! Tape, C. H., 2003. Waves on a Spherical Membrane, M.Sc. thesis, University of Oxford, U.K.
@@ -50,19 +50,19 @@
       implicit none
       integer:: m,kernel,ierror
       real(WP):: window_start_org,window_end_org
-      
+
       !-----------------------------------------------------------------------
-      ! parameters      
-      ! most parameters concerning wave propagation set in file Parameter_Input 
+      ! parameters
+      ! most parameters concerning wave propagation set in file Parameter_Input
       ! (& commonModules.f90)
       ! initialize parameters
       Adjoint_Program                 = .true.   ! we calculate kernels by adjoint method
       Set_Antipode_Time               = .true.   ! simulation time ends at reference antipode time (overrides LASTTIME )
       !-----------------------------------------------------------------------
-      ! machine memory holds for 2 GB RAM: 
-      !   level 6: numVertices=122'882, numofTimeSteps~500, 
+      ! machine memory holds for 2 GB RAM:
+      !   level 6: numVertices=122'882, numofTimeSteps~500,
       !                 double precision 8 byte -> needs ~ 500 MB per wavefield, still o.k.
-      !   level 7: numVertices=491'522, numofTimeSteps~100, 
+      !   level 7: numVertices=491'522, numofTimeSteps~100,
       !                 dp 8 byte -> needs ~ 3.8 GB ! per wavefield, too big
 
       ! initialization of parameters and arrays
@@ -70,118 +70,118 @@
 
       ! wait until all processes reached this point
       call MPI_Barrier( MPI_COMM_WORLD, ierror )
-      if( ierror .ne. 0) call stopProgram('abort - MPI_Barrier kernels failed    ') 
-                                         
+      if ( ierror /= 0) call stopProgram('abort - MPI_Barrier kernels failed    ')
+
       ! prepare for simulation
-      if( MASTER .and. VERBOSE) then
-        print*
-        print*,'running reference simulation...'
-        print*
+      if ( MASTER .and. VERBOSE) then
+        print *
+        print *,'running reference simulation...'
+        print *
       endif
 
       ! benchmark
-      if( MASTER ) benchstart = MPI_WTIME()      
+      if ( MASTER ) benchstart = MPI_WTIME()
 
       ! determine how many kernels
-      if( kernelIteration ) then
+      if ( kernelIteration ) then
         ! only for homogeneous background earth
-        if( HETEROGENEOUS ) then
-          print*,'many kernels can only be calculated for a homogeneous background earth.'
-          print*,'the receivers are fixed on the equator.'
+        if ( HETEROGENEOUS ) then
+          print *,'many kernels can only be calculated for a homogeneous background earth.'
+          print *,'the receivers are fixed on the equator.'
           call stopProgram( 'abort - adjointMethod')
         endif
-        
+
         ! determine number of kernels
-        numofKernels=int(kernelEndDistance-kernelStartDistance+1)          
-        if( numofKernels .le. 0) then
-          print*,'kernels cannot be found correctly:',kernelStartDistance,kernelEndDistance
-          call stopProgram( 'abort - adjointMethod')            
+        numofKernels=int(kernelEndDistance-kernelStartDistance+1)
+        if ( numofKernels <= 0) then
+          print *,'kernels cannot be found correctly:',kernelStartDistance,kernelEndDistance
+          call stopProgram( 'abort - adjointMethod')
         endif
-        if(MASTER .and. VERBOSE) then
-          print*
-          print*,'iteration for number of kernels:',numofKernels
-          print*,'    start/end distance :',kernelStartDistance,kernelEndDistance
-          print*
+        if (MASTER .and. VERBOSE) then
+          print *
+          print *,'iteration for number of kernels:',numofKernels
+          print *,'    start/end distance :',kernelStartDistance,kernelEndDistance
+          print *
         endif
         window_start_org = WINDOW_START
         window_end_org   = WINDOW_END
       else
-        numofKernels=1
+        numofKernels = 1
       endif
-      
+
       ! propagates membrane waves
-      do kernel=1,numofKernels
-        if( kernelIteration) then 
+      do kernel = 1,numofKernels
+        if ( kernelIteration) then
           ! resets time integration window
           WINDOW_START = window_start_org
           WINDOW_END = window_end_org
-          
-          ! sets new receiver position
-          call prepareKernel(kernel)        
-        endif
-        
-        ! do the time iteration
-        if( MASTER .and. VERBOSE) print*,'    forward simulation...'
 
-        call forwardIteration()        
+          ! sets new receiver position
+          call prepareKernel(kernel)
+        endif
+
+        ! do the time iteration
+        if ( MASTER .and. VERBOSE) print *,'    forward simulation...'
+
+        call forwardIteration()
 
         ! save seismogram at receiver
-        if( .not. kernelIteration ) call printSeismogram()
+        if (.not. kernelIteration ) call printSeismogram()
 
         ! benchmark output
-        if( MASTER .and. VERBOSE ) then
+        if ( MASTER .and. VERBOSE ) then
           benchend = MPI_WTIME()
-          print*,'    benchmark seconds:',benchend-benchstart
-          print*
+          print *,'    benchmark seconds:',benchend-benchstart
+          print *
         endif
 
         ! determine adjoint source
         call getAdjointSource()
 
         ! prepare for simulation
-        if( MASTER .and. VERBOSE ) then
-          print*
-          print*,'running adjoint simulation...'
-          print*
+        if ( MASTER .and. VERBOSE ) then
+          print *
+          print *,'running adjoint simulation...'
+          print *
         endif
-            
+
         ! do back-in-time iteration
-        call backwardIteration()      
-                      
+        call backwardIteration()
+
         ! wait until all processes reached this point
         !call MPI_Barrier( MPI_COMM_WORLD, ierror )
-        !if( ierror .ne. 0) call stopProgram('abort - MPI_Barrier iterations failed    ')
+        !if ( ierror /= 0) call stopProgram('abort - MPI_Barrier iterations failed    ')
 
         ! compute kernel
-        if( .not. ADJOINT_ONTHEFLY ) call frechetKernel()
+        if (.not. ADJOINT_ONTHEFLY ) call frechetKernel()
 
         ! wait until all processes reached this point
         !call MPI_Barrier( MPI_COMM_WORLD, ierror )
-        !if( ierror .ne. 0) call stopProgram('abort - MPI_Barrier kernels failed    ')
-        
+        !if ( ierror /= 0) call stopProgram('abort - MPI_Barrier kernels failed    ')
+
         ! output to kernel file
-        call storeAdjointKernel()      
+        call storeAdjointKernel()
 
         ! benchmark
-        if( MASTER .and. VERBOSE) then
-          benchAllEnd = MPI_WTIME()      
-          print*
-          print*,'running time: ',int((benchAllEnd-benchAllStart)/60.0),'min ',&
+        if ( MASTER .and. VERBOSE) then
+          benchAllEnd = MPI_WTIME()
+          print *
+          print *,'running time: ',int((benchAllEnd-benchAllStart)/60.0),'min ', &
                   mod((benchAllEnd-benchAllStart),60.0),'sec'
-          print*
+          print *
         endif
-        
+
       enddo !kernel
 
-      if( MASTER ) print*,'done.'
-          
+      if ( MASTER ) print *,'done.'
+
       ! wait until all processes reached this point
       call MPI_Barrier( MPI_COMM_WORLD, ierror )
-      if( ierror .ne. 0) call stopProgram('abort - final MPI_Barrier failed    ')      
-      
+      if ( ierror /= 0) call stopProgram('abort - final MPI_Barrier failed    ')
+
       ! end parallelization
       call MPI_FINALIZE(ierror)
-      if( ierror .ne. 0) call stopProgram('abort - finalize failed    ')      
-      
+      if ( ierror /= 0) call stopProgram('abort - finalize failed    ')
+
       end
-      
+

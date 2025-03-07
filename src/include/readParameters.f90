@@ -8,7 +8,7 @@
 !
 !      Free for non-commercial academic research ONLY.
 !      This program is distributed WITHOUT ANY WARRANTY whatsoever.
-!      
+!
 !=====================================================================
 
 !-----------------------------------------------------------------------
@@ -19,178 +19,178 @@
       use verbosity; use adjointVariables; use cells
       implicit none
       integer:: length,ierror,tmpInteger
-      character*32:: inputName 
+      character*32:: inputName
       character*150:: line
       character*128:: tmp
-            
+
       ! input parameter
-      inputName = 'Parameter_Input' 
+      inputName = 'Parameter_Input'
       inputName = trim(inputName)
-      !if(VERBOSE) print*,inputName   
+      !if (VERBOSE) print *,inputName
       open(1, file= inputName,status='old',iostat=ierror)
-      if( ierror .ne. 0) then
-        print*,'error opening file ',inputName
+      if ( ierror /= 0) then
+        print *,'error opening file ',inputName
         call stopProgram( 'abort - readParameters() opening input    ')
       endif
-      
-      do while( ierror .eq. 0)
+
+      do while( ierror == 0)
         read(1,'(a150)', iostat=ierror) line
-        if( ierror .ne. 0 ) exit
-        
+        if ( ierror /= 0 ) exit
+
         length = len_trim(line)
-        if( length .eq. 0 ) then
+        if ( length == 0 ) then
           continue
         else
-          if(line(1:1) .eq. " " .or. line(1:1) .eq. "!" ) then 
+          if (line(1:1) == " " .or. line(1:1) == "!" ) then
             continue
           else
             select case( line(1:5))
             case('VERBO')
               read(line(35:len_trim(line)),*) VERBOSE
-              if(VERBOSE)print*,'verbose output'         
+              if (VERBOSE)print *,'verbose output'
             case('LEVEL')
               read(line(35:len_trim(line)),*) subdivisions
-              if(VERBOSE)print*,'level',subdivisions
+              if (VERBOSE)print *,'level',subdivisions
             case('FIRST')
               read(line(35:len_trim(line)),*) FIRSTTIME
-              if(VERBOSE)print*,'firsttimestep',FIRSTTIME
+              if (VERBOSE)print *,'firsttimestep',FIRSTTIME
             case('LASTT')
               read(line(35:len_trim(line)),*) LASTTIME
-              if(VERBOSE)print*,'lasttimestep',LASTTIME
+              if (VERBOSE)print *,'lasttimestep',LASTTIME
             case('CPHAS')
               read(line(35:len_trim(line)),*) cphasetype
               cphasetype=trim(cphasetype)
               call determinePhaseRef(cphasetype,8,cphaseRef)
-              if(VERBOSE)print*,'cphase    ', cphasetype, cphaseRef
+              if (VERBOSE)print *,'cphase    ', cphasetype, cphaseRef
             case('SOURC')
               read(line(35:len_trim(line)),*) sourceLat,sourceLon
-              if(VERBOSE)print*,'source',sourceLat,sourceLon
+              if (VERBOSE)print *,'source',sourceLat,sourceLon
             case('RECEI')
               read(line(35:len_trim(line)),*) receiverLat,receiverLon
-              if(VERBOSE)print*,'receiver',receiverLat,receiverLon              
+              if (VERBOSE)print *,'receiver',receiverLat,receiverLon
             case('MANYR')
               read(line(35:len_trim(line)),*) manyReceivers
-              if(VERBOSE)print*,'many receiver stations', manyReceivers
+              if (VERBOSE)print *,'many receiver stations', manyReceivers
             case('MANYN')
               read(line(35:len_trim(line)),*) numofReceivers
-              if(VERBOSE .and. manyReceivers)print*,'    receiver stations',numofReceivers
+              if (VERBOSE .and. manyReceivers)print *,'    receiver stations',numofReceivers
             case('MANYK')
               read(line(35:len_trim(line)),*) manyKernels
-              if(VERBOSE)print*,'many kernels', manyKernels
+              if (VERBOSE)print *,'many kernels', manyKernels
             case('KRNEP')
               read(line(35:len_trim(line)),*) kernelStartDistance,kernelEndDistance
-              if(VERBOSE .and. manyKernels)print*,'    epicentral distances',kernelStartDistance,kernelEndDistance
+              if (VERBOSE .and. manyKernels)print *,'    epicentral distances',kernelStartDistance,kernelEndDistance
             case('IMPOR')
               read(line(35:len_trim(line)),*) importKernelsReceivers
-              if(VERBOSE .and. manyKernels)print*,'    importing receivers', importKernelsReceivers
+              if (VERBOSE .and. manyKernels)print *,'    importing receivers', importKernelsReceivers
             case('DELTA')
               read(line(35:len_trim(line)),*)DELTA
-              if(VERBOSE)print*,'delta', DELTA
+              if (VERBOSE)print *,'delta', DELTA
             case('MOVED')
               read(line(35:len_trim(line)),*) MOVEDELTA
-              if(VERBOSE .and. DELTA)print*,'  move delta', MOVEDELTA
+              if (VERBOSE .and. DELTA)print *,'  move delta', MOVEDELTA
             case('DRADI')
               read(line(35:len_trim(line)),*) DELTARADIUS
-              if(VERBOSE .and. DELTA)print*,'  delta radius',DELTARADIUS
+              if (VERBOSE .and. DELTA)print *,'  delta radius',DELTARADIUS
             case('DTYPE')
-              read(line(35:len_trim(line)),*) DELTAFUNCTION
-              DELTAFUNCTION=trim(DELTAFUNCTION)
-              if(VERBOSE .and. DELTA)print*,'  delta type ',DELTAFUNCTION
+              read(line(35:len_trim(line)),*) DELTAfunction
+              DELTAfunction=trim(DELTAfunction)
+              if (VERBOSE .and. DELTA)print *,'  delta type ',DELTAfunction
             case('DLOCA')
               read(line(35:len_trim(line)),*) deltaLat,deltaLon
-              if(VERBOSE .and. DELTA)print*,'  delta location',deltaLat,deltaLon
+              if (VERBOSE .and. DELTA)print *,'  delta location',deltaLat,deltaLon
             case('DPERT')
               read(line(35:len_trim(line)),*) deltaPerturbation
-              if(VERBOSE .and. DELTA)print*,'  delta perturbation',deltaPerturbation
+              if (VERBOSE .and. DELTA)print *,'  delta perturbation',deltaPerturbation
             case('DLATS')
               read(line(35:len_trim(line)),*) latitudeStart
-              if(VERBOSE .and. DELTA)print*,'  delta start latitude',latitudeStart
+              if (VERBOSE .and. DELTA)print *,'  delta start latitude',latitudeStart
             case('DLATE')
               read(line(35:len_trim(line)),*) latitudeEnd
-              if(VERBOSE .and. DELTA)print*,'  delta end latitude',latitudeEnd
+              if (VERBOSE .and. DELTA)print *,'  delta end latitude',latitudeEnd
             case('DLONE')
               read(line(35:len_trim(line)),*) longitudeEnd
-              if(VERBOSE .and. DELTA)print*,'  delta end longitude',longitudeEnd
+              if (VERBOSE .and. DELTA)print *,'  delta end longitude',longitudeEnd
             case('DINCR')
               read(line(35:len_trim(line)),*) deltaMoveIncrement
-              if(VERBOSE .and. DELTA)print*,'  delta move increment',deltaMoveIncrement              
+              if (VERBOSE .and. DELTA)print *,'  delta move increment',deltaMoveIncrement
             case('SECON')
               read(line(35:len_trim(line)),*)SECONDDELTA
-              if(VERBOSE .and. DELTA)print*,'  second delta:',SECONDDELTA
+              if (VERBOSE .and. DELTA)print *,'  second delta:',SECONDDELTA
             case('HETER')
               read(line(35:len_trim(line)),*) HETEROGENEOUS
-              if(VERBOSE)print*,'heterogeneous', HETEROGENEOUS
+              if (VERBOSE)print *,'heterogeneous', HETEROGENEOUS
             case('BLKFI')
               read(line(35:len_trim(line)),*) line
-              phaseBlockFile = trim(line)              
-              if( DO_CHECKERBOARD ) then
-                if(VERBOSE .and. HETEROGENEOUS) &
-                  print*,'   checkerboard - L',MAP_DEGREE_L,'M',MAP_DEGREE_M
+              phaseBlockFile = trim(line)
+              if ( DO_CHECKERBOARD ) then
+                if (VERBOSE .and. HETEROGENEOUS) &
+                  print *,'   checkerboard - L',MAP_DEGREE_L,'M',MAP_DEGREE_M
               else
-                if(VERBOSE .and. HETEROGENEOUS) &
-                  print*,'  phaseBlockFile used: ', phaseBlockFile(1:len_trim(phaseBlockFile))
+                if (VERBOSE .and. HETEROGENEOUS) &
+                  print *,'  phaseBlockFile used: ', phaseBlockFile(1:len_trim(phaseBlockFile))
               endif
             case('BLK/I')
               read(line(35:len_trim(line)),*) heterogeneousPixelsize
-              if( .not. DO_CHECKERBOARD ) then
-                if(phaseBlockFile(len_trim(phaseBlockFile)-2:len_trim(phaseBlockFile)) .eq. 'gsh') then
+              if (.not. DO_CHECKERBOARD ) then
+                if (phaseBlockFile(len_trim(phaseBlockFile)-2:len_trim(phaseBlockFile)) == 'gsh') then
                   gsh_maximum_expansion = heterogeneousPixelsize
                   heterogeneousPixelsize = 0
-                  if( VERBOSE .and. HETEROGENEOUS)print*,'    maximum degree expansion ',gsh_maximum_expansion              
+                  if ( VERBOSE .and. HETEROGENEOUS)print *,'    maximum degree expansion ',gsh_maximum_expansion
                 else
-                  if(VERBOSE .and. HETEROGENEOUS)print*,'  Grid pixel size ',heterogeneousPixelsize
+                  if (VERBOSE .and. HETEROGENEOUS)print *,'  Grid pixel size ',heterogeneousPixelsize
                 endif
               endif
             case('BLKVE')
               read(line(35:len_trim(line)),*) tmp
               tmp = trim(tmp)
-              call determinePhaseRef(tmp,128,phaseBlockVelocityReference)              
-              if(VERBOSE .and. HETEROGENEOUS)print*,'  phaseBlock VelocityReference',phaseBlockVelocityReference
+              call determinePhaseRef(tmp,128,phaseBlockVelocityReference)
+              if (VERBOSE .and. HETEROGENEOUS)print *,'  phaseBlock VelocityReference',phaseBlockVelocityReference
             case('INV_D')
               read(line(35:len_trim(line)),*) line
-              heterogeneousDataFile = trim(line)              
-              if(VERBOSE .and. (HetPhaseshift_Program .or. Adjoint_InversionProgram)) &
-                print*,'  Data input: ',heterogeneousDataFile(1:len_trim(heterogeneousDataFile))
+              heterogeneousDataFile = trim(line)
+              if (VERBOSE .and. (HetPhaseshift_Program .or. Adjoint_InversionProgram)) &
+                print *,'  Data input: ',heterogeneousDataFile(1:len_trim(heterogeneousDataFile))
             case('INV_O')
               read(line(35:len_trim(line)),*) line
-              heterogeneousOutput = trim(line)              
-              if(VERBOSE .and. (HetPhaseshift_Program .or. Adjoint_InversionProgram)) &
-                print*,'  Output files: ',heterogeneousOutput(1:len_trim(heterogeneousOutput))
+              heterogeneousOutput = trim(line)
+              if (VERBOSE .and. (HetPhaseshift_Program .or. Adjoint_InversionProgram)) &
+                print *,'  Output files: ',heterogeneousOutput(1:len_trim(heterogeneousOutput))
             case('INV_V')
               read(line(35:len_trim(line)),*) tmpInteger
-              if(phaseBlockFile(len_trim(phaseBlockFile)-2:len_trim(phaseBlockFile)) .ne. 'gsh') then
-                if( tmpInteger .ne. floor(heterogeneousPixelsize+0.1) ) then
-                  print*,' inversion grid size and block phase velocity map are different',&
+              if (phaseBlockFile(len_trim(phaseBlockFile)-2:len_trim(phaseBlockFile)) /= 'gsh') then
+                if ( tmpInteger /= floor(heterogeneousPixelsize+0.1) ) then
+                  print *,' inversion grid size and block phase velocity map are different', &
                           tmpInteger,floor(heterogeneousPixelsize+0.1)
                   call stopProgram('abort - readParameters ')
                 endif
               endif
               heterogeneousPixelsize = tmpInteger
-              if(VERBOSE .and. (HetPhaseshift_Program .or. Adjoint_InversionProgram)) &
-                print*,'  Inversion Grid pixel size ',heterogeneousPixelsize              
+              if (VERBOSE .and. (HetPhaseshift_Program .or. Adjoint_InversionProgram)) &
+                print *,'  Inversion Grid pixel size ',heterogeneousPixelsize
             case('SIMUL')
               read(line(35:len_trim(line)),*) SIMULATIONOUTPUT
-              if(VERBOSE)print*,'simulationoutput',SIMULATIONOUTPUT
+              if (VERBOSE)print *,'simulationoutput',SIMULATIONOUTPUT
             case('DATAD')
               read(line(35:len_trim(line)),*) tmp
               datadirectory = trim(tmp)
-              if(VERBOSE)print*,'data output directory : '//datadirectory(1:len_trim(datadirectory))
+              if (VERBOSE)print *,'data output directory : '//datadirectory(1:len_trim(datadirectory))
             case('ADJOI')
               read(line(35:len_trim(line)),*) tmp
               adjointKernelName = trim(tmp)
-              if(VERBOSE .and. Adjoint_Program) &
-                print*,'adjoint kernel name : '//adjointKernelName(1:len_trim(adjointKernelName))
+              if (VERBOSE .and. Adjoint_Program) &
+                print *,'adjoint kernel name : '//adjointKernelName(1:len_trim(adjointKernelName))
             case('PARAL')
               read(line(35:len_trim(line)),*)PARALLELSEISMO
-              if(VERBOSE)print*,'parallelize single simulation',PARALLELSEISMO              
+              if (VERBOSE)print *,'parallelize single simulation',PARALLELSEISMO
             end select
           endif
         endif
-      end do
-    
-      !if(VERBOSE) print*,'delta location(lat/lon):',deltaLat,deltaLon
+      enddo
+
+      !if (VERBOSE) print *,'delta location(lat/lon):',deltaLat,deltaLon
       close(1)
-      
+
       end
 
 
@@ -203,45 +203,45 @@
       integer,intent(in):: length
       character(len=length):: ctype
       real(WP),intent(out):: cphase
-      
+
       ! initialize
       cphase = -1.0
-      
+
       ! gets phase speed
       ctype = trim(ctype)
-      
-      ! rayleigh waves
-      if( ctype .eq. 'R35')cphase =PHASEVELOCITY_R35
-      if( ctype .eq. 'R37')cphase =PHASEVELOCITY_R37
-      if( ctype .eq. 'R40')cphase =PHASEVELOCITY_R40
-      if( ctype .eq. 'R45')cphase =PHASEVELOCITY_R45
-      if( ctype .eq. 'R50')cphase =PHASEVELOCITY_R50
-      if( ctype .eq. 'R60')cphase =PHASEVELOCITY_R60
-      if( ctype .eq. 'R75')cphase =PHASEVELOCITY_R75
-      if( ctype .eq. 'R100')cphase =PHASEVELOCITY_R100
-      if( ctype .eq. 'R150')cphase =PHASEVELOCITY_R150
-      if( ctype .eq. 'R200')cphase =PHASEVELOCITY_R200
-      if( ctype .eq. 'R250')cphase =PHASEVELOCITY_R250
-      if( ctype .eq. 'R300')cphase =PHASEVELOCITY_R300
-      
-      ! love waves
-      if( ctype .eq. 'L35')cphase =PHASEVELOCITY_L35
-      if( ctype .eq. 'L37')cphase =PHASEVELOCITY_L37
-      if( ctype .eq. 'L40')cphase =PHASEVELOCITY_L40
-      if( ctype .eq. 'L45')cphase =PHASEVELOCITY_L45
-      if( ctype .eq. 'L50')cphase =PHASEVELOCITY_L50              
-      if( ctype .eq. 'L60')cphase =PHASEVELOCITY_L60
-      if( ctype .eq. 'L75')cphase =PHASEVELOCITY_L75
-      if( ctype .eq. 'L100')cphase =PHASEVELOCITY_L100
-      if( ctype .eq. 'L150')cphase =PHASEVELOCITY_L150
-      if( ctype .eq. 'L200')cphase =PHASEVELOCITY_L200
-      if( ctype .eq. 'L250')cphase =PHASEVELOCITY_L250
-      if( ctype .eq. 'L300')cphase =PHASEVELOCITY_L300
-      if( ctype .eq. 'L450')cphase =PHASEVELOCITY_L450
-      if( ctype .eq. 'L600')cphase =PHASEVELOCITY_L600
 
-      if( cphase < 0.0 ) then
-        print*,' phase speed not recognized:',ctype
+      ! rayleigh waves
+      if ( ctype == 'R35')cphase =PHASEVELOCITY_R35
+      if ( ctype == 'R37')cphase =PHASEVELOCITY_R37
+      if ( ctype == 'R40')cphase =PHASEVELOCITY_R40
+      if ( ctype == 'R45')cphase =PHASEVELOCITY_R45
+      if ( ctype == 'R50')cphase =PHASEVELOCITY_R50
+      if ( ctype == 'R60')cphase =PHASEVELOCITY_R60
+      if ( ctype == 'R75')cphase =PHASEVELOCITY_R75
+      if ( ctype == 'R100')cphase =PHASEVELOCITY_R100
+      if ( ctype == 'R150')cphase =PHASEVELOCITY_R150
+      if ( ctype == 'R200')cphase =PHASEVELOCITY_R200
+      if ( ctype == 'R250')cphase =PHASEVELOCITY_R250
+      if ( ctype == 'R300')cphase =PHASEVELOCITY_R300
+
+      ! love waves
+      if ( ctype == 'L35')cphase =PHASEVELOCITY_L35
+      if ( ctype == 'L37')cphase =PHASEVELOCITY_L37
+      if ( ctype == 'L40')cphase =PHASEVELOCITY_L40
+      if ( ctype == 'L45')cphase =PHASEVELOCITY_L45
+      if ( ctype == 'L50')cphase =PHASEVELOCITY_L50
+      if ( ctype == 'L60')cphase =PHASEVELOCITY_L60
+      if ( ctype == 'L75')cphase =PHASEVELOCITY_L75
+      if ( ctype == 'L100')cphase =PHASEVELOCITY_L100
+      if ( ctype == 'L150')cphase =PHASEVELOCITY_L150
+      if ( ctype == 'L200')cphase =PHASEVELOCITY_L200
+      if ( ctype == 'L250')cphase =PHASEVELOCITY_L250
+      if ( ctype == 'L300')cphase =PHASEVELOCITY_L300
+      if ( ctype == 'L450')cphase =PHASEVELOCITY_L450
+      if ( ctype == 'L600')cphase =PHASEVELOCITY_L600
+
+      if ( cphase < 0.0 ) then
+        print *,' phase speed not recognized:',ctype
         call stopProgram('abort - readParameters')
       endif
 

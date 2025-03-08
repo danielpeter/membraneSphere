@@ -31,10 +31,9 @@ propagation_OBJECTS = \
 ################################################################
 
 OBJS_COMMON = \
+	$O/adjointRoutines.o \
 	$O/cellfunctions.o \
 	$O/commonModules.module.o \
-	$O/drsple.o \
-	$O/drspln.o \
 	$O/filterRoutines.o \
 	$O/forcingTerms.o \
 	$O/gridfunctions.o \
@@ -50,13 +49,13 @@ OBJS_COMMON = \
 	$O/readParameters.o \
 	$O/readPrecalculated.o \
 	$O/sphericalHarmonics.o \
+	$O/splineRoutines.o \
 	$O/syncRoutines.o \
 	$O/timelagRoutines.o \
 	$O/vectorfunctions.o \
 	$(EMPTY_MACRO)
 
 OBJS_PROPAGATION = $(OBJS_COMMON) \
-	$O/adjointRoutines.o \
 	$O/propagation.o \
 	$(EMPTY_MACRO)
 
@@ -65,12 +64,10 @@ OBJS_TIMELAG = $(OBJS_COMMON) \
 	$(EMPTY_MACRO)
 
 OBJS_ADJOINT = $(OBJS_COMMON) \
-	$O/adjointRoutines.o \
 	$O/adjointMethod.o \
 	$(EMPTY_MACRO)
 
 OBJS_HETSHIFT = $(OBJS_COMMON) \
-	$O/adjointRoutines.o \
 	$O/heterogeneousPhaseshift.o \
 	$(EMPTY_MACRO)
 
@@ -88,15 +85,27 @@ timelag: $E/timelag
 
 
 $E/propagation:$(OBJS_PROPAGATION)
+	@echo ""
+	@echo "building propagation"
+	@echo ""
 	$(F90) $(LDFLAGS) -o $@ $+
 
 $E/timelag: $(OBJS_TIMELAG)
+	@echo ""
+	@echo "building timelag"
+	@echo ""
 	$(F90) $(LDFLAGS) -o $@ $+
 
 $E/adjointMethod: $(OBJS_ADJOINT)
+	@echo ""
+	@echo "building adjointMethod"
+	@echo ""
 	$(F90) $(LDFLAGS) -o $@ $+
 
 $E/heterogeneousPhaseshift: $(OBJS_HETSHIFT)
+	@echo ""
+	@echo "building heterogeneousPhaseshift"
+	@echo ""
 	$(F90) $(LDFLAGS) -o $@ $+
 
 

@@ -14,8 +14,6 @@ include_OBJECTS = \
 	$O/analyticSolutions.o \
 	$O/cellfunctions.o \
 	$O/commonModules.module.o \
-	$O/drsple.o \
-	$O/drspln.o \
 	$O/filterRoutines.o \
 	$O/forcingTerms.o \
 	$O/gridfunctions.o \
@@ -23,6 +21,7 @@ include_OBJECTS = \
 	$O/kernelValue.o \
 	$O/numericalRecipes_correl.o \
 	$O/numericalRecipes_nr.o \
+	$O/numericalRecipes_splines.o \
 	$O/numericLaplacian.o \
 	$O/phasemapRoutines.o  \
 	$O/phaseshiftRoutines.o \
@@ -32,6 +31,7 @@ include_OBJECTS = \
 	$O/readPrecalculated.o \
 	$O/signalModule.o \
 	$O/sphericalHarmonics.o \
+	$O/splineRoutines.o \
 	$O/syncRoutines.o \
 	$O/timelagRoutines.o \
 	$O/vectorfunctions.o \
@@ -44,6 +44,12 @@ include_OBJECTS = \
 ## file compilation
 ##
 ################################################################
+
+## dependencies
+$O/numericalRecipes_correl.o: $O/numericalRecipes_nr.o
+$O/numericalRecipes_splines.o: $O/numericalRecipes_nr.o
+$O/filterRoutines.o: $O/numericalRecipes_nr.o
+$O/timelagRoutines.o: $O/numericalRecipes_nr.o
 
 #.SUFFIXES: $(SUFFIXES) .f90
 

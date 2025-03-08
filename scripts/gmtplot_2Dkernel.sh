@@ -67,6 +67,7 @@ title='travel time anomaly kernel - Love 150 s'
 #perspective=-E175/35
 ps_filename=$datafilename.ps
 pdf_filename=$datafilename.pdf
+jpg_filename=$datafilename.jpg
 
 echo
 echo "plotting to file: " $ps_filename
@@ -78,7 +79,7 @@ verbose=-V
 # ---------------------------------------------------------------------------------------------------------
 # preprocess data file
 if [ ! -s $datafilename ];then
-     echo can not find data file $datafilename
+     echo "can not find data file $datafilename"
      exit
 fi
 
@@ -97,17 +98,17 @@ fi
 # GMT
 # ---------------------------------------------------------------------------------------------------------
 
-gmtset HEADER_FONT_SIZE 14 OBLIQUE_ANOTATION 0 BASEMAP_TYPE plain
+gmt gmtset HEADER_FONT_SIZE 14 MAP_ANNOT_OBLIQUE 0 BASEMAP_TYPE plain
 
 # without interpolation
 if [ "$interpolate" = "no" ];then
 echo
 echo 'not interpolating data...'
 echo
-blockmean tmpData.dat $region -I1/1 $verbose > tmpData.med.xyz
-xyz2grd tmpData.med.xyz -Gimage.bin -I1/1 $region $verbose -N0.0  # -I0.5/0.5
-xyz2grd tmpData.dat -Gimage.bin -I1/1 $region $verbose -N0.0      # -I0.5/0.5
-grdimage image.bin $portrait $offset $Plotregion -G $projection -Bg15/g15 -T -K -V -C$colormap > $ps_filename
+gmt blockmean tmpData.dat $region -I1/1 $verbose > tmpData.med.xyz
+gmt xyz2grd tmpData.med.xyz -Gimage.bin -I1/1 $region $verbose -N0.0  # -I0.5/0.5
+gmt xyz2grd tmpData.dat -Gimage.bin -I1/1 $region $verbose -N0.0      # -I0.5/0.5
+gmt grdimage image.bin $portrait $offset $Plotregion -G $projection -Bg15/g15 -T -K -V -C$colormap > $ps_filename
 fi
 
 # with interpolation
@@ -115,20 +116,20 @@ if [ "$interpolate" = "yes" ];then
 echo
 echo 'interpolating data...'
 echo
-blockmean tmpData.dat $region -I1/1 $verbose > tmpData.med.xyz
-surface tmpData.med.xyz  $region -I1/1 -Gimage.bin -T0.25 -C0.1 -V
-grdview image.bin $perspective $zdepth -Qs -P $Plotregion $projection -K $verbose -C$colormap > $ps_filename
+gmt blockmean tmpData.dat $region -I1/1 $verbose > tmpData.med.xyz
+gmt surface tmpData.med.xyz  $region -I1/1 -Gimage.bin -T0.25 -C0.1 -V
+gmt grdview image.bin $perspective $zdepth -Qs -P $Plotregion $projection -K $verbose -C$colormap > $ps_filename
 fi
 # store griddf  in data-file
 echo "#kernel values from" $datafilename > $datafilename.xyz
 echo "#lon lat val" >> $datafilename.xyz
-grd2xyz image.bin $verbose >> $datafilename.xyz
+gmt grd2xyz image.bin $verbose >> $datafilename.xyz
 
 
 # image frame
-psscale $scalePosition $scaleAnotate -C$colormap -O $scaleoffset $portrait $verbose -K  >> $ps_filename
-pscoast $coastoffset $Plotregion $projection $portrait $perspective -W1 -Dc -A10000 -O -K >> $ps_filename
-psbasemap  $Plotregion $verbose $projection $perspective -Ba90g15/a30g15:."":WeSn -O   >> $ps_filename
+gmt psscale $scalePosition $scaleAnotate -C$colormap -O $scaleoffset $portrait $verbose -K  >> $ps_filename
+gmt pscoast $coastoffset $Plotregion $projection $portrait $perspective -W1 -Dc -A10000 -O -K >> $ps_filename
+gmt psbasemap  $Plotregion $verbose $projection $perspective -Ba90g15/a30g15:."":WeSn -O   >> $ps_filename
 
 # cross-section
 crosslon=45
@@ -163,22 +164,26 @@ gawk '{if( (substr($1,1,1)!="#") && ($1!="") && (substr($1,1,1)~"[0-9]") ) \
 
 
 echo
-echo converting image to $pdf_filename
+echo "converting image..."
 
-convert $ps_filename $pdf_filename
+# pdf
+#convert $ps_filename $pdf_filename
 #if [ -s $pdf_filename ]; then
 #  rm -f $ps_filename
 #fi
-
-echo "*******************************************************************"
-echo
-echo image plotted to file: $pdf_filename
-echo data used is in tmpData.dat
-echo grid plotted to file: $datafilename.xyz
-echo cross-section at longitude 45 to: $datafilename.45.xyz
-echo
-echo "*******************************************************************"
-
 #open $pdf_filename
+
+# jpg
+magick -density 300 $ps_filename -quality 90 $jpg_filename
+
+echo "*******************************************************************"
+echo
+echo "image plotted to file: $jpg_filename"
+echo "data used is in tmpData.dat"
+echo "grid plotted to file: $datafilename.xyz"
+echo "cross-section at longitude 45 to: $datafilename.45.xyz"
+echo
+echo "*******************************************************************"
+
 
 

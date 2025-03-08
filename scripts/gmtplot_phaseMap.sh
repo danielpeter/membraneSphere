@@ -42,6 +42,12 @@ else
   scaleAnotate=-Ba.1f1:"km/s":
 fi
 
+# check if colormap file exists in ../../scripts/ folder
+if [ -e ../../scripts/$colormap ]; then colormap=../../scripts/$colormap; fi
+if [ ! -e $colormap ]; then
+  echo ""; echo "Error: color map not found: $colormap"; echo "Please find colormaps in scripts/ folder"; echo "";
+  exit 1
+fi
 
 # file output
 datafilename=$1
@@ -54,20 +60,18 @@ title='phase velocity map'
 #
 ################################################################################
 
-gmtset HEADER_FONT_SIZE 14 OBLIQUE_ANOTATION 0 BASEMAP_TYPE plain
+gmt gmtset HEADER_FONT_SIZE 14 MAP_ANNOT_OBLIQUE 0 BASEMAP_TYPE plain
 
-#gmtset GLOBAL_X_SCALE 1. GLOBAL_Y_SCALE 1.
-#gmtset ANOT_FONT Times-Roman ANOT_FONT_SIZE 15
-#gmtset LABEL_FONT Times-Roman LABEL_FONT_SIZE 18
-#gmtset HEADER_FONT Times-Bold HEADER_FONT_SIZE 18
-#gmtset DEGREE_FORMAT 1 DOTS_PR_INCH 300 MEASURE_UNIT cm
-#gmtset BASEMAP_TYPE fancy
-
-
+#gmt gmtset GLOBAL_X_SCALE 1. GLOBAL_Y_SCALE 1.
+#gmt gmtset ANOT_FONT Times-Roman ANOT_FONT_SIZE 15
+#gmt gmtset LABEL_FONT Times-Roman LABEL_FONT_SIZE 18
+#gmt gmtset HEADER_FONT Times-Bold HEADER_FONT_SIZE 18
+#gmt gmtset DEGREE_FORMAT 1 DOTS_PR_INCH 300 MEASURE_UNIT cm
+#gmt gmtset BASEMAP_TYPE fancy
 
 # check if polygon data available
 if [ ! -s $datafilename ];then
-     echo can not find polygon data file $datafilename
+     echo "can not find polygon data file $datafilename"
      exit
 fi
 
@@ -78,10 +82,10 @@ fi
 
 if [ "$percent" = "yes" ];then
   gawk '{if((substr($1,1,1)!="#")&&($1!=""))print($1,$2,(($3-4.77915)*100/4.77915),0.05)}' $datafilename | \
-	 psxy $verbose $region $projection -K -G002/170/002 -Sc -C$colormap $offsets $portrait > $ps_filename
+	 gmt psxy $verbose $region $projection -K -G002/170/002 -Sc -C$colormap $offsets $portrait > $ps_filename
 else
   gawk '{if((substr($1,1,1)!="#")&&($1!=""))print($1,$2,$3,0.05)}' $datafilename | \
-	 psxy $verbose $region $projection -K -G002/170/002 -Sc -C$colormap $offsets $portrait > $ps_filename
+	 gmt psxy $verbose $region $projection -K -G002/170/002 -Sc -C$colormap $offsets $portrait > $ps_filename
 fi
 
 
@@ -100,23 +104,25 @@ fi
 
 # Use pscoast to plot a map with different colors for land and sea rivers(I1), political(N1)
 #  -W1/255/255/255 -S50/50/50 -N1/255/255/255 -G0/0/0
-pscoast $region $projection -Di -A1000 -W1 -O -K $verbose >> $ps_filename
+gmt pscoast $region $projection -Di -A1000 -W1 -O -K $verbose >> $ps_filename
 
 ## color scale legend -B3:"speed":
-psscale -D9/-1/4/0.5h $scaleAnotate -C$colormap -V -O -K >> $ps_filename
+gmt psscale -D9/-1/4/0.5h $scaleAnotate -C$colormap -V -O -K >> $ps_filename
 
 # Use psbasemap for basic map layout, possible title
 #     and complete the plot
 #$gmtbin/psbasemap  $region $verbose $projection \
 #	  -Ba30f10.000/a30f10.000:."$title":WeSn \
 #	  -O   >> $ps_filename
-psbasemap $projection $region  -Ba90f90  -O >> $ps_filename
+gmt psbasemap $projection $region  -Ba90f90  -O >> $ps_filename
 
 echo converting...
-convert $1.ps $1.pdf
+# jpg
+magick -density 300 $1.ps -quality 90 $1.jpg
+#rm -f $1.ps
 
 echo
-echo image plotted to: $1.pdf
+echo "image plotted to: $1.jpg"
 echo
 
 

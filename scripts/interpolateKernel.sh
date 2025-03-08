@@ -57,15 +57,15 @@ fi
 # GMT
 # ---------------------------------------------------------------------------------------------------------
 
-gmtset HEADER_FONT_SIZE 14 OBLIQUE_ANOTATION 0 BASEMAP_TYPE plain
+gmt gmtset HEADER_FONT_SIZE 14 MAP_ANNOT_OBLIQUE 0 BASEMAP_TYPE plain
 
 # gmt interpolation
-blockmean tmpData.dat $region $increment > tmpData.med.xyz
-surface tmpData.med.xyz  $region $increment -Gimage.bin -T0.25 -C0.1
+gmt blockmean tmpData.dat $region $increment > tmpData.med.xyz
+gmt surface tmpData.med.xyz  $region $increment -Gimage.bin -T0.25 -C0.1
 
 echo "#kernel values from" $datafilename > $datafilename1
 echo "#lon lat val" >> $datafilename1
-grd2xyz image.bin >> $datafilename1
+gmt grd2xyz image.bin >> $datafilename1
 
 # cross-sections
 if [ "$crosssections" = "yes" ];then
@@ -99,15 +99,15 @@ echo '#lon lat val' >> $datafilename.$crosslon.xyz
 gawk '{if( (substr($1,1,1)!="#") && ($1!="") && (substr($1,1,1)~"[0-9]") ) \
 	if( $1=='$crosslon') print($1,$2,$3); }' $datafilename1 >> $datafilename.$crosslon.xyz
 
-echo cross-section at longitude 10/20/45/70/80 to $datafilename.--.xyz
+echo "cross-section at longitude 10/20/45/70/80 to $datafilename.--.xyz"
 fi
 
 echo "************************************************************************************"
-echo grid plotted to file: $datafilename1
+echo "grid plotted to file: $datafilename1"
 linenumbers=`gawk 'END { print NR }' $datafilename1`
 echo "number of lines = $linenumbers ( 2 comment lines + 181*361 = 65343 )"
 if [ $linenumbers != 65343 ]; then
-  echo uncorrect kernel!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  echo "uncorrect kernel!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
   pause
   exit
 fi

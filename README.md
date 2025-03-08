@@ -1,7 +1,15 @@
 
 # membraneSphere
 
-This software implements the membrane waves as explained in publications:
+![membrane wave simulation](doc/membrane-wave-simulation.gif "membran wave simulation")
+
+membraneSphere is a software package to simulate waves on a spherical membrane.
+It implements the membrane wave method introduced by Tanimoto (1990).
+Membrane waves are an analogue for seismic surface waves.
+The zero-thickness sphere is discretized by a geodesic grid (Tape, 2003).
+Wave propagation on this sphere is solved by a finite-difference scheme for such hexagonal grids (Tape, 2003; Heikes & Randall, 1995a).
+
+The theory behind this software implementation of the membrane waves is explained in these publications:
 
 * Peter, D., C. Tape, L. Boschi and J. H. Woodhouse, 2007.
   *Surface wave tomography: global membrane waves and adjoint methods*,

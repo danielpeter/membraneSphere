@@ -43,8 +43,8 @@
       !print *,'phase velocity:',phasevelocity, deltaScatterer
 
       if ( phasevelocity < 0.001) then
-        print *,'phase velocity correction too small:',phasevelocity
-        print *,'vertex:',deltaScatterer
+        print *,'Error: phase velocity correction too small:',phasevelocity
+        print *,'       vertex:',deltaScatterer
         call stopProgram( 'abort - getKernelValue   ')
       endif
 
@@ -175,7 +175,7 @@
         !call choles(ataout,gstore,atdout,ytemp,xmasked,nonzero,nono)
 
       if (nono /= 0) then
-        if ( VERBOSE )print *,"cholesky factorization failed ",nono
+        if ( VERBOSE ) print *,"Error: cholesky factorization failed ",nono
         !do j=0,nonzero-1
         !istart=j*(j+1)/2+1
         !j1=j+1
@@ -247,102 +247,102 @@
       end
 
 !-----------------------------------------------------------------------
-      subroutine choles(a,g,b,y,x,n,nono)
+subroutine choles(a, g, b, y, x, n, nono)
 !-----------------------------------------------------------------------
-! single-processor Cholesky factorization
-      implicit real*4 (a-h, o-z)
-      real*4 a(1),g(1)
-      real*4 b(1),y(1),x(1)
-!
-!        a= row-wise p.d. symm. system  n*(n+1)/2
-!        g= cholesky storage
-!        b= r.h.s. vector               n
-!        y= temp. vector
-!        x= answer vector
-!        n= system dimension
-!        nono > 0 is the level at which p.d. failed
-!
-!        (a,g) and (b,y,x) may be equivalenced.
-!
-!----------------------------------------------------------
-!-----first compute cholesky decomposition
+  ! single-processor Cholesky factorization
+  !
+  ! a= row-wise p.d. symm. system  n*(n+1)/2
+  ! g= cholesky storage
+  ! b= r.h.s. vector               n
+  ! y= temp. vector
+  ! x= answer vector
+  ! n= system dimension
+  ! nono > 0 is the level at which p.d. failed
+  !
+  ! (a,g) and (b,y,x) may be equivalenced.
 
-      nono = 0
+  implicit none
 
-      if (a(1) <= 0.) then
-        nono = 1
-        return
-      endif
+  ! Arguments
+  integer, intent(in) :: n
+  integer, intent(out) :: nono
+  real, intent(in) :: a(n*(n+1)/2), b(n)
+  real, intent(out) :: g(n*(n+1)/2), y(n), x(n)
 
-      g(1)=sqrt(a(1))
-      y(1)=b(1)/g(1)
+  ! Local variables
+  integer :: i, j, k, kz, kj, jmax, kmax, jmin
+  real :: sg, gkz
 
-      do 400 i = 2,n
+  !----------------------------------------------------------
+  ! First compute cholesky decomposition
 
-        kz=(i*(i-1))/2
-        g(kz+1)=a(kz+1)/g(1)
-        sg=g(kz+1)**2
-        y(i)=b(i)-g(kz+1)*y(1)
+  nono = 0
 
-        if (i > 2) then
+  if (a(1) <= 0.0) then
+    nono = 1
+    return
+  endif
 
-          jmax = i-1
+  g(1) = sqrt(a(1))
+  y(1) = b(1) / g(1)
 
-          do 200 j = 2,jmax
+  do i = 2, n
+    kz = (i*(i-1))/2
+    g(kz+1) = a(kz+1) / g(1)
+    sg = g(kz+1)**2
+    y(i) = b(i) - g(kz+1)*y(1)
 
-            gkz=a(kz+j)
-            kj=(j*(j-1))/2
-            kmax = j-1
+    if (i > 2) then
+      jmax = i-1
 
-            do 100 k = 1,kmax
-              gkz = gkz-g(kz+k)*g(kj+k)
- 100        continue
+      do j = 2, jmax
+        gkz = a(kz+j)
+        kj = (j*(j-1))/2
+        kmax = j-1
 
-            g(kz+j)=gkz/g(kj+j)
-            y(i)=y(i)-g(kz+j)*y(j)
-            sg=sg+g(kz+j)**2
+        do k = 1, kmax
+          gkz = gkz - g(kz+k)*g(kj+k)
+        enddo
 
- 200      continue
+        g(kz+j) = gkz / g(kj+j)
+        y(i) = y(i) - g(kz+j)*y(j)
+        sg = sg + g(kz+j)**2
+      enddo
 
-        endif
+    endif
 
-        gkz=a(kz+i)-sg
+    gkz = a(kz+i) - sg
 
-        if (gkz <= 0.) then
-          nono = i
-          return
-        endif
-
-        g(kz+i)=sqrt(gkz)
-        y(i)=y(i)/g(kz+i)
-
- 400  continue
-
-      kz=(n*(n-1))/2
-      x(n)=y(n)/g(kz+n)
-      if (n <= 1) return
-
-!-----
-!     compute solution for particular rhs
-
-      do 600 k = 2,n
-
-        i = n+1-k
-        x(i)=y(i)
-        jmin = i+1
-
-        do 500 j = jmin,n
-          kj=(j*(j-1))/2
-          x(i)=x(i)-g(kj+i)*x(j)
- 500    continue
-
-        kz=(i*(i+1))/2
-        x(i)=x(i)/g(kz)
-
- 600  continue
-
+    if (gkz <= 0.0) then
+      nono = i
       return
-      end
+    endif
+
+    g(kz+i) = sqrt(gkz)
+    y(i) = y(i) / g(kz+i)
+  enddo
+
+  kz = (n*(n-1))/2
+  x(n) = y(n) / g(kz+n)
+
+  if (n <= 1) return
+
+  ! Compute solution for particular RHS
+  do k = 2, n
+    i = n+1-k
+    x(i) = y(i)
+    jmin = i+1
+
+    do j = jmin, n
+      kj = (j*(j-1))/2
+      x(i) = x(i) - g(kj+i)*x(j)
+    enddo
+
+    kz = (i*(i+1))/2
+    x(i) = x(i) / g(kz)
+  enddo
+
+end subroutine choles
 
 !-----------------------------------------------------------------------
       subroutine contribution_ata_alt(rowa,dat,ncoef,nunk,ilata,ata,atd)
@@ -377,7 +377,7 @@
       double precision:: blockdata
       character:: nameout*80,chlmax*3,chialpha*1
       real:: xlon,xlat,x,z,xincr
-      integer:: k,igrid
+      integer:: i,j,k,igrid
       parameter(lmx=80)  !maximum harmonic expansion
       real y((lmx+1)**2)
       double precision wkspc(9*(2*lmx+1))
@@ -427,8 +427,15 @@
 
       igrid = 0
       if (lmax > lmx)stop "l too big"
-      do xlat=-89.,89,xincr
-        do xlon = 0.,359.,xincr
+
+      !do xlat=-89.,89,xincr
+      !  do xlon = 0.,359.,xincr
+      ! loop with integers
+      do i = int(-89./xincr), int(89/xincr)
+        xlat = i * xincr
+        do j = int(0./xincr),int(359./xincr)
+          xlon = j * xincr
+
           ! console status display
           igrid = igrid+1
           if (mod(igrid,1000) == 0)print *,igrid," grid points done"
@@ -465,11 +472,11 @@
 !-----------------------------------------------------------------------
       use propagationStartup; use cells
       implicit none
-      character*128::filename
+      character(len=128)::filename
       integer:: ierror,i,triangleIndex,lat,lon,corners(3),lengths(3)
       real(WP):: kernelvalue,distances(3),xlat,xlon
 
-      do lat=-89,89
+      do lat = -89,89
         do lon = 0,359
           ! determine triangle
           xlat = lat
@@ -541,7 +548,7 @@
 
       ! check result
       if ( triangleIndex < 1 .or. triangleIndex > numTriangleFaces ) then
-        print *,'triangle not found',lat,lon,triangleIndex
+        print *,'Error: triangle not found',lat,lon,triangleIndex
         call stopProgram('no fitting triangle   ')
       endif
 

@@ -1,7 +1,7 @@
 
 # membraneSphere
 
-![membrane wave simulation](doc/membrane-wave-simulation.gif "membran wave simulation")
+![membrane wave simulation](doc/wave-simulation.gif "membrane wave simulation")
 
 membraneSphere is a software package to simulate waves on a spherical membrane.
 It implements the membrane wave method introduced by Tanimoto (1990).
@@ -11,13 +11,17 @@ Wave propagation on this sphere is solved by a finite-difference scheme for such
 
 The theory behind this software implementation of the membrane waves is explained in these publications:
 
-* Peter, D., C. Tape, L. Boschi and J. H. Woodhouse, 2007.
-  *Surface wave tomography: global membrane waves and adjoint methods*,
-  Geophys. J. Int., 171: p. 1098-1117.
+* *Peter, D., C. Tape, L. Boschi and J. H. Woodhouse*, 2007.<br>
+  **Surface wave tomography: global membrane waves and adjoint methods**,<br>
+  Geophys. J. Int., 171: p. 1098-1117.<br>
+  [doi:10.1111/j.1365-246X.2007.03554.x]( https://doi.org/10.1111/j.1365-246X.2007.03554.x)
 
-* Tape, C. H., 2003.
-  *Waves on a Spherical Membrane*,
-  M.Sc. thesis, University of Oxford, U.K.
+
+* *Tape, C. H.*, 2003.<br>
+  **Waves on a Spherical Membrane**,<br>
+  M.Sc. thesis, University of Oxford, U.K.<br>
+  [thesis membrane](https://sites.google.com/alaska.edu/carltape/home/research/thesis_membrane)
+
 
 ---
 

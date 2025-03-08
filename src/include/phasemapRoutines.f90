@@ -30,7 +30,7 @@
       use phaseVelocityMap; use propagationStartup; use cells; use adjointVariables
       use phaseBlockData; use verbosity
       implicit none
-      character*128:: fileName
+      character(len=128):: fileName
       logical:: given_as_percent
       integer:: i,ioerror
       integer:: lmx,lmax,lmaxuser,ialpha,ncoef
@@ -63,18 +63,22 @@
       ! read phase map
       fileName = trim(fileName)
       if ( VERBOSE) then
-        print *,'reading gsh file: '
-        print *,'  ',trim(fileName)
+        print *,'  reading gsh file: '
+        print *,'    ',trim(fileName)
         if ( given_as_percent) then
-          print *,'  values given in percentage %'
+          print *,'    values given in percentage %'
         else
-          print *,'  values given in absolute range'
+          print *,'    values given in absolute range'
         endif
       endif
 
       !open file
-      open(10,file=fileName,status='old',iostat=ioerror)
-      if ( ioerror /= 0) call stopProgram( 'abort - could not open GSHPhasemap    ')
+      open(10,file=trim(fileName),status='old',iostat=ioerror)
+      if ( ioerror /= 0) then
+        print *,'Error: could not open file ',trim(fileName)
+        print *,'       Please check if file exists...'
+        call stopProgram( 'abort - could not open GSHPhasemap    ')
+      endif
       read(10,*)lmax
 
       cmod(:)=0.0
@@ -85,8 +89,8 @@
       read(10,*)(cmod(i),i=1,ncoef)
       close(10)
       if ( VERBOSE ) then
-        print *,"  maximum l=",lmax
-        print *,"  interrupt expansion at l=",lmaxuser
+        print *,"    maximum l=",lmax
+        print *,"    interrupt expansion at l=",lmaxuser
         if ( rotate_frame ) print *,"  rotate frame to equator"
       endif
 
@@ -114,7 +118,7 @@
 
       igrid = 0
       if (lmax > lmx) then
-        print *,'l too big:',lmax,lmx
+        print *,'Error: l too big:',lmax,lmx
         call stopProgram( "l too big    ")
       endif
       !do xlat=-89.,89,xincr
@@ -191,13 +195,14 @@
       !close(20)
       !close(30)
       if ( VERBOSE ) then
-        print *,'  total points readin: ',igrid
+        print *,'    total points readin: ',igrid
         print *,'    values minimum/maximum: ',zmin,zmax
         print *,'  phase map stored as: '
         print *,'    ',datadirectory(1:len_trim(datadirectory))//'PhaseMap.percent.dat'
         ! debug
         !print *,'  debug phase maps stored as: '
         !print *,'    ',trim(nameout)
+        print *
       endif
 
       end subroutine
@@ -218,7 +223,7 @@
       use phaseBlockData
       implicit none
       integer:: i,ioerror,id
-      character*128:: fileName
+      character(len=128):: fileName
       real(WP):: phasepercent,blockdata
 
       ! read phase map
@@ -242,7 +247,7 @@
       !resize phaseBlock array
       allocate(phaseBlock(numBlocks), stat=ioerror)
       if ( ioerror /= 0) then
-        print *,'error allocating phaseBlock array'
+        print *,'Error: allocating phaseBlock array'
         call stopProgram( 'abort - readPixelPhasemap    ')
       endif
 
@@ -298,8 +303,9 @@
       integer:: inew(50000),iold(50000),inewh(50000),ioldh(50000)
       character:: filename*80,dummy*80,outpo*80,colorname*30
       integer:: irgb(100,3),rgb(3)
-      integer:: numto,numhi,k,j,kfine,ifine,kireso,kire2,ilat,ilon,icoarse,n,ifila,ico
+      integer:: numto,numhi,kfine,ifine,kireso,kire2,ilat,ilon,icoarse,ifila,ico
       integer:: isqrl,isqre,superISQRE,icoar,icoblo,iche,nprime,iof,jsqre,isqrh,ifilo
+      integer:: i,j,k,n
       real:: colat,theta,deltalon,parall,rmerid,v(100)
       real:: xlafi,xlofi,xlat,xlon,xlamin,xlamax,xlomin,xlomax
 
@@ -358,8 +364,16 @@
       !--determine iresolu,ire2,kireso,kire2
       kireso = 0
       kire2 = 0
-      do parall = rthnobo,southbo,-eq_incr
-         do rmerid = westbo,eastbo,eq_incr
+      ! old style
+      !do parall = rthnobo,southbo,-eq_incr
+      ! new style with loop over integers
+      do i = int(rthnobo/eq_incr),int(southbo/eq_incr),-1
+         parall = i * eq_incr
+         ! old style
+         !do rmerid = westbo,eastbo,eq_incr
+         ! new style with loop over integers
+         do j = int(westbo/eq_incr),int(eastbo/eq_incr)
+            rmerid = j * eq_incr
             kireso = kireso+1
             ilat = parall*100.+0.5
             ilon = rmerid*100.+0.5
@@ -404,9 +418,9 @@
 
       ! check number of pixels
       if ( nprime /= numBlocks ) then
-        print *,'pixel grid error'
-        print *,'    file blocks',numBlocks
-        print *,'    parameterization: total',nprime,' blocks'
+        print *,'Error: pixel grid error'
+        print *,'       file blocks',numBlocks
+        print *,'       parameterization: total',nprime,' blocks'
         call stopProgram('error - determineBlock')
       endif
 
@@ -593,199 +607,256 @@
 !---------------------------------------------------------------------------
 !prog rotmx2
 !xref
-      subroutine rotmx2(nmax,l,theta,d,id1,id2)
+  subroutine rotmx2(nmax, l, theta, d, id1, id2)
 !---------------------------------------------------------------------------
-      implicit double precision (a-h,o-z)
-      integer,intent(in):: nmax,l,id1,id2
-      double precision,intent(in):: theta
-      double precision,intent(inout):: d(id1,id2)
-      double precision:: big,small,dlbig,dlsml,th
-      data big,small,dlbig,dlsml/1.d25,1.d-25,25.d0,-25.d0/
-      double precision,parameter:: pi = 3.14159265358979d0
-      double precision,parameter:: EPS = 1.e-8
+! subroutine to calculate rotation matrix elements
+  implicit none
 
-      dfloat(n)=n
-      th = theta
-      if ( abs(th-pi) < EPS ) th = pi
-      if ((th > pi).or.(th < 0.0d0)) then
-        print *,'illegal arg in rotmx2:',th,pi
-        call stopProgram( 'illegal rotmx2      ')
+  ! Input/output parameters
+  integer, intent(in) :: nmax, l, id1, id2
+  real(kind=8), intent(in) :: theta
+  real(kind=8), intent(inout) :: d(id1, id2)
+
+  ! Local variables
+  integer :: im1ct, im2, im1, in1, in1ct, in2, in2ct, im2ct
+  integer :: m1, nm2, nm2p1, nit, m2, mult, i
+  integer :: isup, nm, nmp1, lp1, lm1, lp2, nrow, nmaxp1, lmn
+  real(kind=8) :: shth, chth, sth, cth, dlogf, dlogs, t1, temp, rmod
+  real(kind=8) :: csum, fac, sfac, rm1, sgn
+  real(kind=8) :: th
+
+  ! Constants
+  real(kind=8), parameter :: big = 1.0d25
+  real(kind=8), parameter :: small = 1.0d-25
+  real(kind=8), parameter :: dlbig = 25.0d0
+  real(kind=8), parameter :: dlsml = -25.0d0
+  real(kind=8), parameter :: pi = 3.14159265358979d0
+  real(kind=8), parameter :: EPS = 1.0e-8
+
+  ! Check for l = 0 case
+  if (l == 0) then
+    d(1+nmax, l+1) = 1.0d0
+    return
+  endif
+
+  ! Set up parameters based on angle
+  isup = 1
+  th = theta
+
+  if (abs(th-pi) < EPS) th = pi
+
+  if ((th > pi) .or. (th < 0.0d0)) then
+    print *, 'Error: illegal arg in rotmx2:', th, pi
+    call stopProgram('illegal rotmx2      ')
+  endif
+
+  if (th > pi/2.0d0) then
+    th = pi - th
+    isup = -1
+  endif
+
+  nm = 2*l + 1
+  nmp1 = nm + 1
+  lp1 = l + 1
+  lm1 = l - 1
+  lp2 = l + 2
+  nrow = 2*nmax + 1
+  nmaxp1 = nmax + 1
+  lmn = l - nmax
+
+  ! Special case for th = 0
+  if (th == 0.0d0) then
+    do im1ct = 1, nrow
+      im1 = im1ct + lmn
+      do im2 = lp1, nm
+        d(im1ct, im2) = 0.0d0
+        if (im1 == im2) d(im1ct, im2) = 1.0d0
+      enddo
+    enddo
+    goto 400
+  endif
+
+  ! Zero left hand side of matrix
+  d(1:nrow, 1:lp1) = 0.0d0
+
+  ! Set up parameters
+  shth = sin(0.5d0 * th)
+  chth = cos(0.5d0 * th)
+  sth = 2.0d0 * shth * chth
+  cth = 2.0d0 * chth * chth - 1.0d0
+  dlogf = log10(chth / shth)
+  dlogs = log10(shth)
+
+  ! Iterate from last column using 1.0 as starting value
+  do im1ct = 1, nrow
+    im1 = im1ct + lmn
+    m1 = im1 - lp1
+    rm1 = real(m1, kind=8)
+    nm2 = min(im1-1, nm-im1)
+    d(im1ct, nm) = 1.0d0
+
+    if (nm2 /= 0) then
+      do nit = 1, nm2
+        m2 = l - nit
+        im2 = m2 + lp1
+
+        if (m2 /= lm1) then
+          t1 = -sqrt(real((im2+1)*(l-m2-1), kind=8)) * d(im1ct, im2+2)
+        else
+          t1 = 0.0d0
+        endif
+
+        d(im1ct, im2) = t1 - (2.0d0/sth) * (cth*real(m2+1, kind=8)-rm1) * d(im1ct, im2+1)
+        d(im1ct, im2) = d(im1ct, im2) / sqrt(real(im2*(l-m2), kind=8))
+
+        temp = d(im1ct, im2)
+        rmod = abs(temp)
+
+        if (rmod >= big .and. nit /= nm2) then
+          d(im1ct, nit+1) = dlbig
+          d(im1ct, im2) = d(im1ct, im2) / big
+          d(im1ct, im2+1) = d(im1ct, im2+1) / big
+        endif
+      enddo
+    endif
+  enddo
+
+  ! Set up normalization for rightmost column
+  t1 = real(2*l, kind=8) * dlogs
+
+  if (lmn /= 0) then
+    do i = 1, lmn
+      m1 = i - l
+      t1 = dlogf + 0.5d0 * log10(real(lp1-m1, kind=8)/real(l+m1, kind=8)) + t1
+    enddo
+  endif
+
+  d(1, 1) = t1
+
+  if (nrow /= 1) then
+    do im1ct = 2, nrow
+      m1 = im1ct - nmaxp1
+      d(im1ct, 1) = dlogf + 0.5d0 * log10(real(l-m1+1, kind=8)/real(l+m1, kind=8)) + d(im1ct-1, 1)
+    enddo
+  endif
+
+  sgn = -1.0d0
+  if (mod(lmn, 2) /= 0) sgn = 1.0d0
+
+  ! Renormalize rows
+  do im1ct = 1, nrow
+    im1 = im1ct + lmn
+    sgn = -sgn
+    csum = d(im1ct, 1)
+    mult = 1
+
+    do while (abs(csum) >= dlbig)
+      mult = mult * 2
+      csum = 0.5 * csum
+    enddo
+
+    fac = 10.0d0**csum
+    sfac = small / fac
+    nm2 = min(im1-1, nm-im1)
+    nm2p1 = nm2 + 1
+
+    do im2 = 1, nm2p1
+      if ((d(im1ct, im2+1) /= 0.0d0) .and. (im2 < nm2)) then
+        csum = csum * real(mult, kind=8) + d(im1ct, im2+1)
+        mult = 1
+
+        do while (abs(csum) >= dlbig)
+          mult = mult * 2
+          csum = 0.5d0 * csum
+        enddo
+
+        fac = 10.0d0**csum
+        sfac = small / fac
       endif
 
-      if (l /= 0) goto 350
-      d(1+nmax,l+1)=1.d0
-      return
- 350   isup = 1
-      if (th <= pi/2.d0) goto 310
-      th = pi-th
-      isup=-1
- 310   nm = 2*l+1
-      nmp1 = nm+1
-      lp1 = l+1
-      lm1 = l-1
-      lp2 = l+2
-      nrow = 2*nmax+1
-      nmaxp1 = nmax+1
-      lmn = l-nmax
-      if (th /= 0.d0) goto 320
-      do 330 im1ct = 1,nrow
-      im1 = im1ct+lmn
-      do 330 im2 = lp1,nm
-      d(im1ct,im2)=0.d0
-      if (im1 == im2) d(im1ct,im2)=1.d0
- 330   continue
-      goto 400
- 320   continue
-!
-!     zero l.h.s. of matrix
-!
-      do 340 im1 = 1,nrow
-      do 340 im2 = 1,lp1
- 340   d(im1,im2)=0.d0
-!
-!        set up parameters
-!
-        shth=dsin(0.5d0*th)
-        chth=dcos(0.5d0*th)
-        sth = 2.d0*shth*chth
-        cth = 2.d0*chth*chth-1.d0
-        dlogf=dlog10(chth/shth)
-        dlogs=dlog10(shth)
-!
-!       iterate from last column using 1. as starting value
-!
-        do 10 im1ct = 1,nrow
-          im1 = im1ct+lmn
-          m1 = im1-lp1
-          rm1 = m1
-          nm2=min0(im1-1,nm-im1)
-          d(im1ct,nm)=1.d0
-          if (nm2 == 0) goto 10
-          do 20 nit = 1,nm2
-            m2 = l-nit
-            im2 = m2+lp1
-            if (m2 /= lm1) goto 70
-            t1 = 0.d0
-            goto 30
- 70         t1=-dsqrt(dfloat((im2+1)*(l-m2-1)))*d(im1ct,im2+2)
- 30         d(im1ct,im2)=t1-(2.d0/sth)*(cth*dfloat(m2+1)-rm1)*d(im1ct,im2+1)
-            d(im1ct,im2)=d(im1ct,im2)/dsqrt(dfloat(im2*(l-m2)))
-            temp=d(im1ct,im2)
-            rmod=dabs(temp)
-            if (rmod < big) goto 20
-            if (nit == nm2) goto 20
-            d(im1ct,nit+1)=dlbig
-            d(im1ct,im2)=d(im1ct,im2)/big
-            d(im1ct,im2+1)=d(im1ct,im2+1)/big
- 20       continue
- 10     continue
-!
-!        set up normalization for rightmost column
-!
-        t1=dfloat(2*l)*dlogs
-        if (lmn == 0) goto 720
-        do 710 i = 1,lmn
-          m1 = i-l
-          t1 = dlogf+0.5d0*dlog10(dfloat(lp1-m1)/dfloat(l+m1))+t1
- 710    continue
- 720    d(1,1)=t1
-        if (nrow == 1) goto 730
-        do 110 im1ct = 2,nrow
-          m1 = im1ct-nmaxp1
- 110      d(im1ct,1)=dlogf+0.5d0*dlog10(dfloat(l-m1+1)/dfloat(l+m1))+d(im1ct-1,1)
- 730      sgn=-1.d0
-          if ((lmn/2)*2 /= lmn) sgn = 1.d0
-!
-!       renormalize rows
-!
-          do 120 im1ct = 1,nrow
-            im1 = im1ct+lmn
-            sgn=-sgn
-            csum=d(im1ct,1)
-            mult = 1
- 520        if (dabs(csum) < dlbig) goto 510
-            mult = mult*2
-            csum = 0.5*csum
-            goto 520
- 510        fac = 10.d0**csum
-            sfac = small/fac
-            nm2=min0(im1-1,nm-im1)
-            nm2p1 = nm2+1
-            do 130 im2 = 1,nm2p1
-              if ((d(im1ct,im2+1) == 0.d0).or.(im2 >= nm2)) goto 250
-              csum = csum*dfloat(mult)+d(im1ct,im2+1)
-              mult = 1
- 220          if (dabs(csum) < dlbig) goto 210
-              mult = mult*2
-              csum = 0.5d0*csum
-              goto 220
- 210          fac = 10.d0**csum
-              sfac = small/fac
- 250          in2 = nmp1-im2
-              do 270 i = 1,mult
-                temp=d(im1ct,in2)
-                rmod=dabs(temp)
-                if (rmod > sfac) goto 260
-                d(im1ct,in2)=0.d0
-                goto 130
- 260            d(im1ct,in2)=d(im1ct,in2)*fac
- 270          continue
-              d(im1ct,in2)=sgn*d(im1ct,in2)
- 130        continue
- 120      continue
-!
-!       fill rest of matrix
-!
- 400      if (isup > 0) goto 410
-          sgn=-1.d0
-          if ((lmn/2)*2 /= lmn) sgn = 1.d0
-          do 420 im1ct = 1,nrow
-            sgn=-sgn
-            im1 = im1ct+lmn
-            nm2=min0(im1,nmp1-im1)
-            do 420 in2 = 1,nm2
-              im2 = nmp1-in2
- 420          d(im1ct,in2)=sgn*d(im1ct,im2)
+      in2 = nmp1 - im2
 
-      do 430 im1ct = 1,nrow
-        im1 = im1ct+lmn
-        in1 = nmp1-im1
-        in1ct = in1-lmn
-        sgn=-1.d0
-        nm2=min0(im1,in1)
-        do 440 nit = 1,nm2
-          sgn=-sgn
-          im2 = 1+nm2-nit
-          in2 = nmp1-im2
-          im2ct = im2-lmn
-          in2ct = in2-lmn
-          d(in1ct,in2)=sgn*d(im1ct,im2)
-          if (in2ct > nrow) goto 440
-          d(im2ct,im1)=d(in1ct,in2)
-          d(in2ct,in1)=d(im1ct,im2)
- 440    continue
- 430  continue
-      return
- 410  do 450 im1ct = 1,nrow
-        im1 = im1ct+lmn
-        in1 = nmp1-im1
-        in1ct = in1-lmn
-        sgn=-1.d0
-        nm2=min0(im1,in1)
-        do 460 nit = 1,nm2
-          sgn=-sgn
-          im2 = nm-nm2+nit
-          in2 = nmp1-im2
-          im2ct = im2-lmn
-          in2ct = in2-lmn
-          d(in1ct,in2)=sgn*d(im1ct,im2)
-          if (im2ct > nrow) goto 460
-          d(im2ct,im1)=d(in1ct,in2)
-          d(in2ct,in1)=d(im1ct,im2)
- 460    continue
- 450  continue
-      return
-      end
+      do i = 1, mult
+        temp = d(im1ct, in2)
+        rmod = abs(temp)
+
+        if (rmod <= sfac) then
+          d(im1ct, in2) = 0.0d0
+          exit
+        endif
+
+        d(im1ct, in2) = d(im1ct, in2) * fac
+      enddo
+
+      d(im1ct, in2) = sgn * d(im1ct, in2)
+    enddo
+  enddo
+
+  ! Fill rest of matrix
+400 continue
+  if (isup <= 0) then
+    sgn = -1.0d0
+    if (mod(lmn, 2) /= 0) sgn = 1.0d0
+
+    do im1ct = 1, nrow
+      sgn = -sgn
+      im1 = im1ct + lmn
+      nm2 = min(im1, nmp1-im1)
+
+      do in2 = 1, nm2
+        im2 = nmp1 - in2
+        d(im1ct, in2) = sgn * d(im1ct, im2)
+      enddo
+    enddo
+
+    do im1ct = 1, nrow
+      im1 = im1ct + lmn
+      in1 = nmp1 - im1
+      in1ct = in1 - lmn
+      sgn = -1.0d0
+      nm2 = min(im1, in1)
+
+      do nit = 1, nm2
+        sgn = -sgn
+        im2 = 1 + nm2 - nit
+        in2 = nmp1 - im2
+        im2ct = im2 - lmn
+        in2ct = in2 - lmn
+
+        d(in1ct, in2) = sgn * d(im1ct, im2)
+
+        if (in2ct <= nrow) then
+          d(im2ct, im1) = d(in1ct, in2)
+          d(in2ct, in1) = d(im1ct, im2)
+        endif
+      enddo
+    enddo
+  else
+    do im1ct = 1, nrow
+      im1 = im1ct + lmn
+      in1 = nmp1 - im1
+      in1ct = in1 - lmn
+      sgn = -1.0d0
+      nm2 = min(im1, in1)
+
+      do nit = 1, nm2
+        sgn = -sgn
+        im2 = nm - nm2 + nit
+        in2 = nmp1 - im2
+        im2ct = im2 - lmn
+        in2ct = in2 - lmn
+
+        d(in1ct, in2) = sgn * d(im1ct, im2)
+
+        if (im2ct <= nrow) then
+          d(im2ct, im1) = d(in1ct, in2)
+          d(in2ct, in1) = d(im1ct, im2)
+        endif
+      enddo
+    enddo
+  endif
+
+end subroutine rotmx2
 
 !-----------------------------------------------------------------------
       subroutine makeCheckerboard()

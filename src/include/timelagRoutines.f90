@@ -586,7 +586,7 @@ end module
       real(WP),dimension(sizeout), intent(out):: traceout
       integer:: i,length,ierror
       double precision:: loc
-      double precision,external:: drsple
+      double precision,external:: mydrsple
 
       ! spline arrays
       length = size1
@@ -604,14 +604,14 @@ end module
       enddo
       Q(:,:)=0.0d0
       F(:,:)=0.0d0
-      call drspln(i1,i2,X,Y,Q,F,ilength)
+      call mydrspln(i1,i2,X,Y,Q,F,ilength)
 
       ! interpolate values
       do i = 1,sizeout
          loc = (i-1)*dtb
          if ( loc <= X(size1) .and. loc >= X(1) ) then
             ! spline respresentation of trace at location loc
-            traceout(i) = drsple(i1,i2,X,Y,Q,ilength,loc)
+            traceout(i) = mydrsple(i1,i2,X,Y,Q,ilength,loc)
          else
             traceout(i)=0.0
          endif
@@ -1207,7 +1207,7 @@ end module
       !  use splinefunction, only: i1,i2,X,Y,Q
       !  implicit none
       !  double precision, INTENT(IN) :: location
-      !  double precision,external:: drsple
+      !  double precision,external:: mydrsple
       !  end function splineRepresentation
       !end interface
       logical,parameter:: FINITE_DIFFERENCES = .true.
@@ -1246,7 +1246,7 @@ end module
 
       Q(:,:)=0.0d0
       F(:,:)=0.0d0
-      call drspln(i1,i2,X,Y,Q,F,ilength)
+      call mydrspln(i1,i2,X,Y,Q,F,ilength)
 
       ! get time derivative
       do i = i1,i2
@@ -1370,7 +1370,7 @@ end module
       enddo
       Q(:,:)=0.0d0
       F(:,:)=0.0d0
-      call drspln(i1,i2,X,Y,Q,F,ilength)
+      call mydrspln(i1,i2,X,Y,Q,F,ilength)
 
       !get integral value
       integral = qsimp(spline_func, X(i1), X(i2))

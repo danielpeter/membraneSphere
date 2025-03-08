@@ -441,7 +441,7 @@ end module
       real(WP):: freq_min,freq_max,center_freq,result
       real(WP),external:: u_f2_asymptoticdisplacement
       real(WP),external:: integrand
-      double precision,external:: drsple
+      double precision,external:: mydrsple
       real(WP):: lambda,deltal,omega_k
       integer:: cpustart,cpuend,cpurate,cpumax
       real:: cputime
@@ -518,13 +518,13 @@ end module
         ! calculates spline arrays
         Q(:,:)=0.0d0
         F(:,:)=0.0d0
-        call drspln(i1,i2,X,Y,Q,F,ilength)
+        call mydrspln(i1,i2,X,Y,Q,F,ilength)
 
         ! test
         open(88,file='OUTPUT/integrals_nonintegerl.test.dat')
         write(88,*) '#format: degree_l integralvalue'
         do degreel = l_min,l_max,0.2d0
-          integralvalue = drsple(i1,i2,X,Y,Q,ilength,dble(degreel))
+          integralvalue = mydrsple(i1,i2,X,Y,Q,ilength,dble(degreel))
           write(88,*) degreel,integralvalue
         enddo
         close(88)
@@ -609,7 +609,7 @@ end module
       real(WP):: sigma2half,integralvalue,lambda,degreel,termSigma, &
                 termSpreading,termIntegral,cphaseSquare,twoPI,PIby4
       complex(WP) :: A_lplus,A_lminus,A_even,A_odd,A_l
-      double precision,external:: drsple
+      double precision,external:: mydrsple
       logical:: ODD_ORBIT
       complex(WP),parameter:: II = ( 0.0, 1.0 )
 
@@ -633,7 +633,7 @@ end module
       degreel = lambda - 0.5
 
       !get integral value with integral boundaries [0,PI]
-      integralvalue = drsple(i1,i2,X,Y,Q,ilength,dble(degreel))
+      integralvalue = mydrsple(i1,i2,X,Y,Q,ilength,dble(degreel))
       ! coefficients A
       termSigma = exp(-omegaSquare*sigma2half)
       termSpreading = sqrt( 1.0/(twoPI*lambda*sineDelta))

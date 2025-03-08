@@ -19,17 +19,17 @@
       use verbosity; use adjointVariables; use cells
       implicit none
       integer:: length,ierror,tmpInteger
-      character*32:: inputName
-      character*150:: line
-      character*128:: tmp
+      character(len=32):: inputName
+      character(len=150):: line
+      character(len=128):: tmp
 
       ! input parameter
       inputName = 'Parameter_Input'
       inputName = trim(inputName)
       !if (VERBOSE) print *,inputName
-      open(1, file= inputName,status='old',iostat=ierror)
+      open(1, file=trim(inputName),status='old',iostat=ierror)
       if ( ierror /= 0) then
-        print *,'error opening file ',inputName
+        print *,'Error: opening file ',trim(inputName)
         call stopProgram( 'abort - readParameters() opening input    ')
       endif
 
@@ -160,7 +160,7 @@
               read(line(35:len_trim(line)),*) tmpInteger
               if (phaseBlockFile(len_trim(phaseBlockFile)-2:len_trim(phaseBlockFile)) /= 'gsh') then
                 if ( tmpInteger /= floor(heterogeneousPixelsize+0.1) ) then
-                  print *,' inversion grid size and block phase velocity map are different', &
+                  print *,'Error: inversion grid size and block phase velocity map are different', &
                           tmpInteger,floor(heterogeneousPixelsize+0.1)
                   call stopProgram('abort - readParameters ')
                 endif
@@ -241,7 +241,7 @@
       if ( ctype == 'L600')cphase =PHASEVELOCITY_L600
 
       if ( cphase < 0.0 ) then
-        print *,' phase speed not recognized:',ctype
+        print *,'Error: phase speed not recognized:',ctype
         call stopProgram('abort - readParameters')
       endif
 

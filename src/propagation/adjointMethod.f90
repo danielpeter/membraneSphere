@@ -86,15 +86,15 @@
       if ( kernelIteration ) then
         ! only for homogeneous background earth
         if ( HETEROGENEOUS ) then
-          print *,'many kernels can only be calculated for a homogeneous background earth.'
-          print *,'the receivers are fixed on the equator.'
+          print *,'Error: many kernels can only be calculated for a homogeneous background earth.'
+          print *,'       the receivers are fixed on the equator.'
           call stopProgram( 'abort - adjointMethod')
         endif
 
         ! determine number of kernels
         numofKernels=int(kernelEndDistance-kernelStartDistance+1)
         if ( numofKernels <= 0) then
-          print *,'kernels cannot be found correctly:',kernelStartDistance,kernelEndDistance
+          print *,'Error: kernels cannot be found correctly:',kernelStartDistance,kernelEndDistance
           call stopProgram( 'abort - adjointMethod')
         endif
         if (MASTER .and. VERBOSE) then

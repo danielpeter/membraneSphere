@@ -71,9 +71,7 @@
 
             ! wait for reference simulation
             call MPI_Barrier( MPI_COMM_WORLD, ierror )
-            if ( ierror /= 0) then
-              call stopProgram( "abort - program phaseshift MPI_Barrier failed    ")
-            endif
+            if ( ierror /= 0) call stopProgram( "abort - program phaseshift MPI_Barrier failed    ")
 
             ! synchronize reference seismograms
             call syncReceiversRef()
@@ -107,7 +105,7 @@
       logical:: looping,available
       integer:: m,ierror
       real(WP):: timerStart,timerEnd
-      character*128:: datafile
+      character(len=128):: datafile
 
       ! print seismogram to file
       if (.not. manyReceivers ) call printSeismogram()
@@ -137,8 +135,8 @@
               inquire(file=datafile ,exist=available)
               timerEnd = MPI_WTIME()
               if ( abs(timerEnd - timerStart) > 120.0 ) then
-                print *,'  did not find reference seismogram:'//datafile
-                print *,'  time out of process',rank
+                print *,'Error: did not find reference seismogram:'//datafile
+                print *,'       time out of process',rank
                 print *,'shutting down...'
                 call stopProgram( 'abort - processSolutions()   ')
               endif
@@ -191,14 +189,12 @@
 
             ! let all processes pass to simulate scattered seismograms
             call MPI_Barrier( MPI_COMM_WORLD, ierror )
-            if ( ierror /= 0) then
-              call stopProgram( "abort - processSolutions() MPI_Barrier failed    ")
-            endif
+            if ( ierror /= 0) call stopProgram( "abort - processSolutions() MPI_Barrier failed    ")
 
             ! synchronize reference seismograms
             call syncReceiversRef()
           else
-            print *,'unknown condition, going to terminate this fuzzy program...'
+            print *,'Error: unknown condition, going to terminate this fuzzy program...'
             call stopProgram( 'abort - processSolutions()   ')
           endif
         endif !parallelseismo
@@ -217,7 +213,7 @@
       use parallel;use propagationStartup
       implicit none
       integer:: i,index,recvVertex,n, filenameBaseLength,ioerror
-      character*128:: filename,fileReference
+      character(len=128):: filename,fileReference
       real(WP):: vperturbation,phaseVelocityRef,realdeltaLat,realdeltaLon, &
                 getKernelValue,correctedLat,correctedLon
       real(WP):: recvLat,recvLon,vsource(3),vreceiver(3),vdelta(3),mat(3,3),startTime
@@ -329,9 +325,9 @@
 
           ! check if NaN
           !if ( isNaN(t_lag) ) then
-          !  print *,'time lag has NaN value!',t_lag
-          !  print *,'    receiver:',n
-          !  print *,'    startTime:',startTime
+          !  print *,'Error: time lag has NaN value!',t_lag
+          !  print *,'       receiver:',n
+          !  print *,'       startTime:',startTime
           !  call stopProgram()
           !endif
 
@@ -373,7 +369,7 @@
               real(correctedLon),real(correctedLat),kernel,kernelAnalytic, &
               recvVertex,t_lag,t_lagAnalytic,vperturbation,recvLat,recvLon
           if ( ioerror /= 0) then
-            print *,'error writing to file:',ioerror
+            print *,'Error: writing to file:',ioerror
             call stopProgram( 'abort - calculatePhaseshifts   ')
           endif
 
@@ -407,9 +403,9 @@
       use filterType; use verbosity
       use parallel;use propagationStartup
       implicit none
-      character*3:: rankstr,recstr,kernelstr
-      character*6:: latstr,lonstr
-      character*128:: filename,fileReference,ttkernelfile,ttkernelRotatedfile
+      character(len=3):: rankstr,recstr,kernelstr
+      character(len=6):: latstr,lonstr
+      character(len=128):: filename,fileReference,ttkernelfile,ttkernelRotatedfile
       integer::ioerror
 
       ! get filename for latitude/longitude
@@ -440,7 +436,7 @@
               kernelstr//'.rank'//rankstr//'.dat'
         open(100,file=ttkernelfile,position='APPEND',iostat=ioerror)
         if ( ioerror /= 0) then
-          print *,'could not open'//datadirectory(1:len_trim(datadirectory))//&
+          print *,'Error: could not open'//datadirectory(1:len_trim(datadirectory))//&
               'ttkernel'//kernelstr//'.rank'//rankstr//'.dat file'
           call stopProgram( 'abort - prepareForKernel     ')
         endif
@@ -448,7 +444,7 @@
                     'ttkernel'//kernelstr//'.rot.rank'//rankstr//'.dat'
         open(101,file=ttkernelRotatedfile,position='APPEND',iostat=ioerror)
         if ( ioerror /= 0) then
-          print *,'could not open '//datadirectory(1:len_trim(datadirectory))//&
+          print *,'Error: could not open '//datadirectory(1:len_trim(datadirectory))//&
               'ttkernel'//kernelstr//'.rot.rank'//rankstr//'.dat file'
           call stopProgram( 'abort - prepareForKernel     ')
         endif
@@ -458,7 +454,7 @@
                       rankstr//'.dat'
         open(100,file=ttkernelfile,position='APPEND',iostat=ioerror)
         if ( ioerror /= 0) then
-          print *,'could not open'//datadirectory(1:len_trim(datadirectory))//&
+          print *,'Error: could not open'//datadirectory(1:len_trim(datadirectory))//&
                   'ttkernel.rank'//rankstr//'.dat file'
           call stopProgram( 'abort - prepareForKernel     ')
         endif
@@ -466,7 +462,7 @@
                 'ttkernel.rot.rank'//rankstr//'.dat'
         open(101,file=ttkernelRotatedfile,position='APPEND',iostat=ioerror)
         if ( ioerror /= 0) then
-          print *,'could not open '//datadirectory(1:len_trim(datadirectory))//&
+          print *,'Error: could not open '//datadirectory(1:len_trim(datadirectory))//&
                 'ttkernel.rot.rank'//rankstr//'.dat file'
           call stopProgram( 'abort - prepareForKernel     ')
         endif
@@ -483,7 +479,7 @@
       use filterType; use verbosity
       use parallel;use propagationStartup
       implicit none
-      character*128:: fileReference
+      character(len=128):: fileReference
       real(WP):: startTime,distance,seismo(2,lasttimestep-firsttimestep+1)
 
       ! start time
@@ -547,8 +543,8 @@
       use parallel; use propagationStartup;use traveltime;use cells;use verbosity
       implicit none
       integer:: index,n,i,ioerror,recvVertex,length
-      character*128:: line,datafile,fileReference,kernelfile
-      character*3:: recstr,rankstr,kernelstr
+      character(len=128):: line,datafile,fileReference,kernelfile
+      character(len=3):: recstr,rankstr,kernelstr
       real(WP):: lat,lon,t_lagfromFile,t_laganalyticfromFile,vperturbation,recvlon,recvlat
       real(WP):: kernelfromFile,kernelanalyticfromFile,distance
 
@@ -575,8 +571,7 @@
             kernelfile=datadirectory(1:length)//'ttkernel.dat'
           endif
           open(100,file=kernelfile,iostat=ioerror)
-          if ( ioerror /= 0) &
-            call stopProgram('abort - collectData could not open ttkernel-file    ')
+          if ( ioerror /= 0) call stopProgram('abort - collectData could not open ttkernel-file    ')
         else
           if ( manyKernels) then
             write(kernelstr,'(i3.3)') int(kernelStartDistance+currentKernel-1)
@@ -586,8 +581,7 @@
             kernelfile=datadirectory(1:length)//'ttkernel.rot.dat'
           endif
           open(100,file=kernelfile,iostat=ioerror)
-          if ( ioerror /= 0) &
-            call stopProgram('abort - collectData could not open ttkernel-file    ')
+          if ( ioerror /= 0) call stopProgram('abort - collectData could not open ttkernel-file    ')
         endif
 
         if ( manyKernels ) then

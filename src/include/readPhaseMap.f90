@@ -24,7 +24,7 @@
       use phaseVelocityMap; use propagationStartup; use verbosity; use cells
       implicit none
       integer:: i,ioerror,id
-      character*64:: fileName
+      character(len=64):: fileName
       real(WP):: phasepercent,lat,lon
 
       ! read phase map
@@ -34,7 +34,7 @@
       !open file
       open(1, file= fileName,status='old',iostat=ioerror)
       if ( ioerror /= 0) then
-        print *,'error opening file ',fileName
+        print *,'Error: opening file ',fileName
         call stopProgram( 'abort - readPhasemap   ')
       endif
 
@@ -50,7 +50,7 @@
       close(1)
       if (VERBOSE)print *,'number of phase velocities read in: ',i-1
       if ( numVertices /= i-1 ) then
-        print *,'read entries do not match'
+        print *,'Error: read entries do not match'
         call stopProgram( 'abort - readPhaseMap   ')
       endif
 
@@ -65,13 +65,13 @@
 ! returns: phaseMap array filled up
       use cells
       implicit none
-      character*64:: fileName
-      character*1:: divString
+      character(len=64):: fileName
+      character(len=1):: divString
 
       ! parameters
       write(divString,'(i1)') subdivisions  ! grid level
       !filename of phase velocity map (values in absolute km/s)
-      fileName = '../phasedata/phase.'//divString//'.L150.dat'
+      fileName = 'data/phasedata/phase.'//divString//'.L150.dat'
 
       ! read phase map
       call readPhaseVelocityMap(fileName)

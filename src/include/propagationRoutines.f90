@@ -448,9 +448,9 @@
       use parallel;use griddomain;use propagationStartup; use verbosity
       implicit none
       integer:: i,n,domain,strlength,length,ierror
-      character*6:: latstr,lonstr
-      character*3:: recstr
-      character*128:: filename
+      character(len=6):: latstr,lonstr
+      character(len=3):: recstr
+      character(len=128):: filename
       real(WP):: reclat,reclon
       integer,external:: getDomain
 
@@ -466,6 +466,9 @@
       else
         filename = datadirectory(1:strlength)//'seismo.'//cphasetype(1:4)//'.withoutDelta.dat'
       endif
+
+      ! output
+      if ( MASTER .and. VERBOSE) print *,'seismogram output:'
 
       ! just to remove unneccessary spaces
       filename=trim(filename)
@@ -577,7 +580,7 @@
       integer,intent(in):: timestep,index
       real(WP),intent(in):: time
       integer:: n,k
-      character*5:: timestr
+      character(len=5):: timestr
       real(WP):: lat,lon
       logical,parameter:: FORMAT_VTK         = .true.  ! outputs as vtk file
       real,parameter:: SIMULATION_STARTTIME = -50.0
@@ -609,13 +612,13 @@
           write(10,'(a5)')  "ASCII"
           write(10,'(a16)') "DATASET POLYDATA"
           !write(10,'(a25)') "DATASET UNSTRUCTURED_GRID"
-          write(10,'(a6,i,1x,a5)') "POINTS",numVertices,"float"
+          write(10,'(a6,i18,1x,a5)') "POINTS",numVertices,"float"
           do n = 1,numVertices
             write(10,'(3(f16.8))') (vertices(n,k),k=1,3)
           enddo
           write(10,*) ""
 
-          write(10,'(a8,i,i)') "POLYGONS",numTriangleFaces,numTriangleFaces*4
+          write(10,'(a8,i18,i18)') "POLYGONS",numTriangleFaces,numTriangleFaces*4
           !write(10,'(a5,i,i)') "CELLS",numTriangleFaces,numTriangleFaces*4
           ! VTK starts indexing at 0
           ! (by that we have to shift the arrays by -1)
@@ -628,7 +631,7 @@
           !write(10,*) (5,k=1,numTriangleFaces)
           !write(10,*)
 
-          write(10,'(a10,i)') "POINT_DATA",numVertices
+          write(10,'(a10,i18)') "POINT_DATA",numVertices
           write(10,'(a26)') "SCALARS displacement float"
           write(10,'(a20)') "LOOKUP_TABLE default"
           do n = 1,numVertices

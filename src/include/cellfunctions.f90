@@ -40,7 +40,7 @@
 
       !check index
       if ( cellFace(vertex,0) > 6 .or. cellFace(vertex,0) < 5) then
-        print *,'vertex',vertex,'faces',cellFace(vertex,0)
+        print *,'Error: vertex',vertex,'faces',cellFace(vertex,0)
         call stopProgram( 'abort-cellArea cellFace    ')
       endif
 
@@ -107,7 +107,7 @@
 
       !check index
       if ( cellNeighbors(vertex,0) > 6 .or. cellNeighbors(vertex,0) < 5) then
-        print *,'vertex',vertex
+        print *,'Error: vertex',vertex
         call stopProgram( 'abort-cellDistances cellNeighbors    ')
       endif
 
@@ -149,7 +149,7 @@
 
       !check index
       if ( cellFace(vertex,0) > 6 .or. cellFace(vertex,0) < 5) then
-        print *,'vertex',vertex,'faces',cellFace(vertex,0)
+        print *,'Error: vertex',vertex,'faces',cellFace(vertex,0)
         call stopProgram( 'abort-cellEdgesLength cellFace   ')
       endif
 
@@ -212,7 +212,7 @@
 
       !check index
       if ( cellFace(vertex,0) > 6 .or. cellFace(vertex,0) < 5) then
-        print *,'vertex',vertex,'faces',cellFace(vertex,0)
+        print *,'Error: vertex',vertex,'faces',cellFace(vertex,0)
         call stopProgram( 'abort-cellArea cellFace    ')
       endif
 
@@ -259,7 +259,7 @@
         if ( timestep < 0 ) then
           charstep=""
         else
-          write(charstep,'(i)') timestep
+          write(charstep,*) timestep
         endif
 
         !for print out of cells for gnuplot
@@ -363,7 +363,7 @@
         ! output to cellCenterDistances
         if ( statfile_output ) write(14,'(7f18.12)') (centerDistances(k),k=0,6)
 
-        do k = 1, centerDistances(0)
+        do k = 1, int(centerDistances(0))
           !debug
           !print *,'distance one',centerDistances(k)
           if ( centerDistances(k) > distMax) then
@@ -385,7 +385,7 @@
         ! output to cellEdgesLength
         if ( statfile_output ) write(13,'(7f18.12)') (edgesLength(k),k=0,6)
 
-        do k = 1, edgesLength(0)
+        do k = 1, int(edgesLength(0))
           if ( edgesLength(k) > edgeMax) then
             edgeMax = edgesLength(k)
             edgeMaxIndex = n
@@ -407,7 +407,7 @@
         ! output to cellFractions.dat
         if ( statfile_output ) write(15,'(f18.12,6e18.8)') (fractions(k),k=0,6)
 
-        do k = 1, fractions(0)
+        do k = 1, int(fractions(0))
           ! global function (see Miura, 2005: eq (7), p. 2822)
           fractionR = fractionR + fractions(k)**4
 
@@ -498,7 +498,7 @@
 
       !set how many neighbors
       fractions(:) = 0.0
-      fractions(0)=cellNeighbors(vertex,0)
+      fractions(0) = cellNeighbors(vertex,0)
 
       !write(21,*) '\n\n#',vertex
       !write(22,*) '\n\n#',vertex
@@ -537,7 +537,7 @@
 
         !fraction
         fraction = distance/edgeLength
-        fractions(n)=fraction
+        fractions(n) = fraction
 
         !debug
         !print *,n,' fraction:',fraction

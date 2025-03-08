@@ -144,9 +144,9 @@
 
       ! check
       if (m < 0 .or. m > l .or. abs(x) > 1.0) then
-        print *,'associatedLegendre error:'
-        print *,'  l / m :',l,m
-        print *,'  input x:',x
+        print *,'Error: associatedLegendre error:'
+        print *,'       l / m :',l,m
+        print *,'       input x:',x
         call stopProgram('abort -associatedLegendre   ')
       endif
 
@@ -286,7 +286,16 @@
           pLegendre = pmmp1
         else
           !Compute P_m l , l >m+1.
-          do ll = m+2.0d0,l,0.2d0
+
+          ! example: m == 2, l == 5
+          ! old Fortran:
+          ! -> loop from ll==4.0, 4.2, .., 5.0
+          !do ll = m+2.0d0,l,0.2d0
+          ! new Fortran: uses integer loop variables, otherwise gives a warning
+          ! -> loop from i = (m+2)/0.2==20, 21, .., (l/0.2)==25
+          !              and ll = 20*0.2==4, 21*0.2==4.2,.., 25*0.2==5.0
+          do i = int((m+2.d0)/0.2d0), int(l/0.2d0)
+            ll = i * 0.2d0
             pll=(x*(ll+ll-1.0d0)*pmmp1-(ll+m-1.0d0)*pmm)/(ll-m)
             pmm = pmmp1
             pmmp1 = pll

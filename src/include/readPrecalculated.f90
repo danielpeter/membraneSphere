@@ -34,7 +34,7 @@
 ! 100  format(f16.14,2x,f16.14,2x,f16.8)
 
       ! read cellArea
-      open(1,file='../griddata/cellAreas.'//divString//trim(ending),status='old',iostat=ioerror)
+      open(1,file='data/griddata/cellAreas.'//divString//trim(ending),status='old',iostat=ioerror)
       if ( ioerror /= 0) call stopProgram( 'abort - readPrecalculated cellAreas    ')
 
       do i = 1, numVertices
@@ -47,7 +47,7 @@
       close(1)
 
       ! read cellEdgesLength
-      open(1,file='../griddata/cellEdgesLength.'//divString//trim(ending),status='old',iostat=ioerror)
+      open(1,file='data/griddata/cellEdgesLength.'//divString//trim(ending),status='old',iostat=ioerror)
       if ( ioerror /= 0) call stopProgram( 'abort - readPrecalculated cellEdgesLength   ')
 
       do i = 1, numVertices
@@ -60,7 +60,7 @@
       close(1)
 
       ! read cellCenterDistances
-      open(1,file='../griddata/cellCenterDistances.'//divString//trim(ending),status='old',iostat=ioerror)
+      open(1,file='data/griddata/cellCenterDistances.'//divString//trim(ending),status='old',iostat=ioerror)
       if ( ioerror /= 0) call stopProgram( 'abort - readPrecalculated cellEdgesLength   ')
 
       do i = 1, numVertices
@@ -74,7 +74,7 @@
 
       ! get heikes&randall ratios for each hexagonal cell edge
       if ( CORRECT_RATIO ) then
-        open(1,file='../griddata/cellFractions.'//divString//trim(ending),status='old',iostat=ioerror)
+        open(1,file='data/griddata/cellFractions.'//divString//trim(ending),status='old',iostat=ioerror)
         if ( ioerror /= 0) call stopProgram( 'abort - readPrecalculated cellFractions   ')
 
         do i = 1, numVertices

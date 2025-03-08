@@ -39,11 +39,11 @@
       do i = 1, cellNeighbors(vertex,0)
         !factor for own displacement
         if (abs(centerDistances(i)*area) < 1.0e-9) then
-          print *,'invalid size in calculation for laplacian'
-          print *,'  vertex:',vertex
-          print *,'  neighbor:',i
-          print *,'  centerDistance:',centerDistances(i)
-          print *,'  area:',area
+          print *,'Error: invalid size in calculation for laplacian'
+          print *,'       vertex:',vertex
+          print *,'       neighbor:',i
+          print *,'       centerDistance:',centerDistances(i)
+          print *,'       area:',area
           call stopProgram( 'discreteLaplacian - centerDistance too small   ')
         endif
 

@@ -51,8 +51,8 @@
       double precision:: forceTerm2Source, initialShapeTerm
       double precision:: area,cphaseDefault,vectorV(3),lat,lon
       integer::         n,k,i,timestep,vertex,index,ierror
-      character*1::     rankstr, dstr
-      character*4::     timestr
+      character(len=1)::     rankstr, dstr
+      character(len=4)::     timestr
       logical:: looping
       external:: initialShapeTerm,discreteLaplacian,precalc_discreteLaplacian
 
@@ -64,7 +64,6 @@
 
       !print *,'Welcome to membrane waves on a spherical shell'
       !print *,'----------------------------------------------'
-      !print *,'           infos: dpeter@erdw.ethz.ch         '
       !print *
 
       ! initialization of parameters and arrays
@@ -99,6 +98,7 @@
         enddo
       endif
 
+      if ( MASTER .and. VERBOSE ) print *,'starting time loop...'
 
       ! loop for each delta location
       looping = .true.
@@ -106,13 +106,13 @@
         ! benchmark
         if ( MASTER ) benchstart = MPI_WTIME()
 
-        !forward simulation of membrane waves
+        ! forward simulation of membrane waves
         call forwardIteration()
 
         ! print seismogram to file
         call printSeismogram()
 
-        !move delta location
+        ! move delta location
         if ( DELTA ) then
           if ( PARALLELSEISMO ) then
             call parallelFindnextLocation(looping)
@@ -121,7 +121,7 @@
           endif
         endif
 
-        !stop looping
+        ! stop looping
         if (.not. MOVEDELTA .or. .not. DELTA ) looping = .false.
 
         ! precalculate the phase velocities for all grid points (delta position may have changed)

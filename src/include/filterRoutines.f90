@@ -146,7 +146,7 @@
 
       ! check if filter frequency is correct
       if ( centerfrequencyIndex < 1 .or. centerfrequencyIndex > xcorrlength/2 ) then
-        print *,'filter is incorrect...',centerfrequencyIndex,xcorrlength
+        print *,'Error: filter is incorrect:',centerfrequencyIndex,xcorrlength
         call stopProgram('abort filterSeismogram() - incorrect centerfrequencyIndex    ')
       endif
 

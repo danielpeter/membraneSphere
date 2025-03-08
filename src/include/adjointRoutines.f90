@@ -25,7 +25,7 @@
       use cells; use verbosity
       implicit none
       integer:: kernelIncrement
-      character*3::kernelstr
+      character(len=3)::kernelstr
       real(WP):: lat,lon,distance
 
       ! append kernel number to name of adjoint kernel file
@@ -140,7 +140,7 @@
         ! console output
         if ( MASTER .and. VERBOSE) then
           print *
-          print *,'not available RAM memory size:', memory/1024./1024.,'Mb'
+          print *,'Error: adjoint arrays - not available RAM memory size:', memory/1024./1024.,'Mb'
           print *
           print *,'adjoint wavefields would be stored as data-files:'
           print *,'    - slower performance expected'
@@ -189,8 +189,8 @@
       implicit none
       integer,intent(in):: timestep,index
       integer::vertex,n,ierror
-      character*8:: timestepstr
-      character*3:: rankstr
+      character(len=8):: timestepstr
+      character(len=3):: rankstr
 
       if ( storeAsFile ) then
         ! collect displacements
@@ -252,8 +252,8 @@
       implicit none
       integer,intent(in):: timestep,index
       integer::vertex,n,ierror
-      character*8:: timestepstr
-      character*3:: rankstr
+      character(len=8):: timestepstr
+      character(len=3):: rankstr
 
       if ( storeAsFile ) then
         ! output to file for each process
@@ -410,7 +410,7 @@
 
       ! check for division by zero
       if ( abs(normFactor) < 1e-6 ) then
-        if ( MASTER ) print *,'norm:',normFactor,' index:',window_startindex,window_endindex
+        if ( MASTER ) print *,'Error: norm:',normFactor,' index:',window_startindex,window_endindex
         call stopProgram('normalization factor zero   ')
       endif
 
@@ -1000,7 +1000,7 @@
       implicit none
       real(WP):: lat,lon,sum_kern
       integer:: i,ierror
-      character*128:: kernelfile
+      character(len=128):: kernelfile
 
       ! console output
       if ( MASTER .and. VERBOSE) print *,'  writing values to kernel file...'
@@ -1022,7 +1022,7 @@
         endif
         open(10,file=kernelfile,iostat=ierror)
         if ( ierror /= 0) then
-          print *,'could not open '//kernelfile
+          print *,'Error: could not open '//kernelfile
           call stopProgram( 'abort - storeAdjointKernel    ')
         endif
 
@@ -1059,8 +1059,8 @@
 ! get forward seismogram for at given vertex location from the wavefield storage-files
       use propagationStartup; use parallel
       real(WP),intent(OUT)::seismo(numofTimeSteps)
-      character*8:: timestepstr
-      character*3:: rankstr
+      character(len=8):: timestepstr
+      character(len=3):: rankstr
       integer:: i,timestep,index,ierror
 
       ! input
@@ -1079,7 +1079,7 @@
         !if (rank == 1) print *,'    read timestep:',i,timestep
         read(10,rec=index,iostat=ierror) seismo(i)
         if ( ierror /= 0 ) then
-          print *,'read error:',timestep,index,ierror
+          print *,'Error: read error:',timestep,index,ierror
           call stopProgram('could not read input from file wavefield_'//&
                   timestepstr//'.rank'//rankstr//'.dat ...    ')
         endif
@@ -1096,8 +1096,8 @@
 ! set forward seismogram for at given vertex location to the wavefield storage-files
       use propagationStartup; use parallel
       real(WP),intent(IN)::seismo(numofTimeSteps)
-      character*8:: timestepstr
-      character*3:: rankstr
+      character(len=8):: timestepstr
+      character(len=3):: rankstr
       integer:: i,timestep,index,ierror
 
       ! output
@@ -1114,7 +1114,7 @@
         ! fill in displacements
         write(10,rec=index,iostat=ierror) seismo(i)
         if ( ierror /= 0 ) then
-          print *,'write error:',timestep,index,ierror
+          print *,'Error: write error:',timestep,index,ierror
           call stopProgram('could not write input from file wavefield_'//&
               timestepstr//'.rank'//rankstr//'.dat ...    ')
         endif
@@ -1130,8 +1130,8 @@
 ! get adjoint seismogram for at given vertex location from the wavefield storage-files
       use propagationStartup; use parallel
       real(WP),intent(OUT)::seismo(numofTimeSteps)
-      character*8:: timestepstr
-      character*3:: rankstr
+      character(len=8):: timestepstr
+      character(len=3):: rankstr
       integer:: i,timestep,index,ierror
 
       ! input
@@ -1147,7 +1147,7 @@
         ! fill in displacements
         read(10,rec=index,iostat=ierror) seismo(i)
         if ( ierror /= 0 ) then
-          print *,'read error:',timestep,index,ierror
+          print *,'Error: read error:',timestep,index,ierror
           call stopProgram('could not read input from file wavefieldAdj_'//&
               timestepstr//'.rank'//rankstr//'.dat ...    ')
         endif
@@ -1164,8 +1164,8 @@
 !-----------------------------------------------------------------------
 ! delete wavefield files
       use propagationStartup; use adjointVariables; use parallel
-      character*8:: timestepstr
-      character*3:: rankstr
+      character(len=8):: timestepstr
+      character(len=3):: rankstr
       integer:: timestep,ierror
 
       ! get rid of files
@@ -1211,7 +1211,7 @@
       ! check
       if ( abs(sum_kern) > EPS ) then
         print *
-        print *,'kernel integral over sphere:',sum_kern
+        print *,'Error: kernel integral over sphere:',sum_kern
         call stopProgram('kernel integral error ')
       endif
 
@@ -1320,10 +1320,10 @@
       ! checks window
       range = startindex - endindex + 1
       if ( range < 1 ) then
-          print *,'no window for windowed integration : ',rank
-          print *,'window start/end                   : ',WINDOW_START,WINDOW_END
-          print *,'adjoint indices start/end             : ',startindex,endindex
-          print *,'number of timesteps                : ',numofTimeSteps
+          print *,'Error: no window for windowed integration : ',rank
+          print *,'       window start/end                   : ',WINDOW_START,WINDOW_END
+          print *,'       adjoint indices start/end             : ',startindex,endindex
+          print *,'       number of timesteps                : ',numofTimeSteps
           call stopProgram('error - crosscorrelation window')
       endif
 
@@ -1356,7 +1356,7 @@
       implicit none
       integer,intent(in):: timestep
       real(WP),intent(in):: time
-      character*4:: timestr
+      character(len=4):: timestr
       integer:: n,k
 
       ! only master process writes to files

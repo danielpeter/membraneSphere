@@ -57,10 +57,14 @@
 
       ! read all voronoi cell centre vertices values from file
       !(voronoi cell centers are equal to triangle corners)
-      fileName = '../griddata/Dtvert'//divString//ending
-      if ( VERBOSE) print *,fileName
+      fileName = 'data/griddata/Dtvert'//divString//ending
+      if ( VERBOSE) print *,'  ',trim(fileName)
       open(1,file=trim(fileName),status='old',iostat=ioerror)
-      if ( ioerror /= 0) call stopProgram( 'abort - readData File1   ')
+      if ( ioerror /= 0) then
+        print *,'Error: could not open file ',trim(fileName)
+        print *,'       Please check if the file exists...'
+        call stopProgram( 'abort - readData File1   ')
+      endif
 
       !print *,'getting voronoi cell centre vertices from',fileName
       numVertices = 0
@@ -82,8 +86,8 @@
       !print *,'vertex',1,(vertices(1,k),k=1,3)
 
       !read in the corresponding cell corners
-      fileName = '../griddata/Dvvert'//divString//ending
-      if (VERBOSE)print *,fileName
+      fileName = 'data/griddata/Dvvert'//divString//ending
+      if (VERBOSE)print *,'  ',trim(fileName)
       open(2,file=trim(fileName),status='old',iostat=ioerror)
       if ( ioerror /= 0) call stopProgram( 'abort - readData File2   ')
 
@@ -100,8 +104,8 @@
       !print *,'vertex',1,(cellCorners(1,k),k=1,3)
 
       !read in the corresponding cell neighbors indices
-      fileName = '../griddata/Dnear'//divString//ending
-      if (VERBOSE)print *,fileName
+      fileName = 'data/griddata/Dnear'//divString//ending
+      if (VERBOSE)print *,'  ',trim(fileName)
       open(3,file=trim(fileName),status='old',iostat=ioerror)
       if ( ioerror /= 0) call stopProgram( 'abort - readData File3   ')
 
@@ -126,8 +130,8 @@
       !print *,'vertex',1,(cellNeighbors(1,k),k=0,6)
 
       !read in the corresponding cell face indices
-      fileName = '../griddata/Dvface'//divString//ending
-      if (VERBOSE)print *,fileName
+      fileName = 'data/griddata/Dvface'//divString//ending
+      if (VERBOSE)print *,'  ',trim(fileName)
       open(4,file=trim(fileName),status='old',iostat=ioerror)
       if ( ioerror /= 0) call stopProgram( 'abort - readData File4   ')
 
@@ -154,8 +158,8 @@
       ! allocate triangle face array
       if ( Station_Correction .or. SIMULATIONOUTPUT ) then
         !read in the corresponding triangle face indices
-        fileName = '../griddata/Dtface'//divString//ending
-        if ( VERBOSE ) print *,fileName
+        fileName = 'data/griddata/Dtface'//divString//ending
+        if ( VERBOSE ) print *,'  ',trim(fileName)
         open(5,file=trim(fileName),status='old', iostat=ioerror)
         if ( ioerror /= 0) call stopProgram( 'abort - readData Dtface file    ')
 
@@ -223,9 +227,10 @@
       ! allocates displacement arrays
       if ( MASTER .and. VERBOSE ) then
         print *,'  allocating displacement, cell and phase velocity arrays:'
-        print *,'    displacements array size :  ',3*numVertices*sizeof(PI)/1024./1024.,'Mb'
-        print *,'    cells array size          :  ',(2*numVertices*7*sizeof(PI)+numVertices*sizeof(PI))/1024./1024.,'Mb'
-        print *,'    phase velocity array size :  ',numVertices*sizeof(PI)/1024./1024.,'Mb'
+        print *,'  displacements array size  :  ',3*numVertices*sizeof(PI)/1024./1024.,'Mb'
+        print *,'  cells array size          :  ',(2*numVertices*7*sizeof(PI)+numVertices*sizeof(PI))/1024./1024.,'Mb'
+        print *,'  phase velocity array size :  ',numVertices*sizeof(PI)/1024./1024.,'Mb'
+        print *
       endif
       allocate(displacement(numVertices),displacement_old(numVertices), &
               newdisplacement(numVertices), stat=ierror )
@@ -251,12 +256,13 @@
       if ( CORRECT_RATIO ) then
         ! check
         if (.not. PRECALCULATED_CELLS ) then
-          print *,'laplacian calculation can not take account of midpoint ratios'
+          print *,'Error: Laplacian calculation can not take account of midpoint ratios'
           call stopProgram('error correct_ratio   ')
         endif
         if ( MASTER .and. VERBOSE ) then
           print *,'  allocating cellFractions array:'
-          print *,'    size: ',7*numVertices*sizeof(PI)/1024./1024.,'Mb'
+          print *,'  size: ',7*numVertices*sizeof(PI)/1024./1024.,'Mb'
+          print *
         endif
         allocate( cellFractions(numVertices,0:6),stat=ierror)
         if ( ierror /= 0 ) call stopProgram('error allocating cellFractions')

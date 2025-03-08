@@ -802,7 +802,7 @@ end module
       real(WP),intent(out):: timediff,lastseismotime
       integer,intent(out):: entries
       integer:: ierror,i
-      character*128:: line
+      character(len=128):: line
       real(WP):: time,sourceterm,displace,endtime
       integer:: index, offset,ZEROLINE,FILELINES !tests: ZEROLINE/0/ ! approximate time 0 s line
 
@@ -819,7 +819,7 @@ end module
       endif
       open(1, file=trim(fileName),status='old',iostat=ierror)
       if ( ierror /= 0) then
-        print *,'error opening file ',trim(fileName)
+        print *,'Error: opening file ',trim(fileName)
         call stopProgram( 'abort - readSeismo   ')
       endif
 
@@ -857,7 +857,7 @@ end module
         if (i >= ZEROLINE .and. index < size) then
           read(1, *, iostat=ierror) time,displace !,sourceterm
           if ( ierror /= 0) then
-            print *,'error reading input. last line ',i,ZEROLINE,index
+            print *,'Error: reading input. last line ',i,ZEROLINE,index
             call stopProgram( 'abort - readSeismo   ')
           endif
 
@@ -947,7 +947,7 @@ end module
       endif
       open(1, file=trim(fileName),status='old',iostat=ierror)
       if ( ierror /= 0) then
-        print *,'error opening file ',trim(fileName)
+        print *,'Error: opening file ',trim(fileName)
         call stopProgram( 'abort - readSeismo   ')
       endif
 
@@ -985,7 +985,7 @@ end module
         if (i >= ZEROLINE .and. index < size) then
           read(1, *, iostat=ierror) time,displace !,sourceterm
           if ( ierror /= 0) then
-            print *,'error reading input. last line ',i,ZEROLINE,index
+            print *,'Error: reading input. last line ',i,ZEROLINE,index
             call stopProgram( 'abort - readSeismo   ')
           endif
 
@@ -1052,7 +1052,7 @@ end module
       allocate( cellAreas(numVertices),cellEdgesLength(numVertices,0:6), &
               cellCenterDistances(numVertices,0:6), stat=ierror )
       if ( ierror > 0 ) then
-        print *,'error in allocating arrays for cell area,..'
+        print *,'Error: in allocating arrays for cell area,..'
         call stopProgram( 'abort - getGridvalues    ')
       endif
       if ( CORRECT_RATIO ) then
@@ -1078,7 +1078,7 @@ end module
 ! returns: arrivalTime (module traveltime) and startTime
       use traveltime; use verbosity; use propagationStartup
       implicit none
-      character*128:: filename
+      character(len=128):: filename
       integer:: numEntries,entries1
       real(WP):: seismo(2,10000),startTime,endtime,timedelta,defaultStart
 
@@ -1145,8 +1145,7 @@ end module
         endif
       else
         if ( beVerbose ) then
-          print *
-          print *,'    defaultStart time:',defaultStart
+          print *,'  defaultStart time:',defaultStart
         endif
         ! set to default start time
         startTime = defaultStart
@@ -1171,7 +1170,7 @@ end module
 
       length=size(seismoRef)
       if ( length /= size(seismoDelta)) then
-        print *,' seismograms have different dimensions', length,size(seismoDelta)
+        print *,'Error: seismograms have different dimensions', length,size(seismoDelta)
         call stopProgram( 'abort - getPerturbedSeismo   ')
       endif
 
@@ -1215,7 +1214,7 @@ end module
 
       ! check
       if ( length < 2 ) then
-        print *,'derivative undefined!',length,timedelta
+        print *,'Error: derivative undefined!',length,timedelta
         call stopProgram('abort getFirstDerivative() - seismo too short!    ')
       endif
 
@@ -1355,7 +1354,7 @@ end module
       else
         ! check with previous spline representation
         if ( length /= size(Y) ) then
-         print *,'different array lengths:',length,size(Y)
+         print *,'Error: different array lengths:',length,size(Y)
          call stopProgram( 'abort - getIntegral   ')
         endif
       endif

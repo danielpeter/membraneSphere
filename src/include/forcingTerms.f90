@@ -50,15 +50,17 @@
       implicit none
       double precision,intent(in):: colatitude,longitude,time
       double precision:: widthTerm
-      real(WP):: timeTerm2
+      real(WP) :: time_wp
+      real(WP),external:: timeTerm2
 
       ! approximative this term is too small to have an influence beyond this time
       ! if ( time > 7000.0d0) then
       !   forceTerm2 = 0.0d0
       !   return
       ! endif
+      time_wp = real(time,kind=WP)
 
-      forceTerm2 = timeTerm2(time)*widthTerm(colatitude)
+      forceTerm2 = timeTerm2(time_wp) * widthTerm(colatitude)
       return
       end function
 

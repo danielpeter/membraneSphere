@@ -126,7 +126,7 @@
     open(dataUnit,file=heterogeneousDataFile(1:len_trim(heterogeneousDataFile)), &
             status="old",iostat=ierror)
     if ( ierror /= 0 ) then
-      print *,'process ',rank,' could not open data file: ', &
+      print *,'Error: process ',rank,' could not open data file: ', &
                 heterogeneousDataFile(1:len_trim(heterogeneousDataFile))
       call stopProgram( "data file not found     ")
     endif
@@ -292,14 +292,14 @@
       do i = 1,nprocesses-1
         call MPI_Send(datacount,1,MPI_INTEGER,i,i,MPI_COMM_WORLD,ierror)
         if ( ierror /= 0 ) then
-          print *,'error datacount',rank,ierror
+          print *,'Error: datacount',rank,ierror
           call stopProgram("syncDataArray()")
         endif
       enddo
     else
       call MPI_Recv(datacount,1,MPI_INTEGER,0,rank,MPI_COMM_WORLD,status,ierror)
       if ( ierror /= 0 ) then
-        print *,'error datacount',rank,ierror
+        print *,'Error: datacount',rank,ierror
         call stopProgram("syncDataArray()")
       endif
     endif
@@ -344,14 +344,14 @@
       do i = 1,nprocesses-1
         call MPI_Send(dataStore(:,:),length,MPI_REAL,i,i,MPI_COMM_WORLD,ierror)
         if ( ierror /= 0 ) then
-          print *,'error datastore',rank,ierror
+          print *,'Error: datastore',rank,ierror
           call stopProgram("syncDataArray()")
         endif
       enddo
     else
       call MPI_Recv(dataStore(:,:),length,MPI_REAL,0,rank,MPI_COMM_WORLD,status,ierror)
       if ( ierror /= 0 ) then
-        print *,'error datastore',rank,ierror
+        print *,'Error: datastore',rank,ierror
         call stopProgram("syncDataArray()")
       endif
     endif
@@ -379,7 +379,7 @@
     integer:: i,j,n,vertex,dataLoopIndex
     logical:: doCalc
     real:: benchmarkLoopStart,benchmarkLoopEnd,epidelta
-    character*5::kernelstr
+    character(len=5)::kernelstr
     integer:: isqre,ierror
     real:: eplo,epla,stla,stlo,datum,error
     real:: time_shift
@@ -688,32 +688,32 @@
         !print *,'getting from',i
         call MPI_Recv(shift_proc,1,MPI_REAL,i,i,MPI_COMM_WORLD,status,ierror)
         if ( ierror /= 0 ) then
-          print *,'error shift',rank,ierror
+          print *,'Error: shift',rank,ierror
           call stopProgram("outputDataline    ")
         endif
         call MPI_Recv(epla_proc,1,MPI_REAL,i,i,MPI_COMM_WORLD,status,ierror)
         if ( ierror /= 0 ) then
-          print *,'error shift',rank,ierror
+          print *,'Error: shift',rank,ierror
           call stopProgram("outputDataline    ")
         endif
         call MPI_Recv(eplo_proc,1,MPI_REAL,i,i,MPI_COMM_WORLD,status,ierror)
         if ( ierror /= 0 ) then
-          print *,'error shift',rank,ierror
+          print *,'Error: shift',rank,ierror
           call stopProgram("outputDataline    ")
         endif
         call MPI_Recv(stla_proc,1,MPI_REAL,i,i,MPI_COMM_WORLD,status,ierror)
         if ( ierror /= 0 ) then
-          print *,'error shift',rank,ierror
+          print *,'Error: shift',rank,ierror
           call stopProgram("outputDataline    ")
         endif
         call MPI_Recv(stlo_proc,1,MPI_REAL,i,i,MPI_COMM_WORLD,status,ierror)
         if ( ierror /= 0 ) then
-          print *,'error shift',rank,ierror
+          print *,'Error: shift',rank,ierror
           call stopProgram("outputDataline    ")
         endif
         call MPI_Recv(error_proc,1,MPI_REAL,i,i,MPI_COMM_WORLD,status,ierror)
         if ( ierror /= 0 ) then
-          print *,'error shift',rank,ierror
+          print *,'Error: shift',rank,ierror
           call stopProgram("outputDataline    ")
         endif
 
@@ -725,32 +725,32 @@
       ! slave process sends information
       call MPI_Send(shift,1,MPI_REAL,0,rank,MPI_COMM_WORLD,ierror)
       if ( ierror /= 0 ) then
-        print *,'error shift',rank,ierror
+        print *,'Error: shift',rank,ierror
         call stopProgram("outputDataline    ")
       endif
       call MPI_Send(epla,1,MPI_REAL,0,rank,MPI_COMM_WORLD,ierror)
       if ( ierror /= 0 ) then
-        print *,'error shift',rank,ierror
+        print *,'Error: shift',rank,ierror
         call stopProgram("outputDataline    ")
       endif
       call MPI_Send(eplo,1,MPI_REAL,0,rank,MPI_COMM_WORLD,ierror)
       if ( ierror /= 0 ) then
-        print *,'error shift',rank,ierror
+        print *,'Error: shift',rank,ierror
         call stopProgram("outputDataline    ")
       endif
       call MPI_Send(stla,1,MPI_REAL,0,rank,MPI_COMM_WORLD,ierror)
       if ( ierror /= 0 ) then
-        print *,'error shift',rank,ierror
+        print *,'Error: shift',rank,ierror
         call stopProgram("outputDataline    ")
       endif
       call MPI_Send(stlo,1,MPI_REAL,0,rank,MPI_COMM_WORLD,ierror)
       if ( ierror /= 0 ) then
-        print *,'error shift',rank,ierror
+        print *,'Error: shift',rank,ierror
         call stopProgram("outputDataline    ")
       endif
       call MPI_Send(error,1,MPI_REAL,0,rank,MPI_COMM_WORLD,ierror)
       if ( ierror /= 0 ) then
-        print *,'error shift',rank,ierror
+        print *,'Error: shift',rank,ierror
         call stopProgram("outputDataline    ")
       endif
     endif

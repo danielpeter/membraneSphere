@@ -35,7 +35,7 @@
       enddo
       range = numDomainVert(rank)
       if ( range <= 0 ) then
-        print *,rank,': range has no elements',range
+        print *,'Error: rank ',rank,': range has no elements',range
         call stopProgram('abort - constructParallelDomains    ')
       endif
 
@@ -64,7 +64,7 @@
         if ( vertexDomain(n) == rank) then
           index = index+1
           if ( index > range) then
-           print *,rank,': exceeding range limite in domain', range
+           print *,'Error: rank ',rank,': exceeding range limite in domain', range
            call stopProgram( 'abort - constructParallelDomains    ')
           endif
           domainVertices(index)=n
@@ -73,7 +73,7 @@
 
       ! check
       if ( index /= range ) then
-        print *,rank,': range in domain wrong',range,index
+        print *,'Error: rank ',rank,': range in domain wrong',range,index
         call stopProgram('abort - constructParallelDomains    ')
       endif
 
@@ -386,7 +386,7 @@
       end select
 
       ! reaching this point should not occur
-      print *,'could not split into domains',nprocesses,vertex,colat,long
+      print *,'Error: could not split into domains',nprocesses,vertex,colat,long
       call stopProgram( 'abort - getDomain    ')
 
       return
@@ -470,7 +470,7 @@
               index = numDomainVert(domain,neighbors(k))
               ! check index
               if ( index > maxRange) then
-                print *,rank,': exceeding range in boundaries',domain,maxRange
+                print *,'Error: rank ',rank,': exceeding range in boundaries',domain,maxRange
                 call stopProgram( 'abort - findBoundaries     ')
               endif
               ! fill boundaries array
@@ -584,7 +584,7 @@
             ! first element in boundaries array is a valid vertex index, so add this neighbor
             index = index+1
             if (index > nprocesses-1) then
-              print *,rank,':exceeding number of neighbor domains',domain
+              print *,'Error: rank ',rank,':exceeding number of neighbor domains',domain
               call stopProgram( 'abort - findDomainNeighbors    ')
             endif
             ! add this as neighbor

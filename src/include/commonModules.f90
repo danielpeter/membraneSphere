@@ -272,7 +272,7 @@
         logical:: Adjoint_InversionProgram               = .false.
         logical:: kernelIteration,storeAsFile,Set_Antipode_Time
         integer:: adjointSourceVertex
-        character*64:: adjointKernelName
+        character(len=64):: adjointKernelName
         real(WP):: normFactor
         real(WP),allocatable,dimension(:,:):: adjointSource
         real(WP),allocatable,dimension(:):: adjointKernel
@@ -320,8 +320,8 @@
         integer:: numofReceivers,numofKernels,currentKernel
         integer,allocatable,dimension(:):: receivers
         integer,allocatable,dimension(:,:)::kernelsReceivers
-        character*8:: DELTAfunction,cphasetype
-        character*128:: datadirectory
+        character(len=8):: DELTAfunction,cphasetype
+        character(len=128):: datadirectory
         real(WP):: FIRSTTIME,LASTTIME,DELTARADIUS
         real(WP):: sourceLat,sourceLon,receiverLat,receiverLon,cphaseRef, &
                    desiredSourceLat,desiredSourceLon,muSquare,muTwo
@@ -360,7 +360,7 @@
 !-----------------------------------------------------------------------
       ! parallel module
       ! used for MPI parallelization
-        include 'mpif.h'
+        use mpi
         logical:: PARALLELSEISMO,MASTER
         integer:: nprocesses,rank,tag,MPI_CUSTOM
         integer:: status(MPI_STATUS_SIZE)
@@ -405,7 +405,7 @@
         integer:: numBlocks
         real(WP), allocatable, dimension(:):: phaseBlock
         real(WP):: phaseBlockVelocityReference
-        character*128:: phaseBlockFile,heterogeneousDataFile,heterogeneousOutput
+        character(len=128):: phaseBlockFile,heterogeneousDataFile,heterogeneousOutput
         real:: heterogeneousPixelsize
         integer:: gsh_maximum_expansion
       end module

@@ -92,8 +92,8 @@
       character(len=128),intent(out)::fileDelta,fileReference
       real(WP),intent(out):: startingTime
       real(WP),intent(out):: endingTime
-      character*128:: inputName,tmp
-      character*128:: line
+      character(len=128):: inputName,tmp
+      character(len=128):: line
       integer:: i,ierror,length
 
       ! open input parameter file
@@ -274,11 +274,11 @@
       end
 
 !-----------------------------------------------------------------------
-      subroutine stopProgram(textline)
+      subroutine stopProgram_fixedlength(textline)
 !-----------------------------------------------------------------------
       use parallel
       implicit none
-      character*128:: textline
+      character(len=128):: textline
       integer:: i,endindex,ierror
       logical:: flag
 
@@ -293,7 +293,8 @@
       ! stop MPI
       call MPI_Initialized(flag,ierror)
       if ( flag .eqv. .true. .and. ierror == 0) then
-        call MPI_Abort(MPI_COMM_WORLD, ierror )
+        ! note: MPI_ABORT does not return, it makes the program exit with an error code of 30
+        call MPI_Abort(MPI_COMM_WORLD, 30, ierror )
         call MPI_FINALIZE(ierror)
       endif
 

@@ -41,7 +41,7 @@
 
         ! benchmark
         benchAllEnd = MPI_WTIME()
-        print *,'running time: ',int((benchAllEnd-benchAllStart)/60.0),'min ', &
+        print *,'initialization running time: ',int((benchAllEnd-benchAllStart)/60.0),'min ', &
                           mod((benchAllEnd-benchAllStart),60.0),'sec'
         print *
       endif
@@ -60,7 +60,8 @@
       call MPI_Init(ierror)
       if ( ierror /= 0) then
         print *,'error starting MPI program.'
-        call MPI_ABORT(MPI_COMM_WORLD,ierror)
+        ! note: MPI_ABORT does not return, it makes the program exit with an error code of 30
+        call MPI_ABORT(MPI_COMM_WORLD,30,ierror)
       endif
 
       ! get number of processors
@@ -175,6 +176,7 @@
           print *,'homogeneous phase map      ', cphaseRef
         endif
         print *,'-----------------------------------------------------------------------'
+        print *
       endif
 
       ! set additional filter verbosity
@@ -185,7 +187,7 @@
       endif
 
       if ( MASTER .and. VERBOSE) then
-        print *,'  parameters o.k'
+        print *,'parameters o.k'
       endif
       end subroutine
 
@@ -264,21 +266,21 @@
           print *,'delta phase map ', DELTA, (cphaseRef + deltaPerturbation)
           print *,'delta(lat/lon) desired:',deltaLat,deltaLon
           call getSphericalCoord_Lat(deltaVertex,lat,lon)
-          print *,'               got:',lat,lon
-          print *,'               index:',deltaVertex
+          print *,'                   got:',lat,lon
+          print *,'                 index:',deltaVertex
           if ( SECONDDELTA ) then
             print *,'second delta(lat/lon):',deltaSecondLat,deltaSecondLon
             call getSphericalCoord_Lat(deltaSecondVertex,lat,lon)
-            print *,'               got:',lat,lon
-            print *,'               index:',deltaSecondVertex
+            print *,'                  got:',lat,lon
+            print *,'                index:',deltaSecondVertex
           endif
         endif
         if ( Station_Correction ) then
           print *,'interpolation receiver station:'
-          print *,'        triangle:',interpolation_triangleIndex
-          print *,'        corners :',(interpolation_corners(i),i=1,3)
-          print *,'        side lengths (degrees):',(interpolation_triangleLengths(i)*180.0/PI,i=1,3)
-          print *,'        receiverdistance (degr.):',(interpolation_distances(i)*180.0/PI,i=1,3)
+          print *,'  triangle:',interpolation_triangleIndex
+          print *,'  corners :',(interpolation_corners(i),i=1,3)
+          print *,'  side lengths (deg)    :',(interpolation_triangleLengths(i)*180.0/PI,i=1,3)
+          print *,'  receiverdistance (deg):',(interpolation_distances(i)*180.0/PI,i=1,3)
           print *
         endif
         print *
@@ -363,11 +365,12 @@
 
       !console output
       if ( MASTER .and. VERBOSE) then
-        print *,'    time step dt            : ',dt
-        print *,'    time range             : ',firsttimestep*dt,lasttimestep*dt
-        print *,'    time iteration steps     : ',numofTimeSteps
-        print *,'    phase velocity          : ',cphaseRef
-        if (DELTA)print *,'    delta heterogeneity - radius: ',DELTARADIUS
+        print *,'    time step dt         : ',dt
+        print *,'    time range           : ',firsttimestep*dt,lasttimestep*dt
+        print *,'    time iteration steps : ',numofTimeSteps
+        print *,'    phase velocity       : ',cphaseRef
+        if (DELTA) &
+          print *,'    delta heterogeneity - radius = ',DELTARADIUS
       endif
 
 
@@ -539,7 +542,7 @@
       use filterType;use verbosity; use adjointVariables
       implicit none
       integer:: vertex,timestep,index,i,n,ierror,jrec
-      character*8::vertexstr
+      character(len=8)::vertexstr
       real(WP)::seismo(2,numofTimeSteps)
       real(WP)::min,max,originalT,originalf
 
@@ -567,21 +570,21 @@
       index = 0
       do timestep = firsttimestep,lasttimestep
         index = index+1
-        seismo(1,index)=timestep*dt
+        seismo(1,index) = timestep*dt
       enddo
 
       ! filter initial source
       do n = 1,numDomainVertices
         ! get cell vertex
         if ( PARALLELSEISMO ) then
-          vertex=domainVertices(n)
+          vertex = domainVertices(n)
         else
           vertex = n
         endif
 
         ! get corresponding source
         if (.not. sourceOnFile ) then
-          seismo(2,:)=forceTermPrescribed(n,:)
+          seismo(2,:) = forceTermPrescribed(n,:)
         else
           do i = 1,numofTimeSteps
             jrec = (n-1)*numofTimeSteps + i
@@ -605,8 +608,8 @@
         endif
 
         ! filter only when there is some displacement in the trace
-        min=minval(seismo(2,:))
-        max=maxval(seismo(2,:))
+        min = minval(seismo(2,:))
+        max = maxval(seismo(2,:))
         if ( (abs(max)+abs(min)) > 1e-4 ) then
           !print *,'    filter',rank,vertex,max,min
           call dofilterSeismogram(seismo,numofTimeSteps)
@@ -617,14 +620,14 @@
           if ( MASTER .and. VERBOSE .and. n == 1) print *,'starting source for adjoint method at time: zero'
           do i = 1,numofTimeSteps
             if ( seismo(1,i) < 0.0 ) then
-              seismo(2,i)=0.0_WP
+              seismo(2,i) = 0.0_WP
             endif
           enddo
         endif
 
         ! retain as new source
         if (.not. sourceOnFile ) then
-          forceTermPrescribed(n,:)=seismo(2,:)
+          forceTermPrescribed(n,:) = seismo(2,:)
         else
           do i = 1,numofTimeSteps
             jrec = (n-1)*numofTimeSteps + i
@@ -674,7 +677,7 @@
         !allocate phaseMap array
         allocate(phaseMap(numVertices), stat=ierror)
         if ( ierror /= 0) then
-          print *,'error allocating phaseMap array'
+          print *,'Error: allocating phaseMap array'
           call stopProgram( 'abort - setupFrame   ')
         endif
 
@@ -752,7 +755,7 @@
 
       ! increment latitude corresponding for this process
       if ( (deltaLat - (latitudeEnd - (nprocesses-1)*deltaMoveIncrement)) > deltaMoveIncrement/2 ) then
-        print *,'delta location too close to end'
+        print *,'Error: delta location too close to end'
         call stopProgram( 'abort - parallelizeDeltaLocations    ')
       endif
 
@@ -814,7 +817,7 @@
 
       ! check if phase reference is same as the one used for the propagation
       if (phaseBlockVelocityReference /= cphaseRef) then
-        print *,'using a false phase velocity data file for this referenced velocity:', &
+        print *,'Error: using a false phase velocity data file for this referenced velocity:', &
                       cphaseRef,phaseBlockVelocityReference,phaseBlockFile
         call stopProgram( 'abort - constructPhasedata   ')
       endif
@@ -826,7 +829,7 @@
       else
         ! check if we read a gsh-file
         phaseBlockFile=trim(phaseBlockFile)
-        print *,'reading phase map file-type: '//&
+        print *,'  reading phase map file-type: '//&
               phaseBlockFile(len_trim(phaseBlockFile)-2:len_trim(phaseBlockFile))
         if ( phaseBlockFile(len_trim(phaseBlockFile)-2:len_trim(phaseBlockFile)) == "gsh") then
           ! read in phaseMap() array data
@@ -870,8 +873,8 @@
             !get vertex block index
             call determineBlock(real(lat),real(lon),index)
             if ( index < 0 .or. index > numBlocks) then
-              print *,'   block error:',lat,lon
-              print *,'   index violates boundaries:',index, i,numBlocks
+              print *,'Error: block error:',lat,lon
+              print *,'       index violates boundaries:',index, i,numBlocks
               call stopProgram( 'abort - constructPhasedata   ')
             endif
 
@@ -899,7 +902,7 @@
           ! determine how many kernels
           numofKernels=int(kernelEndDistance-kernelStartDistance+1)
           if ( numofKernels <= 0) then
-            print *,'kernels cannot be found correctly:',kernelStartDistance,kernelEndDistance
+            print *,'Error: kernels cannot be found correctly:',kernelStartDistance,kernelEndDistance
             call stopProgram( 'abort - initializeKernels()   ')
           endif
           ! allocate kernel arrays
@@ -911,10 +914,10 @@
 
           ! console output
           if ( VERBOSE .and. MASTER) then
-            print *,'arrays for receivers allocated successfully',size(receiversSeismogram), &
+            print *,'  arrays for receivers allocated successfully',size(receiversSeismogram), &
                               size(kernelsReceiversSeismogramRef)
-            print *,'    epicentral distances between:',kernelStartDistance,kernelEndDistance
-            print *,'    number of kernels:',numofKernels
+            print *,'  epicentral distances between:',kernelStartDistance,kernelEndDistance
+            print *,'  number of kernels:',numofKernels
           endif
 
           ! setup the stations
@@ -923,7 +926,7 @@
             ! determine kernels station locations (with respect to a source at north pole)
             receiverLat=90.0 - (kernelStartDistance + m-1)
             if ( receiverLat < -90.0) then
-              print *,'kernels to far away from source (north pole):',receiverLat
+              print *,'Error: kernels to far away from source (north pole):',receiverLat
               call stopProgram( 'abort - initializeKernels()   ')
             endif
             receiverLon = 0.0 ! initial first station
@@ -931,7 +934,7 @@
           enddo
           ! console output
           if ( VERBOSE .and. MASTER ) then
-            print *,'    set up kernels for latitude: ',90-kernelStartDistance,90-kernelEndDistance
+            print *,'  set up kernels for latitude: ',90-kernelStartDistance,90-kernelEndDistance
           endif
         else
           call setupReceivers()
@@ -993,15 +996,15 @@
       implicit none
       integer:: i,ierror
       real(WP):: lat,lon
-      character*128:: datafile
-      character*3:: kernelstr
+      character(len=128):: datafile
+      character(len=3):: kernelstr
 
       ! useless for heterogeneous case
       if ( HETEROGENEOUS ) &
         call stopProgram('multiple receiver stations and heterogeneous phase map not applicable    ')
       ! check number of receivers
       if ( numofReceivers <= 0 ) then
-        print *,'number of receiver stations invalid!',numofReceivers
+        print *,'Error: number of receiver stations invalid!',numofReceivers
         call stopProgram('setupReceivers() - abort    ')
       endif
 
@@ -1014,8 +1017,8 @@
                 stat=ierror)
         if ( ierror /= 0 ) call stopProgram('cannot allocate receivers array   ')
         !console output
-        if ( MASTER .and. VERBOSE ) print *,'arrays for receivers allocated successfully', &
-                    size(receiversSeismogram),size(receiversSeismogramRef)
+        if ( MASTER .and. VERBOSE ) &
+          print *,'arrays for receivers allocated successfully',size(receiversSeismogram),size(receiversSeismogramRef)
       endif
 
       ! assumes the source to be on north pole, the receiver station placed along the same latitude
@@ -1100,8 +1103,8 @@
       use propagationStartup; use parallel; use verbosity
       implicit none
       integer:: i,n,ioerror
-      character*3:: rankstr,kernelstr
-      character*128:: datafile
+      character(len=3):: rankstr,kernelstr
+      character(len=128):: datafile
 
       ! only master process creates the files
       ! (but all processes must have access to these files)
@@ -1142,12 +1145,12 @@
           !if ( ioerror == 0 ) close(10,status='DELETE')
 
           ! put two comment lines at beginning
-          open(10,file=datafile,iostat=ioerror)
+          open(10,file=trim(datafile),iostat=ioerror)
           if ( ioerror /= 0) then
             ! check if really we can not create the file
-            print *,'could not open file: '//datafile
+            print *,'could not open file: '//trim(datafile)
             print *,'  try again...'
-            open(10,file=datafile,status='unknown',iostat=ioerror)
+            open(10,file=trim(datafile),status='unknown',iostat=ioerror)
             if ( ioerror /= 0 ) call stopProgram('createKernelFiles() - still not possible. shutting down    ')
             print *,'  successed opening file'
           endif
@@ -1278,7 +1281,7 @@
       implicit none
       real(WP),intent(in):: lat,lon
       real(WP):: distance
-      character*64,parameter::distanceFile     = 'Kernel_EpiDistances.dat'
+      character(len=64),parameter::distanceFile     = 'Kernel_EpiDistances.dat'
       integer:: ierror,iorbit
 
       ! place new receiver
@@ -1473,8 +1476,8 @@
       ! empirical formula to obtain a maximum at the reference period
       if ( ADAPT_SOURCE ) then
         if ( (20.+WidthParameterMu*7000.) > bw_waveperiod ) then
-          print *,'  minimum period possible: ',20.+WidthParameterMu*7000.
-          print *,'  width parameter mu:',WidthParameterMu
+          print *,'Error: minimum period possible: ',20.+WidthParameterMu*7000.
+          print *,'       width parameter mu:',WidthParameterMu
           call stopProgram("source not possible    ")
         endif
         tmp = 1.0-8.0/3.0*(20.+WidthParameterMu*7000.-bw_waveperiod)
@@ -1501,7 +1504,7 @@
 !-----------------------------------------------------------------------
       use parallel
       implicit none
-      character*128:: textline
+      character(len=*):: textline
       integer:: i,endindex,ierror
       logical:: flag
 
@@ -1516,7 +1519,8 @@
       ! stop MPI
       call MPI_Initialized(flag,ierror)
       if ( flag .eqv. .true. .and. ierror == 0) then
-        call MPI_Abort(MPI_COMM_WORLD, ierror )
+        ! note: MPI_ABORT does not return, it makes the program exit with an error code of 30
+        call MPI_Abort(MPI_COMM_WORLD, 30, ierror )
         call MPI_FINALIZE(ierror)
       endif
 

@@ -30,9 +30,9 @@ CPHASE                           = L150
 ! locations: source & receiver location 
 ! (source latitude/longitude in degree, e.g. north pole 90/0, tibetian 0/60)
 ! (receiver latitude/longitude in degree, e.g. tibetian 60/150)     
-! (!!source will be rotated to equator at 0¼ latitude/ 0¼ longitude when only 1 receiver station used!!)
-! (!!receiver will be rotated into equatorial plane with 0¼ latitude when only 1 receiver station used!!)
-SOURCE                           = 0.0 0.0    
+! (!!source will be rotated to equator at 0 degree latitude/ 0 degree longitude when only 1 receiver station used!!)
+! (!!receiver will be rotated into equatorial plane with 0 degree latitude when only 1 receiver station used!!)
+SOURCE                           = 0.0 0.0
 RECEIVER                         = 0.0 90.0     
 
 ! many receivers: use many receiver stations & number of receiver stations (e.g. 360 stations, located around the same latitude)
@@ -58,7 +58,7 @@ DTYPE                            = plateau
 DPERTURBATION                    = -1.5
 DLOCATION                        = 33.0 80.0
 
-! looping delta locations,starting latitude when moving to next longitude / ending latitude (incrementing by +1¼), 
+! looping delta locations,starting latitude when moving to next longitude / ending latitude (incrementing by +1 degree), 
 ! afterwards move to next longitude / end loop after last longitude;
 ! increment step (in degrees) of moving the delta location in latitude and longitude
 MOVEDELTA                        = .false.
@@ -83,9 +83,9 @@ HETEROGENEOUS                    = .true.
 !   (b) choose a general spherical harmonics file e.g. 'L150.crust.2degree.gsh' (of CRUST 2x2degree) 
 !   then blk/inv_pixelsize must be set to the degree of expansion you want (e.g. 12 for expansion up to degree 12)
 ! wave reference to which the crustal phase map refers to 
-! (e.g. '../phasedata/TrampertWoodhouse/gji95/model.l150.abs.gsh' and 40 )
-! (e.g. '../phasedata/L0150.born.3.lsqr.mod-0.-0.800.pcn' and 3 )
-BLKFILE                          = '../phasedata/TrampertWoodhouse/gji95/model.l150.abs.gsh'
+! (e.g. 'data/phasedata/TrampertWoodhouse/gji95/model.l150.abs.gsh' and 40 )
+! (e.g. 'data/phasedata/L0150.born.3.lsqr.mod-0.-0.800.pcn' and 3 )
+BLKFILE                          = 'data/phasedata/TrampertWoodhouse/gji95/model.l150.abs.gsh'
 BLK/INV_PIXELSIZE                = 10
 BLKVELOCITYREFERENCE             = L150
 
@@ -94,7 +94,7 @@ BLKVELOCITYREFERENCE             = L150
 ! (e.g. L0150, size 3 degree, output datafile has root name L0150.born.3.***)
 ! inv_pixelsize value is set the size of the grid blocks (see above) of the inversion grid
 ! (e.g. INV_DATA = '~/SUWA/ETLDATA/wei_sum.02.L0150.1.txt'
-INV_DATA                         = '../phasedata/wei_sum.02.L0150.1.txt'
+INV_DATA                         = 'data/phasedata/wei_sum.02.L0150.1.txt'
 INV_OUTPUT                       = 'OUTPUT/L0150.born.3'
 INV_VOXELSIZE                    = 3
 

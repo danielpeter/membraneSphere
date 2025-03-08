@@ -6,13 +6,13 @@
 # check
 if [ ! -s "$1" ]; then
   echo "usage: "
-  echo "    gmtplot_phasedata L150.gsh-012.xyz" 
+  echo "    gmtplot_phasedata L150.gsh-012.xyz"
   echo
-  exit  
+  exit
 fi
 
-# Geographical variables: 
-projection=-JQ0/18 
+# Geographical variables:
+projection=-JQ0/18
 #projection=-JM15
 
 #region=-R-180/180/-70/70
@@ -52,7 +52,7 @@ if [ ! -s $datafilename ];then
      exit
 fi
 
-# Add custom xy-data from $datafilename 
+# Add custom xy-data from $datafilename
 # take size 0.4/0.05 for grid level 4/8 and Europe
 # take size 0.1      for grid level 4 and World
 gawk '{if((substr($1,1,1)!="#")&&($1!=""))print($1,$2,$3,0.05)}' $datafilename | \
@@ -69,9 +69,9 @@ gawk '{if((substr($1,1,1)!="#")&&($1!=""))if(NR==59)print($1,$2,0.5)}' $datafile
 	  psxy $verbose $region $projection -O -K -W0/0/0 -G20/20/20 -St >> $ps_filename
 #echo receiver:
 gawk '{if((substr($1,1,1)!="#")&&($1!=""))if(NR==59)print($1,$2,0.5)}' $datafilename >> coords
- 
-psxy -W5/220/220/220  $projection $region coords -V -O -K >> $ps_filename    
-          
+
+psxy -W5/220/220/220  $projection $region coords -V -O -K >> $ps_filename
+
 # Use pscoast to plot a map with different colors for land and sea rivers(I1), political(N1)
 #  -W1/255/255/255 -S50/50/50 -N1/255/255/255 -G0/0/0
 pscoast $region $projection -Di -A1000 -W1 -O -K  >> $ps_filename

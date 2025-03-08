@@ -4,7 +4,7 @@
 # check
 if [ ! -s "$1" ]; then
   echo "usage: "
-  echo "    gmtplot_3Dkernel.sh kernel.dat" 
+  echo "    gmtplot_3Dkernel.sh kernel.dat"
   echo
   exit
 fi
@@ -63,7 +63,7 @@ echo "plotted to $ps_filename"
 
 #xyz2grd timelag.L150.l6.left.dat -Gimage.bin -I1/1 -R-50/-6/-90/90  -N0.0 -V
 #grdimage image.bin $portrait $offset $region -G $projection -Bg15/g15 -T -K -V -C$colormap -K -O >> $ps_filename
-# Add custom xy-data from $datafilename 
+# Add custom xy-data from $datafilename
 # take size 0.4/0.05 for grid level 4/8 and Europe
 # take size 0.1      for grid level 4 and World
 #gawk '{if((substr($1,1,1)!="#")&&($1!=""))print($1,$2,$3,0.08)}' $datafilename | \

@@ -12,7 +12,7 @@
 # check
 if [ ! -s "$1" ]; then
   echo "usage: "
-  echo "    gmtplot_2Dkernel.sh kernel.dat" 
+  echo "    gmtplot_2Dkernel.sh kernel.dat"
   echo
   exit
 fi
@@ -112,11 +112,11 @@ fi
 
 # with interpolation
 if [ "$interpolate" = "yes" ];then
-echo 
+echo
 echo 'interpolating data...'
 echo
 blockmean tmpData.dat $region -I1/1 $verbose > tmpData.med.xyz
-surface tmpData.med.xyz  $region -I1/1 -Gimage.bin -T0.25 -C0.1 -V 
+surface tmpData.med.xyz  $region -I1/1 -Gimage.bin -T0.25 -C0.1 -V
 grdview image.bin $perspective $zdepth -Qs -P $Plotregion $projection -K $verbose -C$colormap > $ps_filename
 fi
 # store griddf  in data-file
@@ -171,7 +171,7 @@ convert $ps_filename $pdf_filename
 #fi
 
 echo "*******************************************************************"
-echo 
+echo
 echo image plotted to file: $pdf_filename
 echo data used is in tmpData.dat
 echo grid plotted to file: $datafilename.xyz

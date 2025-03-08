@@ -1,20 +1,20 @@
 #!/bin/bash
 
 # arguments:
-#  $1 = phase velocity map , e.g. PhaseMap.dat 
+#  $1 = phase velocity map , e.g. PhaseMap.dat
 #  $2 = show relative percentages
 
 # check
 if [ ! -s "$1" ]; then
   echo "usage: "
-  echo "    gmtplot_phaseMap PhaseMap.dat [yes]" 
+  echo "    gmtplot_phaseMap PhaseMap.dat [yes]"
   echo
   exit
 fi
 
 
-# Geographical variables: 
-projection=-JQ0/18 
+# Geographical variables:
+projection=-JQ0/18
 #projection=-JM15
 
 #region=-R-180/180/-70/70
@@ -24,7 +24,7 @@ offsets='-X1.5 -Y14'
 portrait=-P
 verbose=-V
 
-# relative percent of a reference speed 
+# relative percent of a reference speed
 percent=$2
 
 if [ "$percent" = "yes" ];then
@@ -32,9 +32,9 @@ if [ "$percent" = "yes" ];then
   echo "plotting relative speed percentages of c0=4.77915 ..."
 
   # colortable
-  colormap=seis.L150.1.cpt 
+  colormap=seis.L150.1.cpt
 
-  scaleAnotate=-Ba1:"%":  
+  scaleAnotate=-Ba1:"%":
 else
   # colortable
   colormap=seis.L150.3.cpt
@@ -71,7 +71,7 @@ if [ ! -s $datafilename ];then
      exit
 fi
 
-# Add custom xy-data from $datafilename 
+# Add custom xy-data from $datafilename
 # take size 0.4/0.05 for grid level 4/8 and Europe
 # take size 0.1      for grid level 4 and World
 
@@ -96,8 +96,8 @@ fi
   #	  psxy $verbose $region $projection -O -K -W0/0/0 -G20/20/20 -St >> $ps_filename
   #echo receiver:
   #gawk '{if((substr($1,1,1)!="#")&&($1!=""))if(NR==59)print($1,$2,0.5)}' $datafilename >> coords
-  #psxy -W5/220/220/220  $projection $region coords -V -O -K >> $ps_filename    
-          
+  #psxy -W5/220/220/220  $projection $region coords -V -O -K >> $ps_filename
+
 # Use pscoast to plot a map with different colors for land and sea rivers(I1), political(N1)
 #  -W1/255/255/255 -S50/50/50 -N1/255/255/255 -G0/0/0
 pscoast $region $projection -Di -A1000 -W1 -O -K $verbose >> $ps_filename

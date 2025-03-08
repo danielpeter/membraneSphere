@@ -11,7 +11,7 @@
 # check
 if [ ! -s "$1" ]; then
   echo "usage: "
-  echo "    interpolateKernel.sh kernel.dat" 
+  echo "    interpolateKernel.sh kernel.dat"
   echo
   exit
 fi
@@ -61,7 +61,7 @@ gmtset HEADER_FONT_SIZE 14 OBLIQUE_ANOTATION 0 BASEMAP_TYPE plain
 
 # gmt interpolation
 blockmean tmpData.dat $region $increment > tmpData.med.xyz
-surface tmpData.med.xyz  $region $increment -Gimage.bin -T0.25 -C0.1 
+surface tmpData.med.xyz  $region $increment -Gimage.bin -T0.25 -C0.1
 
 echo "#kernel values from" $datafilename > $datafilename1
 echo "#lon lat val" >> $datafilename1
@@ -99,7 +99,7 @@ echo '#lon lat val' >> $datafilename.$crosslon.xyz
 gawk '{if( (substr($1,1,1)!="#") && ($1!="") && (substr($1,1,1)~"[0-9]") ) \
 	if( $1=='$crosslon') print($1,$2,$3); }' $datafilename1 >> $datafilename.$crosslon.xyz
 
-echo cross-section at longitude 10/20/45/70/80 to $datafilename.--.xyz  
+echo cross-section at longitude 10/20/45/70/80 to $datafilename.--.xyz
 fi
 
 echo "************************************************************************************"

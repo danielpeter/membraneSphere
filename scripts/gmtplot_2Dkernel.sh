@@ -98,7 +98,7 @@ fi
 # GMT
 # ---------------------------------------------------------------------------------------------------------
 
-gmt gmtset HEADER_FONT_SIZE 14 MAP_ANNOT_OBLIQUE 0 BASEMAP_TYPE plain
+gmt gmtset HEADER_FONT_SIZE 14 MAP_ANNOT_OBLIQUE 0 BASEMAP_TYPE plain GMT_HISTORY false
 
 # without interpolation
 if [ "$interpolate" = "no" ];then

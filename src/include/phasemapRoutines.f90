@@ -86,10 +86,11 @@
       if ( lmaxuser > lmax ) call stopProgram('error lmax expansion')
 
       ncoef=(lmaxuser+1)**2
-      read(10,*)(cmod(i),i=1,ncoef)
+      read(10,*) (cmod(i),i=1,ncoef)
       close(10)
+
       if ( VERBOSE ) then
-        print *,"    maximum l=",lmax
+        print *,"    maximum expansion      l=",lmax
         print *,"    interrupt expansion at l=",lmaxuser
         if ( rotate_frame ) print *,"  rotate frame to equator"
       endif
@@ -105,8 +106,13 @@
       lmax = lmaxuser
 
       ! file output
-      write(chlmax,'(i3.3)')lmax
-      write(chialpha,"(i1.1)")ialpha
+      write(chlmax,'(i3.3)') lmax
+      write(chialpha,"(i1.1)") ialpha
+
+      if (lmax > lmx) then
+        print *,'Error: l too big:',lmax,lmx
+        call stopProgram( "l too big    ")
+      endif
 
       ! debug phase speed values on grid
       !nameout=fileName(1:len_trim(fileName) )//"-"//chlmax//'.spheregrid.xyz'
@@ -115,14 +121,11 @@
 
       ! phase speeds
       open(40,file=datadirectory(1:len_trim(datadirectory))//'PhaseMap.percent.dat')
-
-      igrid = 0
-      if (lmax > lmx) then
-        print *,'Error: l too big:',lmax,lmx
-        call stopProgram( "l too big    ")
-      endif
-      !do xlat=-89.,89,xincr
-      !do xlon=1.,359.,xincr
+      ! header comment
+      write(40,*) '# Phase map - perturbations'
+      write(40,*) '# reference velocity = ',cphaseRef,'(km/s)'
+      write(40,*) '# format:'
+      write(40,*) '#lon #lat #phase-velocity-perturbation (in percent)'
 
       ! determine rotation matrix from (1,0,0)/... to source/receiver frame
       if ( rotate_frame ) then
@@ -130,6 +133,8 @@
         Vreceiver(:)= vertices(originReceiverVertex,:)
         call getRotationMatrix(Vsource,Vreceiver,rot)
       endif
+
+      igrid = 0
       zmin = 0.0
       zmax = 0.0
       do i = 1,numVertices
@@ -160,19 +165,19 @@
 
         z = 0.
         ! scalar SH
-        ncoef=(lmax+1)**2
+        ncoef = (lmax+1)**2
         do k = 1,ncoef
-          z = z+y(k)*cmod(k)
+          z = z + y(k) * cmod(k)
         enddo
 
         ! set corresponding phase velocity
         scale = cphaseRef
         if ( given_as_percent ) then
-          vphase = z/100.0*scale + cphaseRef
+          vphase = z/100.0 * scale + cphaseRef
         else
-          vphase = z*scale + cphaseRef
+          vphase = z * scale + cphaseRef
         endif
-        phaseMap(i)=vphase
+        phaseMap(i) = vphase
 
         ! statistics
         if ( z < zmin ) zmin = z
@@ -183,10 +188,11 @@
         !write(30,*)xlon,xlat,z
 
         ! file output
+        ! format: #lon #lat #phase-velocity-perturbation (in percent)
         if ( given_as_percent ) then
-          write(40,*)xlon,xlat,z
+          write(40,*) xlon,xlat,z
         else
-          write(40,*)xlon,xlat,z*100.0
+          write(40,*) xlon,xlat,z*100.0
         endif
       enddo
       close(40)
@@ -195,10 +201,9 @@
       !close(20)
       !close(30)
       if ( VERBOSE ) then
-        print *,'    total points readin: ',igrid
+        print *,'    total points readin   : ',igrid
         print *,'    values minimum/maximum: ',zmin,zmax
-        print *,'  phase map stored as: '
-        print *,'    ',datadirectory(1:len_trim(datadirectory))//'PhaseMap.percent.dat'
+        print *,'    phase map stored as   : '//trim(datadirectory)//'PhaseMap.percent.dat'
         ! debug
         !print *,'  debug phase maps stored as: '
         !print *,'    ',trim(nameout)

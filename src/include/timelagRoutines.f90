@@ -87,14 +87,18 @@ contains
   !------------------------------------------------------------------
   subroutine spline(x,y,yp1,ypn,y2)
   !------------------------------------------------------------------
-    USE nrtype; USE nrutil, only: assert_eq
+    USE nrtype
     implicit none
     REAL(DP), DIMENSION(:), INTENT(IN) :: x,y
     REAL(DP), INTENT(IN) :: yp1,ypn
     REAL(DP), DIMENSION(:), INTENT(OUT) :: y2
     INTEGER(I4B) :: n
     REAL(DP), DIMENSION(size(x)) :: a,b,c,r
-    n = assert_eq(size(x),size(y),size(y2),'spline')
+
+    n = size(x)
+    if (n /= size(y) .or. n /= size(y2)) &
+      call stopProgram('spline must have arrays with same size    ')
+
     c(1:n-1)=x(2:n)-x(1:n-1)
     r(1:n-1)=6.0_DP*((y(2:n)-y(1:n-1))/c(1:n-1))
     r(2:n-1)=r(2:n-1)-r(1:n-2)
@@ -121,14 +125,18 @@ contains
   !------------------------------------------------------------------
   function splint(xa,ya,y2a,x)
   !------------------------------------------------------------------
-    USE nrtype; USE nrutil, only: assert_eq,nrerror
+    USE nrtype
     implicit none
     REAL(DP), DIMENSION(:), INTENT(IN) :: xa,ya,y2a
     REAL(DP), INTENT(IN) :: x
     REAL(DP) :: splint
     INTEGER(I4B) :: khi,klo,n,i
     REAL(DP) :: a,b,h
-    n = assert_eq(size(xa),size(ya),size(y2a),'splint')
+
+    n = size(xa)
+    if (n /= size(ya) .or. n /= size(y2a)) &
+      call stopProgram('splint: must have arrays with same size    ')
+
     klo = max(min(locate(xa,x),n-1),1)
     khi = klo+1
     h = xa(khi)-xa(klo)
@@ -136,35 +144,41 @@ contains
           do i = 1,n
              print *,i,xa(i),khi,klo
           enddo
-    call nrerror('bad xa input in splint')
+          call stopProgram('splint: bad xa input in splint    ')
     endif
-    a=(xa(khi)-x)/h
-    b=(x-xa(klo))/h
-    splint = a*ya(klo)+b*ya(khi)+((a**3-a)*y2a(klo)+(b**3-b)*y2a(khi))*(h**2)/6.0_DP
+    a = (xa(khi)-x)/h
+    b = (x-xa(klo))/h
+    splint = a*ya(klo) + b*ya(khi) + ((a**3-a)*y2a(klo) + (b**3-b)*y2a(khi))*(h**2)/6.0_DP
   end function splint
   !------------------------------------------------------------------
   subroutine tridag_ser(a,b,c,r,u)
   !------------------------------------------------------------------
-    USE nrtype; USE nrutil, only: assert_eq,nrerror
+    USE nrtype
     implicit none
     REAL(DP), DIMENSION(:), INTENT(IN) :: a,b,c,r
     REAL(DP), DIMENSION(:), INTENT(OUT) :: u
     REAL(DP), DIMENSION(size(b)) :: gam
     INTEGER(I4B) :: n,j
     REAL(DP) :: bet
-    n = assert_eq((/size(a)+1,size(b),size(c)+1,size(r),size(u)/),'tridag_ser')
-    bet=b(1)
-    if (bet == 0.0_DP) call nrerror('tridag_ser: Error at code stage 1')
-    u(1)=r(1)/bet
+
+    n = size(a)+1
+    if (n /= size(b) .or. n /= size(c)+1 .or. n /= size(r) .or. n /= size(u)) &
+      call stopProgram('tridag_ser: must have same sized arrays    ')
+
+    bet = b(1)
+    if (bet == 0.0_DP) &
+      call stopProgram('tridag_ser: Error at code stage 1    ')
+
+    u(1) = r(1)/bet
     do j = 2,n
-       gam(j)=c(j-1)/bet
+       gam(j) = c(j-1)/bet
        bet = b(j)-a(j-1)*gam(j)
        if (bet == 0.0_DP) &
-            call nrerror('tridag_ser: Error at code stage 2')
-       u(j)=(r(j)-a(j-1)*u(j-1))/bet
+            call stopProgram('tridag_ser: Error at code stage 2    ')
+       u(j) = (r(j)-a(j-1)*u(j-1))/bet
     enddo
     do j = n-1,1,-1
-       u(j)=u(j)-gam(j+1)*u(j+1)
+       u(j) = u(j)-gam(j+1)*u(j+1)
     enddo
   end subroutine tridag_ser
   !-----------------------------------------------------------------
@@ -218,7 +232,6 @@ end module
 !
 ! returns: t_lag timelag in seconds
       use verbosity; use nrtype; use nrutil; use filterType
-      use nr, only: correl
       implicit none
       real(WP),intent(out):: t_lag
       character(len=128),intent(in):: fileDelta,fileReference
@@ -260,7 +273,6 @@ end module
 !
 ! returns: t_lag timelag in seconds
       use verbosity; use nrtype; use nrutil; use filterType
-      use nr, only: correl
       implicit none
       character(len=128),intent(in):: fileDelta,fileReference
       real(WP),intent(in):: startingTime,endingTime
@@ -301,7 +313,6 @@ end module
 !
 ! returns: t_lag timelag in seconds
       use verbosity;use nrtype; use nrutil; use propagationStartup;use filterType
-      use nr, only: correl; use verbosity
       implicit none
       integer::i,station,index,zeropad,ierror
       real(WP):: seismo(2,WindowSIZE),seismoRef(2,WindowSIZE),t_lag,startingTime,endtime,time,timeRef,displace,displaceRef
@@ -489,15 +500,8 @@ end module
         close(10)
       endif
 
-      ! gets cross-correlation (by numerical recipes)
-      ! Computes the correlation of two real datasets data1and data2 of length N (includ-
-      ! ing any user-supplied zeropadding). N must be an integer power of 2. The answer is
-      ! returned as the function correl, an array of length N. The answer is stored in wrap-
-      ! around order, i.e., correlations at increasingly negative lags are in correl(N) on down to
-      ! correl(N/2+1), while correlations at increasingly positive lags are in correl(1) (zero
-      ! lag) on up to correl(N/2). Sign convention of this routine: if data1 lags data2, i.e.,
-      ! is shifted to the right of it, then correl will show a peak at positive lags.
-      crosscorrelation=correl(seismoWindow,seismoRefWindow)
+      ! gets cross-correlation
+      crosscorrelation = correl(seismoWindow,seismoRefWindow)
 
       ! alternative
       !call time_correl(seismoWindow,seismoRefWindow,crosscorrelation,WindowSIZE)
@@ -672,13 +676,12 @@ end module
 !       length                                           - array size
 !
 ! see remark from function correl():
-! Computes the correlation of two real datasets data1and data2 of length N (includ-
-! ing any user-supplied zeropadding). N must be an integer power of 2. The answer is
-! returned as the function correl, an array of length N. The answer is stored in wrap-
-! around order, i.e., correlations at increasingly negative lags are in correl(N) on down to
-! correl(N/2+1), while correlations at increasingly positive lags are in correl(1) (zero
-! lag) on up to correl(N/2). Sign convention of this routine: if data1 lags data2, i.e.,
-! is shifted to the right of it, then correl will show a peak at positive lags.
+! Computes the correlation of two real datasets data1 and data2 of length N (including any user-supplied zeropadding).
+! N must be an integer power of 2. The answer is returned as the function correl, an array of length N.
+! The answer is stored in wrap-around order, i.e., correlations at increasingly negative lags are in correl(N) on down to
+! correl(N/2+1), while correlations at increasingly positive lags are in correl(1) (zero lag) on up to correl(N/2).
+! Sign convention of this routine: if data1 lags data2, i.e., is shifted to the right of it, then correl will show
+! a peak at positive lags.
 !
 ! i found a problem when i take the absolute maximum of the cross-correlation. the
 ! traces could be shifted by PI, so that their "anti"-correlation was maximum.
@@ -1622,7 +1625,6 @@ end module
 !
 ! returns: t_lag timelag in seconds
       use verbosity; use nrtype; use nrutil; use filterType
-      use nr, only: correl
       use propagationStartup, only: datadirectory,dt
       implicit none
       character(len=128),intent(in):: fileDelta,fileReference
@@ -1672,7 +1674,6 @@ end module
 !
 ! returns: t_lag (timelag in seconds), amplification (factor to scale homogeneous seismogram with)
       use verbosity; use nrtype; use nrutil; use filterType
-      use nr, only: correl
       use propagationStartup, only: datadirectory,dt
       implicit none
       real(WP),intent(out):: t_lag,amplification

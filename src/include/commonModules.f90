@@ -73,8 +73,7 @@
         ! membranecorrection: [s] to correct wave period in filtering routines;
         !                                   -10.0 for grid level 6 (empirical value; compare with single
         !                                   frequency kernel cross-sections)
-        ! ANALYTICAL_CORRELATION: calculates also the analytically derived timelag &
-        !                                                   kernel value
+        ! ANALYTICAL_CORRELATION: calculates also the analytically derived timelag kernel value
         logical,parameter :: FILTERINITIALSOURCE    = .true. !.true. for inversions/kernels
         logical,parameter :: FILTERSEISMOGRAMS      = .false.
         logical,parameter :: BW_FIXFREQUENCY        = .true.
@@ -266,6 +265,7 @@
         logical,parameter:: ADJOINT_ONTHEFLY            = .false.
         logical,parameter:: ADJOINT_STARTATZERO         = .false.
         logical,parameter:: PRECALCULATE_DERIVATIVES    = .false.
+        logical,parameter:: BYSPLINE                    = .false.
 
         ! adjoint variables
         logical:: Adjoint_Program                        = .false.
@@ -338,8 +338,8 @@
         real(WP),allocatable,dimension(:,:)::forceTermPrescribed
         logical:: sourceOnFile = .false.
         integer:: sourceFileID = 201
-        integer::SH_lmx,SH_ncoef
-        real,allocatable,dimension(:)::SH_coef
+        integer:: SH_lmx,SH_ncoef
+        real,allocatable,dimension(:):: SH_coef
         ! rotate source&receiver locations /
         ! heterogeneous phase map to equatorial plane (by default)
         logical:: rotate_frame = .false.

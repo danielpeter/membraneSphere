@@ -662,7 +662,6 @@
       real(WP):: seismo(3),seismoAdjoint(3),seismoTmp(numofTimeSteps),timewindow
       real(WP):: kernelVal,val1,val2,for1,for2,for3,for4
       real(WP):: derivativeActual,derivativeNext,kernelfactor
-      logical:: bySpline = .false.
 
       ! current time step index
       index = timestep - firsttimestep  + 1
@@ -687,7 +686,7 @@
       endif
 
       ! calculate kernel value with actual available displacement values
-      if ( bySpline ) then
+      if ( BYSPLINE ) then
         ! time integral calculated as a sum of discrete rectangles with size dt
         !if ( (index > numofTimeSteps-2) .or. (index < 1) ) then
         !  return
@@ -845,7 +844,6 @@
       real(WP):: kernelVal,val1,val2,derivativeActual,derivativeNext,kernelfactor
       real(WP):: arrivalTime,distance,vertexCellArea,vertexCellAreaRad,timewindow,for1,for2,for3
       real(WP)::seismo(2,numofTimeSteps),seismoAdjoint(2,numofTimeSteps),seismoTmp(numofTimeSteps)
-      logical,parameter:: bySPLINE = .false.
 
       ! console output
       if ( MASTER .and. VERBOSE) print *,'  calculating kernel values...'
@@ -926,7 +924,7 @@
         ! kernel value
         kernelVal = 0.0_WP
         seismoTmp(:)=0.0_WP
-        if ( bySPLINE ) then
+        if ( BYSPLINE ) then
           ! compute second derivative of forward seismogram
           call getSecondDerivative(seismo(2,:),seismo(2,:),dt,numofTimeSteps)
 

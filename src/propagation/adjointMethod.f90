@@ -11,30 +11,11 @@
 !
 !=====================================================================
 !
-! Copyright July 2006, by the ETH Zurich.
-!
-! The software shall be used for scientific purposes only, excluding industrial or commercial
-! purposes.
-!
-! The software is furnished on an "as is" basis and the copyright holder in no way warrants
-! the software or any of its results and is in no way liable for any use made of the software.
-! The copyright holder disclaims all warranties, representations, and statements, express or
-! implied, statutory or otherwise, including, without limitation, any implied warranties of
-! merchantability or fitness for a particular purpose. In no event shall the copyright holder be
-! liable for any actual, direct, indirect, special, consequential, or incidental damages, however
-! caused, including, without limitation, any damages arising out of the use or operation of
-! the software, loss of use of the software, or damage of any sort to the user.
-!
-! If you use this code for your own research, please send an email
-! to Daniel Peter < dpeter@erdw.ethz.ch> for information.
-!
 ! Proper acknowledgement shall be made to the authors of the software in publications and
 ! presentations resulting from the use of this software:
 !
 ! Peter, D., C. Tape, L. Boschi and J. H. Woodhouse, 2007. Surface wave tomography:
 ! global membrane waves and adjoint methods, Geophys. J. Int., , 171: p. 1098-1117.
-!
-! Tape, C. H., 2003. Waves on a Spherical Membrane, M.Sc. thesis, University of Oxford, U.K.
 
 !-----------------------------------------------------------------------
       program adjointMethod

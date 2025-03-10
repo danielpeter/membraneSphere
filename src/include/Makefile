@@ -14,6 +14,7 @@ include_OBJECTS = \
 	$O/analyticSolutions.o \
 	$O/cellfunctions.o \
 	$O/commonModules.module.o \
+	$O/correlationRoutines.module.o \
 	$O/filterRoutines.o \
 	$O/forcingTerms.o \
 	$O/gridfunctions.o \

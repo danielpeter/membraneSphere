@@ -39,7 +39,7 @@ if [ ! -s $datafilename ];then
      exit
 fi
 
-gmt gmtset HEADER_FONT_SIZE 14 MAP_ANNOT_OBLIQUE 0 BASEMAP_TYPE plain
+gmt gmtset HEADER_FONT_SIZE 14 MAP_ANNOT_OBLIQUE 0 BASEMAP_TYPE plain GMT_HISTORY false
 gmt xyz2grd $datafilename -Gimage.bin -I1/1 $region  -N0.0 -V
 
 #gmt grdimage image.bin $portrait $offset $region -G $projection -Bg15/g15 -T -K -V -C$colormap > $ps_filename

@@ -33,7 +33,7 @@ ps_filename=$datafilename.ps
 #
 ################################################################################
 
-gmt gmtset HEADER_FONT_SIZE 14 MAP_ANNOT_OBLIQUE 0 BASEMAP_TYPE plain
+gmt gmtset HEADER_FONT_SIZE 14 MAP_ANNOT_OBLIQUE 0 BASEMAP_TYPE plain GMT_HISTORY false
 
 #gmt gmtset GLOBAL_X_SCALE 1. GLOBAL_Y_SCALE 1.
 #gmt gmtset ANOT_FONT Times-Roman ANOT_FONT_SIZE 15

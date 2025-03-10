@@ -3,16 +3,24 @@
 # arguments:
 #  $1 = phase velocity map , e.g. PhaseMap.dat
 #  $2 = show relative percentages
+#  $3 = reference velocity
 
 # check
 if [ ! -s "$1" ]; then
   echo "usage: "
-  echo "    gmtplot_phaseMap PhaseMap.dat [yes]"
+  echo "    gmtplot_phaseMap PhaseMap.dat [yes] [c0]"
   echo
   exit
 fi
 
+# input arguments
+datafilename=$1
+# relative percent of a reference speed
+percent=$2
+# reference speed
+c0=$3
 
+## GMT
 # Geographical variables:
 projection=-JQ0/18
 #projection=-JM15
@@ -24,23 +32,47 @@ offsets='-X1.5 -Y14'
 portrait=-P
 verbose=-V
 
-# relative percent of a reference speed
-percent=$2
-
+# colormap / annotation
 if [ "$percent" = "yes" ];then
-  # relative percent of reference speed
-  echo "plotting relative speed percentages of c0=4.77915 ..."
-
   # colortable
   colormap=seis.L150.1.cpt
-
   scaleAnotate=-Ba1:"%":
 else
   # colortable
   colormap=seis.L150.3.cpt
-
   scaleAnotate=-Ba.1f1:"km/s":
 fi
+
+# relative percent of reference speed
+c_ref=`grep 'reference velocity' $datafilename | sed -E 's/.*=\s*([0-9.]+).*/\1/'`
+if [ "${c_ref}" != "" ]; then
+  echo "data file  : $datafilename"
+  echo "             file header has reference velocity = ${c_ref}"
+  echo
+  # check if phase map is giving perturbations in percent
+  if [[ "$datafilename" == *".percent."* ]] && [[ "${c_ref}" != "" ]]; then
+    echo "data file is phase map given in percent."
+    # colortable
+    colormap=seis.L150.1.cpt
+    scaleAnotate=-Ba1:"%":
+    echo
+    # plotting as perturbation to reference velocity in percent only makes sense for phase maps giving absolute phase speed values
+    if [ "$percent" == "yes" ]; then
+      echo "Phase map is already given in percent - calculating perturbations to reference velocity in percent not needed."
+      exit 1
+    fi
+  fi
+fi
+
+if [ "$percent" = "yes" ];then
+  # relative percent of reference speed
+  echo
+  echo "plotting phase speed perturbation as percentages"
+  if [ "${c0}" == "" ]; then c0=4.77915; fi
+  echo "         relative speed percentages of c0=${c0} ..."
+  echo
+fi
+
 
 # check if colormap file exists in ../../scripts/ folder
 if [ -e ../../scripts/$colormap ]; then colormap=../../scripts/$colormap; fi
@@ -50,7 +82,6 @@ if [ ! -e $colormap ]; then
 fi
 
 # file output
-datafilename=$1
 ps_filename=$1.ps
 title='phase velocity map'
 
@@ -60,7 +91,7 @@ title='phase velocity map'
 #
 ################################################################################
 
-gmt gmtset HEADER_FONT_SIZE 14 MAP_ANNOT_OBLIQUE 0 BASEMAP_TYPE plain
+gmt gmtset HEADER_FONT_SIZE 14 MAP_ANNOT_OBLIQUE 0 BASEMAP_TYPE plain GMT_HISTORY false
 
 #gmt gmtset GLOBAL_X_SCALE 1. GLOBAL_Y_SCALE 1.
 #gmt gmtset ANOT_FONT Times-Roman ANOT_FONT_SIZE 15
@@ -79,15 +110,20 @@ fi
 # take size 0.4/0.05 for grid level 4/8 and Europe
 # take size 0.1      for grid level 4 and World
 
-
+# create temporary table
 if [ "$percent" = "yes" ];then
-  gawk '{if((substr($1,1,1)!="#")&&($1!=""))print($1,$2,(($3-4.77915)*100/4.77915),0.05)}' $datafilename | \
-	 gmt psxy $verbose $region $projection -K -G002/170/002 -Sc -C$colormap $offsets $portrait > $ps_filename
+  gawk '{if((substr($1,1,1)!="#")&&($1!=""))print($1,$2,(($3-c0)/c0*100),0.05)}' c0=${c0} $datafilename > gmt.table.txt
 else
-  gawk '{if((substr($1,1,1)!="#")&&($1!=""))print($1,$2,$3,0.05)}' $datafilename | \
-	 gmt psxy $verbose $region $projection -K -G002/170/002 -Sc -C$colormap $offsets $portrait > $ps_filename
+  gawk '{if((substr($1,1,1)!="#")&&($1!=""))print($1,$2,$3,0.05)}' $datafilename > gmt.table.txt
 fi
 
+# infos
+echo "extracted table infos:"
+gmt info gmt.table.txt
+echo
+
+# plotting
+gmt psxy gmt.table.txt $verbose $region $projection -K -G002/170/002 -Sc -C$colormap $offsets $portrait > $ps_filename
 
 # source
   #gawk '{if((substr($1,1,1)!="#")&&($1!=""))if(NR==77607)print($1,$2,0.5)}' $datafilename | \

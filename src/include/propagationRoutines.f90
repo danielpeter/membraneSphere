@@ -308,10 +308,14 @@
       ! store to file
       if ( MASTER ) then
         if ( VERBOSE ) then
-          print *,'  writing to file:'
-          print *,'      ',datadirectory(1:len_trim(datadirectory))//'PhaseMap.dat'
+          print *,'  writing to file: '//trim(datadirectory)//'PhaseMap.dat'
         endif
-        open(10,file=datadirectory(1:len_trim(datadirectory))//'PhaseMap.dat')
+        open(10,file=trim(datadirectory)//'PhaseMap.dat')
+        ! header info
+        write(10,*) '# Phase map'
+        write(10,*) '# format:'
+        ! format: #lon #lat #phase-velocity #vertexID
+        write(10,*) '#lon #lat #phase-velocity #vertexID'
       endif
 
       ! for all grid vertices
@@ -323,6 +327,7 @@
         ! file output
         if ( MASTER ) then
           call getSphericalCoord_Lat(i,lat,lon)
+          ! format: #lon #lat #phase-velocity #vertexID
           write(10,*) lon,lat,sqrt(phaseVelocitySquare(i)),i
           !write(11,*) i,real(phaseVelocitySquare(i))
         endif

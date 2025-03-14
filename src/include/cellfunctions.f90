@@ -33,9 +33,11 @@
 ! (formula:http://mathforum.org/library/drmath/view/65316.html)
       use cells; use verbosity
       implicit none
-      integer:: vertex
-      real(WP):: area,vectorA(3),vectorB(3),vectorC(3),angleA,angleB,angleC,normalAB, normalAC
-      integer:: n,k, corner1,corner2,corner3
+      integer,intent(in):: vertex
+      real(WP),intent(out):: area
+      ! local parameters
+      real(WP):: vectorA(3),vectorB(3),vectorC(3)
+      integer:: n,corner1,corner2,corner3
       real(WP):: a,b,c,s,excess,tanexcess4,haversine
 
       !check index
@@ -98,29 +100,34 @@
 ! return: distances array [in km]
       use cells; use verbosity
       implicit none
-      integer:: vertex,n,k
-      real(WP):: distances(0:6), distance
+      integer,intent(in):: vertex
+      real(WP),intent(out):: distances(0:6)
+      ! local parameters
+      integer:: n
+      real(WP):: distance
       real(WP):: vectorA(3),vectorB(3)
 
-      !cell center reference
-      vectorA(:)=vertices(vertex, : )
+      ! cell center reference
+      vectorA(:) = vertices(vertex, : )
 
-      !check index
+      ! check index
       if ( cellNeighbors(vertex,0) > 6 .or. cellNeighbors(vertex,0) < 5) then
         print *,'Error: vertex',vertex
         call stopProgram( 'abort-cellDistances cellNeighbors    ')
       endif
 
-      !get distances
+      distances(:) = 0.0_WP
+
+      ! get distances
       distance = 0.0
       distances(0) = cellNeighbors(vertex,0)
       do n = 1, cellNeighbors(vertex,0)
-        !determine distance to neighbor
+        ! determine distance to neighbor
         vectorB(:) = vertices(cellNeighbors(vertex,n), : )
 
-        !calculate arc distance between these two
+        ! calculate arc distance between these two
         call greatCircleDistance(vectorA,vectorB,distance)
-        distances(n)=EARTHRADIUS*distance
+        distances(n) = EARTHRADIUS*distance
       enddo
 
       end
@@ -144,21 +151,26 @@
 ! return: lengths [in km]
       use cells; use verbosity
       implicit none
-      integer:: vertex,n,k,corner1,corner2
-      real(WP):: vectorA(3),vectorB(3),lengths(0:6),distance
+      integer,intent(in):: vertex
+      real(WP),intent(out):: lengths(0:6)
+      ! local parameters
+      integer:: n,corner1,corner2
+      real(WP):: vectorA(3),vectorB(3),distance
 
-      !check index
+      ! check index
       if ( cellFace(vertex,0) > 6 .or. cellFace(vertex,0) < 5) then
         print *,'Error: vertex',vertex,'faces',cellFace(vertex,0)
         call stopProgram( 'abort-cellEdgesLength cellFace   ')
       endif
 
-      !get cell edge lengths
+      lengths(:) = 0.0_WP
+
+      ! get cell edge lengths
       !write(11,*) '#',vertex
       lengths(0) = cellFace(vertex,0)
       do n = 1, cellFace(vertex,0)
         ! determine which corners (they are ordered clockwise)
-        corner1=cellFace(vertex,n)
+        corner1 = cellFace(vertex,n)
         corner2 = cellFace(vertex, mod(n,cellFace(vertex,0))+1)
 
         !get corresponding corner vectors
@@ -172,7 +184,7 @@
 
         !calculate arc distance between these two
         call greatCircleDistance(vectorA,vectorB,distance)
-        lengths(n)=EARTHRADIUS*distance
+        lengths(n) = EARTHRADIUS*distance
 
         !print an output file for gnuplot
         !write(11,'(3f12.8,f12)') vectorA(1),vectorA(2),vectorA(3),
@@ -207,8 +219,11 @@
 ! (formula:http://mathworld.wolfram.com/SphericalTrigonometry.html)
       use cells; use verbosity
       implicit none
-      integer:: vertex,n,k, corner1,corner2,corner3
-      real(WP):: area,vectorA(3),vectorB(3),vectorC(3),angleA,angleB,angleC,normalAB, normalAC
+      integer,intent(in):: vertex
+      real(WP),intent(out):: area
+      ! local parameters
+      integer:: n,corner1,corner2,corner3
+      real(WP):: vectorA(3),vectorB(3),vectorC(3),angleA,angleB,angleC
 
       !check index
       if ( cellFace(vertex,0) > 6 .or. cellFace(vertex,0) < 5) then
@@ -219,7 +234,7 @@
       corner1 = vertex
       vectorA(:) = vertices(corner1,:)
 
-      area = 0.0
+      area = 0.0_WP
       do n = 1, cellFace(vertex,0)
         !determine triangles corner indices
         corner2=cellFace(vertex,n)
@@ -252,6 +267,7 @@
       implicit none
       integer,intent(in):: timestep
       logical,intent(in):: statfile_output
+      ! local parameters
       character(len=24):: charstep
 
       ! writes precalculated values to files
@@ -291,24 +307,24 @@
       end subroutine
 
 
-!c-----------------------------------------------------------------------
+!-----------------------------------------------------------------------
       subroutine dataVariation(statfile_output,plotfile_output)
-!c-----------------------------------------------------------------------
-!c calculates variation of cell areas, cell center distances,
-!c and cell edge lengths
-!c
-!c return: prints output
+!-----------------------------------------------------------------------
+! calculates variation of cell areas, cell center distances,
+! and cell edge lengths
+!
+! return: prints output
       use cells
       implicit none
       !include 'spherical.h'
       logical,intent(in):: statfile_output,plotfile_output
+      ! local parameters
       real(WP):: centerDistances(0:6),edgesLength(0:6)
-      real(WP):: laplace,area
-      real(WP):: sumNeighbors, sumFactor
-      integer::               n,k,i,vertex
+      real(WP):: area
+      integer::  n,k
       real(WP):: averageArea, averageLength
       real(WP):: averageDist
-      integer::               areaCount, lengthCount, distCount
+      integer::  areaCount, lengthCount, distCount
       real(WP):: areaMin, areaMax
       real(WP):: distMin, distMax
       real(WP):: edgeMin, edgeMax
@@ -454,37 +470,37 @@
       print *,'CELL DERIVATIVE FRACTIONS'
       print *,'min/max fraction:',fractionMin,fractionMax,' - ',fractionMinIndex,fractionMaxIndex
       print *,'global function R:',fractionR
+
       end
 
 
-
-
-!c-----------------------------------------------------------------------
+!-----------------------------------------------------------------------
       subroutine cellDerivativeFractions(vertex,fractions,fractionavg,plotfile_output)
-!c-----------------------------------------------------------------------
-!c calculates for vertex the fraction of the distance
-!c between an edge midpoint and the corresponding
-!c cell center line midpoint for all cell neighbors
-!c (defined after Heikes&Randall
-!c
-!c input:
-!c    vertex     - index of reference vertex
-!c    fractions      - fractions for all neighbors
-!c
-!c return: fractions
+!-----------------------------------------------------------------------
+! calculates for vertex the fraction of the distance
+! between an edge midpoint and the corresponding
+! cell center line midpoint for all cell neighbors
+! (defined after Heikes&Randall
+!
+! input:
+!    vertex     - index of reference vertex
+!    fractions      - fractions for all neighbors
+!
+! return: fractions
       use cells
       implicit none
       !include 'spherical.h'
-      logical,intent(in):: plotfile_output
       integer,intent(in):: vertex
       real(WP),intent(out):: fractions(0:6),fractionavg
+      logical,intent(in):: plotfile_output
+      ! local parameters
       real(WP):: fraction, distance
       real(WP):: vectorA(3),vectorB(3),vectorC(3),vectorD(3)
       integer:: n,k,corner1,corner2
       !real(WP) greatCircleDistance
       real(WP):: midpointCenterLine(3)
       real(WP):: midpointEdge(3)
-      real(WP):: edgeLength, midpointsDifference
+      real(WP):: edgeLength
 
       !check index
       if ( cellFace(vertex,0) > 6.or.cellFace(vertex,0) < 5) then

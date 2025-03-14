@@ -19,12 +19,13 @@
 ! return: vector to middle point
       use precisions
       implicit none
-      real(WP):: vector1(3),vector2(3),middle(3)
+      real(WP),intent(in):: vector1(3),vector2(3)
+      real(WP),intent(out):: middle(3)
 
       middle(1) = 0.5*(vector1(1) + vector2(1))
       middle(2) = 0.5*(vector1(2) + vector2(2))
       middle(3) = 0.5*(vector1(3) + vector2(3))
-      end
+      end subroutine
 
 !-----------------------------------------------------------------------
       subroutine getCentralpoint(vector1, vector2, vector3, central)
@@ -36,7 +37,10 @@
 ! return: vector to central point
       use precisions
       implicit none
-      real(WP):: vector1(3),vector2(3),vector3(3),central(3),vTmpA(3),vTmpB(3),vlength
+      real(WP),intent(in):: vector1(3),vector2(3),vector3(3)
+      real(WP),intent(out):: central(3)
+      ! local parameters
+      real(WP):: vTmpA(3),vTmpB(3),vlength
 
       ! using the formula with one vectorproduct
       call vectordiff(vector3,vector1,vTmpA)
@@ -56,7 +60,7 @@
       !central(2) = (vector1(2) + vector2(2)+vector3(2))/3.0
       !central(3) = (vector1(3) + vector2(3)+vector3(3))/3.0
 
-      end
+      end subroutine
 
 !-----------------------------------------------------------------------
       subroutine vectorproduct(vector1, vector2, product)
@@ -66,12 +70,13 @@
 ! return: vector product
       use precisions
       implicit none
-      real(WP):: vector1(3),vector2(3),product(3)
+      real(WP),intent(in):: vector1(3),vector2(3)
+      real(WP),intent(out):: product(3)
 
       product(1) = vector1(2)*vector2(3) - vector1(3)*vector2(2)
       product(2) = - vector1(1)*vector2(3) + vector1(3)*vector2(1)
       product(3) = vector1(1)*vector2(2) - vector1(2)*vector2(1)
-      end
+      end subroutine
 
 !-----------------------------------------------------------------------
       subroutine scalarproduct(vector1, vector2, scalar)
@@ -81,10 +86,11 @@
 ! return: scalar product
       use precisions
       implicit none
-      real(WP):: vector1(3),vector2(3),scalar
+      real(WP),intent(in):: vector1(3),vector2(3)
+      real(WP),intent(out):: scalar
 
-      scalar = vector1(1)*vector2(1)+vector1(2)*vector2(2)+vector1(3)*vector2(3)
-      end
+      scalar = vector1(1)*vector2(1) + vector1(2)*vector2(2) + vector1(3)*vector2(3)
+      end subroutine
 
 !-----------------------------------------------------------------------
       subroutine vectordiff(vector1, vector2, difference)
@@ -99,12 +105,13 @@
 ! return: difference vector
       use precisions
       implicit none
-      real(WP):: vector1(3),vector2(3),difference(3)
+      real(WP),intent(in):: vector1(3),vector2(3)
+      real(WP),intent(out):: difference(3)
 
       difference(1) = vector1(1)-vector2(1)
       difference(2) = vector1(2)-vector2(2)
       difference(3) = vector1(3)-vector2(3)
-      end
+      end subroutine
 
 !-----------------------------------------------------------------------
       subroutine vectoradd(vector1, vector2, addition)
@@ -119,12 +126,13 @@
 ! return: addition vector
       use precisions
       implicit none
-      real(WP):: vector1(3),vector2(3),addition(3)
+      real(WP),intent(in):: vector1(3),vector2(3)
+      real(WP),intent(out):: addition(3)
 
       addition(1) = vector1(1)+vector2(1)
       addition(2) = vector1(2)+vector2(2)
       addition(3) = vector1(3)+vector2(3)
-      end
+      end subroutine
 
 !-----------------------------------------------------------------------
       subroutine vectorscale(vector1, scale, scaledvector)
@@ -134,12 +142,13 @@
 ! return: scaled vector
       use precisions
       implicit none
-      real(WP):: vector1(3),scaledvector(3),scale
+      real(WP),intent(in):: vector1(3),scale
+      real(WP),intent(out):: scaledvector(3)
 
       scaledvector(1) = scale*vector1(1)
       scaledvector(2) = scale*vector1(2)
       scaledvector(3) = scale*vector1(3)
-      end
+      end subroutine
 
 !-----------------------------------------------------------------------
       subroutine normalize(vector)
@@ -149,10 +158,12 @@
 ! return: normalized vector
       use precisions
       implicit none
-      real(WP):: vector(3), vectorlength
+      real(WP),intent(inout):: vector(3)
+      ! local parameters
+      real(WP):: vectorlength
 
       call vectorscale(vector,1.0_WP/vectorlength(vector),vector)
-      end
+      end subroutine
 
 !-----------------------------------------------------------------------
       function distanceToSurface(vector1,vector2,vector3,vCheck)
@@ -164,9 +175,11 @@
 ! check formula: http://mathworld.wolfram.com/Point-PlaneDistance.html
       use precisions
       implicit none
-      real(WP):: vector1(3),vector2(3),vector3(3), vCheck(3)
+      real(WP),intent(in):: vector1(3),vector2(3),vector3(3),vCheck(3)
+      real(WP):: distanceToSurface
+      ! local parameters
       real(WP):: normale(3), tmpA(3), tmpB(3),tmpC(3)
-      real(WP):: distanceToSurface,length, dist
+      real(WP):: length, dist
 
       ! get the unit normal of the surface spanned by the first 3 vector
       call vectordiff(vector2,vector1,tmpA)
@@ -182,7 +195,7 @@
 
       distanceToSurface = dist
       return
-      end
+      end function
 
 !-----------------------------------------------------------------------
       function distance(vector1, vector2)
@@ -193,14 +206,17 @@
 ! return: distance
       use precisions
       implicit none
-      real(WP):: vector1(3),vector2(3),vTmp(3),distance
+      real(WP),intent(in):: vector1(3),vector2(3)
+      real(WP):: distance
+      ! local parameters
+      real(WP):: vTmp(3)
 
       ! get vector length between these two
       call vectordiff(vector1, vector2, vTmp)
       call scalarproduct(vTmp,vTmp,distance)
       distance = sqrt(distance)
       return
-      end
+      end function
 
 !-----------------------------------------------------------------------
       function vectorlength(vector)
@@ -213,13 +229,16 @@
 ! return: vectorlength
       use precisions
       implicit none
-      real(WP):: vectorlength,vector(3),scalar
+      real(WP),intent(in):: vector(3)
+      real(WP):: vectorlength
+      ! local parameters
+      real(WP):: scalar
 
       ! get scalarproduct
       scalar = vector(1)*vector(1)+vector(2)*vector(2)+vector(3)*vector(3)
       vectorlength = sqrt(scalar)
       return
-      end
+      end function
 
 
 !-----------------------------------------------------------------------
@@ -246,8 +265,11 @@
 ! return: central vector
        use precisions; use verbosity
        implicit none
-       integer:: ordered
-       real(WP):: vectors(5,3),central(3),vRef(3),vTmpA(3), vTmpB(3), vTmpC(3)
+       integer,intent(in):: ordered
+       real(WP),intent(in):: vectors(5,3)
+       real(WP),intent(out):: central(3)
+       ! local parameters
+       real(WP):: vRef(3),vTmpA(3), vTmpB(3), vTmpC(3)
        real(WP):: sideMiddle(3),side, minside, maxside,distance, factor
        integer:: farNeighbors(2), count,i,k
 
@@ -266,7 +288,7 @@
        else
           ! get side length of pentagon and far neighbors distance
           minside = 100000.0
-          maxside= -100000.0
+          maxside = -100000.0
           do i = 2,5
             do k = 1,3
               vTmpA(k) = vectors(i,k)
@@ -291,7 +313,7 @@
               vTmpA(k) = vectors(i,k)
             enddo
 
-            if ( abs(distance(vRef,vTmpA) -maxside ) < 1.0e-4) then
+            if ( abs(distance(vRef,vTmpA) - maxside ) < 1.0e-4) then
               count = count+1
               farNeighbors(mod(count,2)+1) = i
             endif
@@ -308,8 +330,8 @@
 
        ! get middle point of far side
        do i = 1,3
-       	 vTmpB(i) = vectors( farNeighbors(1), i)
-         vTmpC(i) = vectors( farNeighbors(2), i)
+          vTmpB(i) = vectors(farNeighbors(1),i)
+          vTmpC(i) = vectors(farNeighbors(2),i)
        enddo
        call midpoint(vTmpB,vTmpC,sideMiddle)
 
@@ -321,7 +343,7 @@
        call vectorscale(central, factor, central)    !central points R- > center
        call vectoradd(vRef, central, central)     !central point Orig- > center
 
-       end
+       end subroutine
 
 !-----------------------------------------------------------------------
       subroutine projectToSphere(vertices,nCount, vector)
@@ -337,9 +359,13 @@
 ! return: projected vector
       use precisions; use verbosity
       implicit none
-      integer:: k,nCount
-      real(WP):: vertices(nCount,3), vector(3), vectorlength, vNormale(3)
-      real(WP):: vTmpA(3),vTmpB(3),vTmpC(3), vProj(3), factor1,factor2, A,B,C,det
+      integer,intent(in):: nCount
+      real(WP),intent(in):: vertices(nCount,3)
+      real(WP),intent(inout):: vector(3)
+      ! local parameters
+      integer:: k
+      real(WP):: vectorlength, vNormale(3)
+      real(WP):: vTmpA(3),vTmpB(3),vTmpC(3),factor1,factor2, A,B,C,det
 
       ! be sure vector is not already on sphere
       if ( abs(vectorlength( vector) - 1.0) < 1.0e-5) then
@@ -367,7 +393,7 @@
       !       with det= sqrt((2v*n)_-4*(n)_((v)_-1))
       call scalarproduct( vNormale,vNormale,A)
       call scalarproduct( vector,vNormale,B)
-      B= 2*B
+      B = 2*B
       call scalarproduct( vector, vector,C)
       C = C - 1
       det = B**2 - 4*A*C
@@ -378,8 +404,8 @@
       endif
       det = sqrt(det)
 
-      factor1= (-B+det)/(2*A)
-      factor2= (-B-det)/(2*A)
+      factor1 = (-B+det)/(2*A)
+      factor2 = (-B-det)/(2*A)
 
       ! project on closer side of the sphere
       if ( abs(factor1) < abs(factor2) ) then
@@ -391,7 +417,7 @@
       ! get resulting vector
       call vectoradd(vector, vNormale, vector)
 
-      end
+      end subroutine
 
 !-----------------------------------------------------------------------
       integer function getClosestPoint(vertices,vDestination)
@@ -406,7 +432,9 @@
 !            to the desired location
       use precisions; use verbosity
       implicit none
-      real(WP):: vertices(32,3), vDestination(3),vTmp(3),distance, minimum, tmpDist
+      real(WP),intent(in):: vertices(32,3), vDestination(3)
+      ! local parameters
+      real(WP):: vTmp(3),distance, minimum, tmpDist
       integer:: n, k, vertex
 
       vertex = -1
@@ -414,7 +442,7 @@
       do n = 1,32
         ! get vertex vector
         do k = 1,3
-          vTmp(k)=vertices(n,k)
+          vTmp(k) = vertices(n,k)
         enddo
 
         ! get minimal distance between two points
@@ -427,8 +455,7 @@
 
       getClosestPoint = vertex
       return
-      end
-
+      end function
 
 !----------------------------------------------------------------------
       subroutine getSphericalCoord(vertex,colatitude,longitude)
@@ -443,8 +470,11 @@
 ! returns: colatitude between [0,PI], longitude between [0,2PI[ in radian
       use cells
       implicit none
-      integer:: vertex,k
-      real(WP):: colatitude, longitude,vectorlength,vector(3)
+      integer,intent(in):: vertex
+      real(WP),intent(out):: colatitude, longitude
+      ! local parameters
+      integer:: k
+      real(WP):: vectorlength,vector(3)
 
       !get corresponding vertex vector
       do k = 1,3
@@ -471,7 +501,7 @@
       !print *,'colatitude',colatitude
       !print *,'longitude',longitude
 
-      end
+      end subroutine
 
 !----------------------------------------------------------------------
       subroutine getSphericalCoord_Lat(vertex,latitude,longitude)
@@ -489,8 +519,10 @@
 ! returns: latitude/longitude in degrees
       use cells
       implicit none
-      integer::  vertex,k
-      real(WP):: latitude,longitude,vectorlength,vector(3)
+      integer,intent(in)::  vertex
+      real(WP),intent(out):: latitude,longitude
+      ! local parameters
+      real(WP):: vector(3)
 
       !get corresponding vertex vector
       vector(:) = vertices(vertex,:)
@@ -503,7 +535,8 @@
 
       !calculate spherical coordinates
       call getSphericalCoordinates(vector,latitude,longitude)
-      end
+
+      end subroutine
 
 
 !-----------------------------------------------------------------------
@@ -518,12 +551,15 @@
 ! return: latitude [-90,90], longitude [0, 360[ in degree
       use precisions
       implicit none
-      real(WP):: vector(3),x,y,z,latitude,longitude
+      real(WP),intent(in):: vector(3)
+      real(WP),intent(out):: latitude,longitude
+      ! local parameters
+      real(WP):: x,y,z
 
       ! initialize
-      x=vector(1)
-      y=vector(2)
-      z=vector(3)
+      x = vector(1)
+      y = vector(2)
+      z = vector(3)
 
       ! determine longitude and latitude
       longitude = atan2(y,x)
@@ -552,20 +588,22 @@
 ! return: x,y,z
       use precisions
       implicit none
-      real(WP):: x,y,z,latitude,longitude,colat,lon
+      real(WP),intent(in):: latitude,longitude
+      real(WP),intent(out):: x,y,z
+      ! local parameters
+      real(WP):: colat,lon
 
       lon = DEGREE2RAD*longitude
       colat = PI/2.0_WP - DEGREE2RAD*latitude
 
       x = cos(lon)*sin(colat)
       y = sin(lon)*sin(colat)
-      z=cos(colat)
-      end
+      z = cos(colat)
+      end subroutine
 
 
 !-----------------------------------------------------------------------
-      subroutine sphericalAngle(vectorA,vectorB,vectorC, &
-     &                                          angle)
+      subroutine sphericalAngle(vectorA,vectorB,vectorC,angle)
 !-----------------------------------------------------------------------
 ! calculates the angle in the corner of a spherical triangle
 !
@@ -577,7 +615,10 @@
 ! (formula:http://mathworld.wolfram.com/SphericalTrigonometry.html)
       use precisions
       implicit none
-      real(WP):: vectorA(3),vectorB(3),vectorC(3), angle,normalAB(3),normalAC(3),normalBC(3)
+      real(WP),intent(in):: vectorA(3),vectorB(3),vectorC(3)
+      real(WP),intent(out):: angle
+      ! local parameters
+      real(WP):: normalAB(3),normalAC(3),normalBC(3)
       real(WP):: normalResult(3), vectorlength,scalar
 
       !get cross products
@@ -585,11 +626,12 @@
       call vectorproduct(vectorA,vectorC, normalAC)
       call vectorproduct(vectorB,vectorC, normalBC)
       call vectorproduct(normalAB,normalAC,normalResult)
+
       !calculate angle at A
       scalar = vectorlength(normalResult)/(vectorlength(normalAB)*vectorlength(normalAC))
       angle = asin( scalar )
 
-      end
+      end subroutine
 
 !-----------------------------------------------------------------------
       function haversine(vector1,vector2)
@@ -604,8 +646,11 @@
 ! (formula:http://mathforum.org/library/drmath/view/51879.html)
       use precisions
       implicit none
-      real(WP):: vector1(3),vector2(3),dlon,dlonhalf,dlat,dlathalf,lon1,lon2,lat1,lat2
-      real(WP):: haversine,a
+      real(WP),intent(in):: vector1(3),vector2(3)
+      real(WP):: haversine
+      ! local parameters
+      real(WP):: dlon,dlonhalf,dlat,dlathalf,lon1,lon2,lat1,lat2
+      real(WP):: a
 
       ! get longitude and latitudes
       lon1 = atan2(vector1(2),vector1(1))
@@ -617,13 +662,14 @@
 
       !haversine formula
       dlon = lon2 - lon1
-      dlonhalf= dlon*0.5_WP
+      dlonhalf = dlon*0.5_WP
       dlat = lat2 - lat1
       dlathalf = dlat*0.5_WP
       a = sin(dlathalf)*sin(dlathalf)+cos(lat1)*cos(lat2)*sin(dlonhalf)*sin(dlonhalf)
+
       haversine = 2.0_WP*atan2(sqrt(a), sqrt(1.0_WP-a))
       return
-      end
+      end function
 
 
 !-----------------------------------------------------------------------
@@ -639,12 +685,16 @@
 ! return: vertex which is nearest
       use cells; use propagationStartup
       implicit none
-      real(WP):: lat,lon,desiredLat,desiredLon,vectorS(3),vectorV(3),distanceMin,distance
-      integer:: vertex,vertexMin,n
+      real(WP),intent(in):: desiredLat,desiredLon
+      integer,intent(out):: vertex
+      ! local parameters
+      real(WP):: lat,lon,vectorS(3),vectorV(3),distanceMin,distance
+      integer:: vertexMin,n
 
       !pick vector on unit sphere
       lat = DEGREE2RAD*desiredLat
       lon = DEGREE2RAD*desiredLon
+
       vectorS(1) = cos(lat)*cos(lon)
       vectorS(2) = cos(lat)*sin(lon)
       vectorS(3) = sin(lat)
@@ -666,8 +716,9 @@
           return
         endif
       enddo
+
       vertex = vertexMin
-      end
+      end subroutine
 
 
 !-----------------------------------------------------------------------
@@ -683,43 +734,48 @@
 ! returns: rotated vector
       use precisions
       implicit none
-      real(WP):: vector(3),rotVector(3),rot(3,3),tmp(3)
+      real(WP),intent(in):: vector(3),rot(3,3)
+      real(WP),intent(out):: rotVector(3)
+      ! local parameters
+      real(WP):: tmp(3)
       integer:: i,j
 
       ! matrix - vector multiplication
       do i = 1,3
-        tmp(i)=0.0_WP
+        tmp(i) = 0.0_WP
         do j = 1,3
-          tmp(i)= tmp(i)+rot(i,j)*vector(j)
+          tmp(i) = tmp(i)+rot(i,j)*vector(j)
         enddo
       enddo
 
       rotVector = tmp
-      end
+      end subroutine
 
 !-----------------------------------------------------------------------
       subroutine matrixMultip(mat1,mat2, mat)
 !-----------------------------------------------------------------------
 ! calculates the matrix multiplication
-! returns: rotated vector
       use precisions
       implicit none
-      real(WP):: mat1(3,3),mat2(3,3),mat(3,3),tmp(3,3)
+      real(WP),intent(in):: mat1(3,3),mat2(3,3)
+      real(WP),intent(out):: mat(3,3)
+      ! local parameters
+      real(WP):: tmp(3,3)
       integer:: i,j,k
 
       ! matrix - matrix multiplication
       do i = 1,3
         do j = 1,3
-          tmp(i,j)=0.0_WP
+          tmp(i,j) = 0.0_WP
           do k = 1,3
-             tmp(i,j)=tmp(i,j)+mat1(i,k)*mat2(k,j)
+             tmp(i,j) = tmp(i,j) + mat1(i,k) * mat2(k,j)
           enddo
         enddo
       enddo
 
       mat = tmp
 
-      end
+      end subroutine
 
 !-----------------------------------------------------------------------
       subroutine getRotationMatrix(vsource,vreceiver,rotationMatrix)
@@ -733,7 +789,9 @@
 ! returns: rotation matrix
       use precisions
       implicit none
-      real(WP):: vsource(3),vreceiver(3),rotationMatrix(3,3)
+      real(WP),intent(in):: vsource(3),vreceiver(3)
+      real(WP),intent(out):: rotationMatrix(3,3)
+      ! local parameters
       real(WP):: Vnormal1(3),Vnormal2(3),tauX,tauY,tauZ,vectorlength
       external:: vectorlength
 
@@ -755,18 +813,17 @@
       !print *,'tau Z:',tauZ, tauZ/PI*180.0
 
       ! rotation of frame (1,0,0)/(0,1,0)/(0,0,1) to new frame
-      rotationMatrix(1,1)= cos(tauZ)*cos(tauY)+sin(tauZ)*sin(tauX)*sin(tauY)
-      rotationMatrix(1,2)= sin(tauZ)*cos(tauX)
-      rotationMatrix(1,3)= -cos(tauZ)*sin(tauY)+sin(tauZ)*sin(tauX)*cos(tauY)
-      rotationMatrix(2,1)=-sin(tauZ)*cos(tauY)+cos(tauZ)*sin(tauX)*sin(tauY)
-      rotationMatrix(2,2)=cos(tauZ)*cos(tauX)
-      rotationMatrix(2,3)=sin(tauZ)*sin(tauY)+cos(tauZ)*sin(tauX)*cos(tauY)
-      rotationMatrix(3,1)=cos(tauX)*sin(tauY)
-      rotationMatrix(3,2)=-sin(tauX)
-      rotationMatrix(3,3)=cos(tauX)*cos(tauY)
+      rotationMatrix(1,1) =  cos(tauZ)*cos(tauY)+sin(tauZ)*sin(tauX)*sin(tauY)
+      rotationMatrix(1,2) =  sin(tauZ)*cos(tauX)
+      rotationMatrix(1,3) = -cos(tauZ)*sin(tauY)+sin(tauZ)*sin(tauX)*cos(tauY)
+      rotationMatrix(2,1) = -sin(tauZ)*cos(tauY)+cos(tauZ)*sin(tauX)*sin(tauY)
+      rotationMatrix(2,2) =  cos(tauZ)*cos(tauX)
+      rotationMatrix(2,3) =  sin(tauZ)*sin(tauY)+cos(tauZ)*sin(tauX)*cos(tauY)
+      rotationMatrix(3,1) =  cos(tauX)*sin(tauY)
+      rotationMatrix(3,2) = -sin(tauX)
+      rotationMatrix(3,3) =  cos(tauX)*cos(tauY)
 
-
-      end
+      end subroutine
 
 
 !-----------------------------------------------------------------------
@@ -781,7 +838,9 @@
 ! returns: inverse rotation matrix
       use precisions
       implicit none
-      real(WP):: vsource(3),vreceiver(3),invRotationMatrix(3,3)
+      real(WP),intent(in):: vsource(3),vreceiver(3)
+      real(WP),intent(out):: invRotationMatrix(3,3)
+      ! local parameters
       real(WP):: Vnormal1(3),Vnormal2(3),tauX,tauY,tauZ,vectorlength
       external:: vectorlength
 
@@ -803,17 +862,17 @@
       !print *,'tau Z:',tauZ, tauZ/PI*180.0
 
       ! inverse rotation matrix
-      invRotationMatrix(1,1)= cos(tauZ)*cos(tauY)+sin(tauZ)*sin(tauX)*sin(tauY)
-      invRotationMatrix(2,1)= sin(tauZ)*cos(tauX)
-      invRotationMatrix(3,1)= -cos(tauZ)*sin(tauY)+sin(tauZ)*sin(tauX)*cos(tauY)
-      invRotationMatrix(1,2)=-sin(tauZ)*cos(tauY)+cos(tauZ)*sin(tauX)*sin(tauY)
-      invRotationMatrix(2,2)=cos(tauZ)*cos(tauX)
-      invRotationMatrix(3,2)=sin(tauZ)*sin(tauY)+cos(tauZ)*sin(tauX)*cos(tauY)
-      invRotationMatrix(1,3)=cos(tauX)*sin(tauY)
-      invRotationMatrix(2,3)=-sin(tauX)
-      invRotationMatrix(3,3)=cos(tauX)*cos(tauY)
+      invRotationMatrix(1,1) =  cos(tauZ)*cos(tauY)+sin(tauZ)*sin(tauX)*sin(tauY)
+      invRotationMatrix(2,1) =  sin(tauZ)*cos(tauX)
+      invRotationMatrix(3,1) = -cos(tauZ)*sin(tauY)+sin(tauZ)*sin(tauX)*cos(tauY)
+      invRotationMatrix(1,2) = -sin(tauZ)*cos(tauY)+cos(tauZ)*sin(tauX)*sin(tauY)
+      invRotationMatrix(2,2) =  cos(tauZ)*cos(tauX)
+      invRotationMatrix(3,2) =  sin(tauZ)*sin(tauY)+cos(tauZ)*sin(tauX)*cos(tauY)
+      invRotationMatrix(1,3) =  cos(tauX)*sin(tauY)
+      invRotationMatrix(2,3) = -sin(tauX)
+      invRotationMatrix(3,3) =  cos(tauX)*cos(tauY)
 
-      end
+      end subroutine
 
 !-----------------------------------------------------------------------
       subroutine newDeltaLocation(latDelta,lonDelta,sourceVertex,receiverVertex,dlat,dlon)
@@ -828,12 +887,15 @@
 ! return: new delta location dlat,dlon
       use cells
       implicit none
-      integer:: sourceVertex,receiverVertex
-      real(WP):: latDelta,lonDelta,dlat,dlon,Vmid(3),Vsource(3),Vreceiver(3),Vnormal1(3),Vnormal2(3),vtmp(3)
-      real(WP):: vectorlength,tauX,tauY,tauZ,rot(3,3),rotInv(3,3),lat,lon,tmp,rotX(3,3),rotY(3,3),rotZ(3,3)
+      real(WP),intent(in):: latDelta,lonDelta
+      integer,intent(in):: sourceVertex,receiverVertex
+      real(WP),intent(out):: dlat,dlon
+      ! local parameters
+      real(WP):: Vsource(3),Vreceiver(3),vtmp(3)
+      real(WP):: rot(3,3),rotInv(3,3),lat,lon
 
-      Vsource(:)=vertices(sourceVertex,:)
-      Vreceiver(:)=vertices(receiverVertex,:)
+      Vsource(:) = vertices(sourceVertex,:)
+      Vreceiver(:) = vertices(receiverVertex,:)
 
       ! get midpoint between source and receiver
       !call greatCircleMidpoint(Vsource,Vreceiver,Vmid)
@@ -858,80 +920,83 @@
       dlat = lat
       dlon = lon
 
-      end
+      end subroutine
 
-!-----------------------------------------------------------------------
-      subroutine newDeltaLocation_alt(latDelta,lonDelta,dlat,dlon)
-!-----------------------------------------------------------------------
-! calculates the delta location with reference to the midpoint of source and receiver
-! http://astronomy.swin.edu.au/~pbourke/projection/eulerangle/
-
-! input:
-!   latDelta,lonDelta - delta location increments with reference to midpoint of source&receiver
-!   dlat,dlon             - new delta location
-! return: new delta location dlat,dlon
-      use cells
-      implicit none
-      integer:: midpoint,sourceVertex,receiverVertex
-      real(WP):: latDelta,lonDelta,dlat,dlon
-      real(WP):: Vmid(3),Vsource(3),Vreceiver(3),Vnormal1(3),Vnormal2(3),vtmp(3)
-      real(WP):: vectorlength,tauX,tauY,tauZ,rot(3,3),rotInv(3,3),lat,lon,tmp,rotX(3,3),rotY(3,3),rotZ(3,3)
-      real(WP):: sourceLat,sourceLon,receiverLat,receiverLon
-
-      sourceLat = 0.0
-      sourceLon = 60.0
-      receiverLat = 60.0
-      receiverLon = 150.0
-      call findVertex(sourceLat,sourceLon,sourceVertex)
-      call findVertex(receiverLat,receiverLon,receiverVertex)
-
-      Vsource(:)=vertices(sourceVertex,:)
-      Vreceiver(:)=vertices(receiverVertex,:)
-
-      ! get midpoint between source and receiver
-      call greatCircleMidpoint(Vsource,Vreceiver,Vmid)
-
-      ! determine euler angles for rotation source to equator and receiver into equatorial plane
-      ! get normale on plane of source and receiver
-      call vectorproduct(Vsource,Vreceiver,Vnormal1)
-      call vectorscale(Vnormal1,1.0/vectorlength(Vnormal1),Vnormal1)
-
-      ! get normale on plane of source and normal 1
-      call vectorproduct(Vsource,Vnormal1,Vnormal2)
-      call vectorscale(Vnormal2,-1.0/vectorlength(Vnormal2),Vnormal2)
-
-      call getSphericalCoordinates(Vsource,lat,lon)
-      !print *,'source:',lat,lon
-      call getSphericalCoordinates(Vnormal1,lat,lon)
-      !print *,'normal 1:',lat,lon
-      call getSphericalCoordinates(Vnormal2,lat,lon)
-      !print *,'normal 2:',lat,lon
-
-      tauX = asin(-Vnormal2(3))
-      tauY = atan2(Vsource(3),Vnormal1(3))
-      tauZ = atan2(Vnormal2(1),Vnormal2(2))
-
-      ! rotation of frame (1,0,0)/(0,1,0)/(0,0,1) to new frame
-      rot(1,1)= cos(tauZ)*cos(tauY)+sin(tauZ)*sin(tauX)*sin(tauY)
-      rot(1,2)= sin(tauZ)*cos(tauX)
-      rot(1,3)= -cos(tauZ)*sin(tauY)+sin(tauZ)*sin(tauX)*cos(tauY)
-      rot(2,1)=-sin(tauZ)*cos(tauY)+cos(tauZ)*sin(tauX)*sin(tauY)
-      rot(2,2)=cos(tauZ)*cos(tauX)
-      rot(2,3)=sin(tauZ)*sin(tauY)+cos(tauZ)*sin(tauX)*cos(tauY)
-      rot(3,1)=cos(tauX)*sin(tauY)
-      rot(3,2)=-sin(tauX)
-      rot(3,3)=cos(tauX)*cos(tauY)
-
-      call getVector(latDelta,lonDelta,vtmp(1),vtmp(2),vtmp(3))
-      call getSphericalCoordinates(vtmp,lat,lon)
-      !print *,'  delta location:',lat,lon
-      call rotateVector(rot,vtmp,vtmp)
-      call getSphericalCoordinates(vtmp,lat,lon)
-      !print *,'  rotated delta location',lat,lon
-      dlat = lat
-      dlon = lon
-
-      end
+!!-----------------------------------------------------------------------
+!      subroutine newDeltaLocation_alt(latDelta,lonDelta,dlat,dlon)
+!!-----------------------------------------------------------------------
+!! calculates the delta location with reference to the midpoint of source and receiver
+!! http://astronomy.swin.edu.au/~pbourke/projection/eulerangle/
+!
+!! input:
+!!   latDelta,lonDelta     - delta location increments with reference to midpoint of source&receiver
+!!   dlat,dlon             - new delta location
+!! return: new delta location dlat,dlon
+!      use cells
+!      implicit none
+!      real(WP),intent(in):: latDelta,lonDelta
+!      real(WP),intent(out):: dlat,dlon
+!      ! local parameters
+!      integer:: sourceVertex,receiverVertex
+!      real(WP):: Vmid(3),Vsource(3),Vreceiver(3),Vnormal1(3),Vnormal2(3),vtmp(3)
+!      real(WP):: vectorlength,tauX,tauY,tauZ,rot(3,3),lat,lon
+!      real(WP):: sourceLat,sourceLon,receiverLat,receiverLon
+!
+!      sourceLat = 0.0
+!      sourceLon = 60.0
+!      receiverLat = 60.0
+!      receiverLon = 150.0
+!
+!      call findVertex(sourceLat,sourceLon,sourceVertex)
+!      call findVertex(receiverLat,receiverLon,receiverVertex)
+!
+!      Vsource(:) = vertices(sourceVertex,:)
+!      Vreceiver(:) = vertices(receiverVertex,:)
+!
+!      ! get midpoint between source and receiver
+!      call greatCircleMidpoint(Vsource,Vreceiver,Vmid)
+!
+!      ! determine euler angles for rotation source to equator and receiver into equatorial plane
+!      ! get normale on plane of source and receiver
+!      call vectorproduct(Vsource,Vreceiver,Vnormal1)
+!      call vectorscale(Vnormal1,1.0/vectorlength(Vnormal1),Vnormal1)
+!
+!      ! get normale on plane of source and normal 1
+!      call vectorproduct(Vsource,Vnormal1,Vnormal2)
+!      call vectorscale(Vnormal2,-1.0/vectorlength(Vnormal2),Vnormal2)
+!
+!      call getSphericalCoordinates(Vsource,lat,lon)
+!      !print *,'source:',lat,lon
+!      call getSphericalCoordinates(Vnormal1,lat,lon)
+!      !print *,'normal 1:',lat,lon
+!      call getSphericalCoordinates(Vnormal2,lat,lon)
+!      !print *,'normal 2:',lat,lon
+!
+!      tauX = asin(-Vnormal2(3))
+!      tauY = atan2(Vsource(3),Vnormal1(3))
+!      tauZ = atan2(Vnormal2(1),Vnormal2(2))
+!
+!      ! rotation of frame (1,0,0)/(0,1,0)/(0,0,1) to new frame
+!      rot(1,1) =  cos(tauZ)*cos(tauY)+sin(tauZ)*sin(tauX)*sin(tauY)
+!      rot(1,2) =  sin(tauZ)*cos(tauX)
+!      rot(1,3) = -cos(tauZ)*sin(tauY)+sin(tauZ)*sin(tauX)*cos(tauY)
+!      rot(2,1) = -sin(tauZ)*cos(tauY)+cos(tauZ)*sin(tauX)*sin(tauY)
+!      rot(2,2) =  cos(tauZ)*cos(tauX)
+!      rot(2,3) =  sin(tauZ)*sin(tauY)+cos(tauZ)*sin(tauX)*cos(tauY)
+!      rot(3,1) =  cos(tauX)*sin(tauY)
+!      rot(3,2) = -sin(tauX)
+!      rot(3,3) =  cos(tauX)*cos(tauY)
+!
+!      call getVector(latDelta,lonDelta,vtmp(1),vtmp(2),vtmp(3))
+!      call getSphericalCoordinates(vtmp,lat,lon)
+!      !print *,'  delta location:',lat,lon
+!      call rotateVector(rot,vtmp,vtmp)
+!      call getSphericalCoordinates(vtmp,lat,lon)
+!      !print *,'  rotated delta location',lat,lon
+!      dlat = lat
+!      dlon = lon
+!
+!      end subroutine
 
 !-----------------------------------------------------------------------
       subroutine placeSecondDelta(lat,lon,secondlat,secondlon,secondvertex,distance)
@@ -946,16 +1011,17 @@
 ! return: new SecondLat,SecondLon,SecondVertex for second delta location
       use precisions
       implicit none
-      real(WP):: lat,lon,secondlat,secondlon,distance
-      integer:: secondvertex
+      real(WP):: lat,lon,distance
+      real(WP),intent(out):: secondlat,secondlon
+      integer,intent(out):: secondvertex
 
       ! new location
       secondlon = lon+distance
-      secondlat  = lat
+      secondlat = lat
 
       ! get nearest vertex for new location
       call findVertex(secondlat,secondlon,secondvertex)
-      end
+      end subroutine
 
 !-----------------------------------------------------------------------
       subroutine normalizeArray(array,arraylength)
@@ -969,8 +1035,11 @@
 ! returns: normalized array
       use precisions
       implicit none
-      integer:: arraylength,i
-      real(WP):: array(arraylength),maximum
+      integer,intent(in):: arraylength
+      real(WP),intent(inout):: array(arraylength)
+      ! local parameters
+      integer:: i
+      real(WP):: maximum
 
       ! determine maximum value in array
       maximum = 0.0_WP
@@ -982,10 +1051,10 @@
       if ( maximum < 1.0e-9) then
         print *,'array maximum too small, could not normalize!',maximum
       else
-        array(:)=array(:)/maximum
+        array(:) = array(:)/maximum
       endif
 
-      end
+      end subroutine
 
 
 !-----------------------------------------------------------------------
@@ -1004,8 +1073,12 @@
 ! return: great circle distance (in degree)
       use precisions
       implicit none
-      real(WP):: lon,lonhalf,lat,lathalf,lon1,lon2,lat1,lat2,a,distance
+      real(WP),intent(in):: lon1,lon2,lat1,lat2
+      real(WP),intent(out):: distance
+      ! local parameters
+      real(WP):: lon,lonhalf,lat,lathalf,a
       real(WP):: radlat1,radlat2,radlon1,radlon2
+
       ! convert to radian
       radlat1 = DEGREE2RAD*lat1
       radlat2 = DEGREE2RAD*lat2
@@ -1014,7 +1087,7 @@
 
       !haversine formula
       lon = radlon2 - radlon1
-      lonhalf= lon*0.5
+      lonhalf = lon*0.5
       lat = radlat2 - radlat1
       lathalf = lat*0.5
       a = sin(lathalf)*sin(lathalf)+cos(radlat1)*cos(radlat2)*sin(lonhalf)*sin(lonhalf)
@@ -1034,8 +1107,8 @@
         print *,'greatCircleDistance:',distance
         print *,'greatCircleDistance:',lon,lat,a
       endif
-      return
-      end
+
+      end subroutine
 
 
 !-----------------------------------------------------------------------
@@ -1052,9 +1125,10 @@
 ! return: great circle distance (in radian)
       use precisions
       implicit none
-      real(WP):: vector1(3), vector2(3)
+      real(WP),intent(in):: vector1(3), vector2(3)
+      real(WP),intent(out):: distance
+      ! local parameters
       real(WP):: lon,lonhalf,lat,lathalf,lon1,lon2,lat1,lat2,a
-      real(WP):: distance
 
       ! get longitude and latitudes
       lon1 = atan2(vector1(2),vector1(1))
@@ -1066,7 +1140,7 @@
 
       !haversine formula
       lon = lon2 - lon1
-      lonhalf= lon*0.5_WP
+      lonhalf = lon*0.5_WP
       lat = lat2 - lat1
       lathalf = lat*0.5_WP
       a = sin(lathalf)*sin(lathalf)+cos(lat1)*cos(lat2)*sin(lonhalf)*sin(lonhalf)
@@ -1097,14 +1171,15 @@
 ! return: great circle distance in radian
       use precisions
       implicit none
-      real(WP):: vector1(3), vector2(3)
+      real(WP),intent(in):: vector1(3), vector2(3)
+      ! local parameters
       real(WP):: scalar, vectorlength
-      integer               k
+      integer:: k
 
       if ( abs(vector1(1)*vector1(1)+vector1(2)*vector1(2)+              &
-     &   vector1(3)*vector1(3) - 1.0d0) > 0.00001d0 .or.             &
-     &   abs(vector2(1)*vector2(1)+vector2(2)*vector2(2)+               &
-     &   vector2(3)*vector2(3) - 1.0d0) > 0.00001d0 ) then
+               vector1(3)*vector1(3) - 1.0d0) > 0.00001d0              &
+          .or. abs(vector2(1)*vector2(1)+vector2(2)*vector2(2)+               &
+                   vector2(3)*vector2(3) - 1.0d0) > 0.00001d0 ) then
         print *,'vector1',(vector1(k),k=1,3),vectorlength(vector1)
         print *,'vector2',(vector2(k),k=1,3),vectorlength(vector2)
         stop 'abort-greatCircleDistance vectorlength'
@@ -1113,8 +1188,9 @@
       call scalarproduct( vector1,vector2,scalar)
 
       greatCircleDistance_alternate = dble( acos( scalar) )
+
       return
-      end
+      end function
 
 !-----------------------------------------------------------------------
       subroutine greatCircleMidpoint(vector1, vector2, midpoint)
@@ -1125,16 +1201,18 @@
 ! return: midpoint vector (on the sphere)
       use precisions
       implicit none
-      real(WP):: vector1(3),vector2(3),midpoint(3),normale(3)
-      real(WP):: distance, vectorlength
-      real(WP):: midAngle, vX,vY,vZ, cosAlpha,sinAlpha,factor
+      real(WP),intent(in):: vector1(3),vector2(3)
+      real(WP),intent(out):: midpoint(3)
+      ! local parameters
+      real(WP):: distance, vectorlength  !,normale(3)
+      real(WP):: midAngle,factor  !vX,vY,vZ, cosAlpha,sinAlpha
       integer:: k
 
       ! get angle for the midpoint between the two vectors
       ! (the radian of this angle for the unit sphere is equal to half
       !   of its great circle distance)
-      if ( abs(vectorlength(vector1) - 1.0_WP) > 0.00001 .or.          &
-     &   abs(vectorlength(vector2) - 1.0_WP) > 0.00001 ) then
+      if ( abs(vectorlength(vector1) - 1.0_WP) > 0.00001 &
+           .or. abs(vectorlength(vector2) - 1.0_WP) > 0.00001 ) then
         print *,'vector1',(vector1(k),k=1,3),vectorlength(vector1)
         print *,'vector2',(vector2(k),k=1,3),vectorlength(vector2)
         stop 'abort-greatCircleMidpoint vectorlength'
@@ -1147,9 +1225,9 @@
       call greatCircleDistance(vector1,vector2,distance)
       factor = sin(midAngle)/sin(distance)
 
-      midpoint(1) =factor*(vector1(1)+vector2(1))
-      midpoint(2) =factor*(vector1(2)+vector2(2))
-      midpoint(3) =factor*(vector1(3)+vector2(3))
+      midpoint(1) = factor*(vector1(1)+vector2(1))
+      midpoint(2) = factor*(vector1(2)+vector2(2))
+      midpoint(3) = factor*(vector1(3)+vector2(3))
 
 !      !debug
 !      !print *,'midpoint2',factor,(midpoint(k),k=1,3)
@@ -1187,7 +1265,7 @@
 !      call midpoint(vector1,vector2,midpoint)
 !      call normalize(midpoint)
 !
-      end
+      end subroutine
 
 !-----------------------------------------------------------------------
       subroutine determineTimeStep()
@@ -1204,21 +1282,36 @@
 ! returns: dt in seconds, averageCellDistance in km
       use propagationStartup; use cells
       implicit none
-      real(WP),parameter:: sqrt2=1.414213562373095_WP
+      ! local parameters
+      real(WP),parameter:: sqrt2 = 1.414213562373095_WP
 
       ! initialize number of time steps
       numofTimeSteps = 0
 
-      ! timestep width relation (Tape, chap. 5, (5.9), p. 66) with space steps (table 4.4) [averageCellDistance in km]
-      if ( subdivisions == 8) averageCellDistance = 17.3860147304427_WP
-      if ( subdivisions == 7) averageCellDistance = 34.7719816287154444_WP
-      if ( subdivisions == 6) averageCellDistance = 69.5435806022331491_WP
-      if ( subdivisions == 5) averageCellDistance = 139.084100036946921_WP
-      if ( subdivisions == 4) averageCellDistance = 278.143713101840262_WP
-      if ( subdivisions == 3) averageCellDistance = 556.091606162381709_WP
-      if ( subdivisions == 2) averageCellDistance = 1110.61907020550302_WP
-      if ( subdivisions == 1) averageCellDistance = 2208.80170795688991_WP
-      if ( subdivisions == 0) averageCellDistance = 4320.48077165147788_WP
+      ! timestep width relation
+      ! (Tape, chap. 5, (5.9), p. 66) with space steps (table 4.4) [averageCellDistance in km]
+      select case(subdivisions)
+      case (8)
+        averageCellDistance = 17.3860147304427_WP
+      case (7)
+        averageCellDistance = 34.7719816287154444_WP
+      case (6)
+        averageCellDistance = 69.5435806022331491_WP
+      case (5)
+        averageCellDistance = 139.084100036946921_WP
+      case (4)
+        averageCellDistance = 278.143713101840262_WP
+      case (3)
+        averageCellDistance = 556.091606162381709_WP
+      case (2)
+        averageCellDistance = 1110.61907020550302_WP
+      case (1)
+        averageCellDistance = 2208.80170795688991_WP
+      case (0)
+        averageCellDistance = 4320.48077165147788_WP
+      case default
+        call stopProgram('subdivisions not supported yet in routine determineTimeStep()    ')
+      end select
 
       ! for routine findVertex
       distanceQuit = averageCellDistance*0.5/EARTHRADIUS
@@ -1253,10 +1346,9 @@
       ! time step - trial'n error formula (5.8)
       dt = averageCellDistance/(cphaseRef*sqrt2)
 
-
       !if ( cphaseref > 4.78 ) dt = dt/2.0
 
-      end
+      end subroutine
 
 !-----------------------------------------------------------------------
       function rootmeansquare(x,length)
@@ -1265,18 +1357,22 @@
 ! for the values given by vector x
 !
 ! returns: rms of x
-        use precisions
-        implicit none
-        real(WP):: rootmeansquare
-        integer,intent(in):: length
-        real(WP),intent(in):: x(length)
-        real(WP):: sum
-        integer:: i
-        ! see: http://en.wikipedia.org/wiki/Root_mean_square
-        sum = 0.0
-        do i = 1,length
-          sum = sum + x(i)*x(i)
-        enddo
-        rootmeansquare = sqrt(sum/length)
+      use precisions
+      implicit none
+      integer,intent(in):: length
+      real(WP),intent(in):: x(length)
+      real(WP):: rootmeansquare
+      ! local parameters
+      real(WP):: sum
+      integer:: i
+
+      ! see: http://en.wikipedia.org/wiki/Root_mean_square
+      sum = 0.0
+      do i = 1,length
+        sum = sum + x(i)*x(i)
+      enddo
+      rootmeansquare = sqrt(sum/length)
+
+      return
       end function
 

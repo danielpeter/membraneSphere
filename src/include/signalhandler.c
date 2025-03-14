@@ -33,7 +33,6 @@ here, we catch the SIGINT interrupt signal and call a fortran routine to stop th
 #define def_interrupt15 C_NAME(def_interrupt15,def_interrupt15)
 
 
-
 /* Portland */
 //#define F77_NAME(name,NAME) __exception_MOD_##name
 //#define C_NAME(name,NAME) name

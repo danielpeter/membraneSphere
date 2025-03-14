@@ -24,9 +24,9 @@
       use adjointVariables; use propagationStartup; use parallel
       use cells; use verbosity
       implicit none
-      integer:: kernelIncrement
-      character(len=3)::kernelstr
-      real(WP):: lat,lon,distance
+      integer, intent(in):: kernelIncrement
+      ! local parameters
+      character(len=3):: kernelstr
 
       ! append kernel number to name of adjoint kernel file
       !(originally something like 'adjointKernel.dat' should become
@@ -34,10 +34,10 @@
       write(kernelstr,'(i3.3)') int(kernelStartDistance+kernelIncrement-1)
       if ( kernelIncrement == 1 ) then
         adjointKernelName(len_trim(adjointKernelName)-2:len_trim(adjointKernelName)+4)&
-                =kernelstr//'.dat'
+                = kernelstr//'.dat'
       else
         adjointKernelName(len_trim(adjointKernelName)-6:len_trim(adjointKernelName))&
-                =kernelstr//'.dat'
+                = kernelstr//'.dat'
       endif
 
       if ( MASTER .and. VERBOSE) then
@@ -69,6 +69,7 @@
       use propagationStartup;use parallel;use adjointVariables
       use verbosity; use cells
       implicit none
+      ! local parameters
       real(WP)::memory
       integer:: ierror
 
@@ -76,7 +77,7 @@
       if (.not. allocated(adjointKernel) ) then
         if ( MASTER .and. VERBOSE ) then
           print *,'  allocating adjointKernel array...'
-          print *,'    size: ',numVertices*sizeof(PI)/1024./1024.,'Mb'
+          print *,'    size: ',numVertices*WP/1024./1024.,'Mb'
         endif
         allocate(adjointKernel(numVertices), stat=ierror)
         if ( ierror /= 0 ) call stopProgram('error allocating adjoint kernel arrays    ')
@@ -113,7 +114,7 @@
 
       storeAsFile = .false.
       if (.not. allocated(wavefieldForward) ) then
-        memory=numDomainVertices*numofTimeSteps*sizeof(PI)
+        memory = numDomainVertices*numofTimeSteps*WP
         if ( MASTER .and. VERBOSE ) then
           print *,'  allocating wavefieldForward array...'
           print *,'    vertices   : ',numDomainVertices
@@ -164,7 +165,7 @@
         if (.not. allocated(wavefieldAdjoint) ) then
           if ( MASTER .and. VERBOSE ) then
             print *,'  allocating wavefieldAdjoint array...'
-            print *,'    size       : ',numDomainVertices*numofTimeSteps*sizeof(PI)/1024./1024.,'Mb'
+            print *,'    size       : ',numDomainVertices*numofTimeSteps*WP/1024./1024.,'Mb'
           endif
           allocate(wavefieldAdjoint(numDomainVertices,numofTimeSteps),stat=ierror)
           if ( ierror /= 0 ) call stopProgram('error allocating adjoint wavefield    ')
@@ -188,6 +189,7 @@
       use verbosity;use griddomain; use cells
       implicit none
       integer,intent(in):: timestep,index
+      ! local parameters
       integer::vertex,n,ierror
       character(len=8):: timestepstr
       character(len=3):: rankstr
@@ -205,7 +207,7 @@
         write(rankstr,'(i3.3)') rank
         open(10,file=datadirectory(1:len_trim(datadirectory))//'wavefield_'//&
                 timestepstr//'.rank'//rankstr//'.dat', &
-              access='direct',recl=sizeof(PI),iostat=ierror)
+              access='direct',recl=WP,iostat=ierror)
         if ( ierror /= 0 ) call stopProgram('could not open file: wavefield_'//&
               timestepstr//'.rank'//rankstr//'.dat ....     ')
         ! fill in displacements
@@ -251,6 +253,7 @@
       use verbosity;use griddomain; use cells
       implicit none
       integer,intent(in):: timestep,index
+      ! local parameters
       integer::vertex,n,ierror
       character(len=8):: timestepstr
       character(len=3):: rankstr
@@ -261,7 +264,7 @@
         write(rankstr,'(i3.3)') rank
         open(10,file=datadirectory(1:len_trim(datadirectory))//'wavefieldAdj_'//&
               timestepstr//'.rank'//rankstr//'.dat', &
-              access='direct',recl=sizeof(PI),iostat=ierror)
+              access='direct',recl=WP,iostat=ierror)
         if ( ierror /= 0 ) call stopProgram('could not open file wavefieldAdj_'//&
               timestepstr//'.rank'//rankstr//'.dat ....     ')
         ! fill in displacements
@@ -294,9 +297,10 @@
 !-----------------------------------------------------------------------
 ! determine adjoint source
 ! (Tromp et al., 2005, sec 4.1 eq (45) )
-      use propagationStartup; use parallel; use splinefunction
+      use propagationStartup; use parallel
       use verbosity; use filterType; use adjointVariables
       implicit none
+      ! local parameters
       real(WP)::seismo(numofTimeSteps),seismoDisplacement(numofTimeSteps)
       real(WP),dimension(:,:),allocatable:: window_signal
       integer::n,i,ierror
@@ -320,7 +324,7 @@
 
       ! get receiver's velocity seismogram (first time derivative of recorded seismogram at receiver)
       seismo(:)=0.0_WP
-      seismoDisplacement(:)=seismogramReceiver(2,:)
+      seismoDisplacement(:) = seismogramReceiver(2,:)
 
       if ( MASTER .and. fileOutput) then
         print *,'  printing to file: '//datadirectory(1:len_trim(datadirectory))//'seismo.displacement.dat'
@@ -451,8 +455,9 @@
       use propagationStartup; use parallel; use griddomain; use filterType
       use adjointVariables;use verbosity; use cells
       implicit none
-      integer::n,vertex,index
-      real(WP)::seismo(2,numofTimeSteps),seismoTmp(numofTimeSteps)
+      ! local parameters
+      integer:: n,vertex !,index
+      real(WP):: seismo(2,numofTimeSteps),seismoTmp(numofTimeSteps)
 
       ! console output
       if ( MASTER .and. VERBOSE) print *,'precalculate time derivatives...'
@@ -473,14 +478,14 @@
         if ( storeAsFile ) then
           call getForwardWave(n,seismoTmp)
         else
-          seismoTmp(:)=wavefieldForward(n,:)
+          seismoTmp(:) = wavefieldForward(n,:)
         endif
         seismo(2,:)=seismoTmp(:)
 
         ! filter seismogram
         if ( FILTERSEISMOGRAMS ) then
           call dofilterSeismogram(seismo,numofTimeSteps)
-          seismoTmp(:)=seismo(2,:)
+          seismoTmp(:) = seismo(2,:)
         endif
 
         ! compute second time derivative (by spline)
@@ -513,10 +518,11 @@
       use phaseVelocityMap, only: phaseVelocitySquare
       use adjointVariables
       implicit none
-      real(WP):: u_t,u_tplus1,u_tminus1,forcing,forcingRef,D2,time
-      real(WP),external:: forceAdjointSource,discreteLaplacian,precalc_discreteLaplacian
-      real(WP),external:: precalc_backdiscreteLaplacian
-      integer:: n,i,k,timestep,vertex,index,ierror
+      ! local parameters
+      real(WP):: u_t,u_tplus1,u_tminus1,forcing,D2,time
+      real(WP), external:: forceAdjointSource,discreteLaplacian,precalc_discreteLaplacian
+      real(WP), external:: precalc_backdiscreteLaplacian
+      integer:: n,timestep,vertex,index,ierror
 
       ! benchmark
       if ( MASTER .and. VERBOSE ) benchstart = MPI_WTIME()
@@ -548,7 +554,7 @@
               print *,'    allocating adjoint wavefield...'
               print *,'      vertices    : ',numDomainVertices
               print *,'      time steps : ',numofTimeSteps
-              print *,'      array size  : ',numDomainVertices*numofTimeSteps*sizeof(PI)/1024./1024.,'Mb'
+              print *,'      array size  : ',numDomainVertices*numofTimeSteps*WP/1024./1024.,'Mb'
             endif
 
             allocate(wavefieldAdjoint(numDomainVertices,numofTimeSteps),stat=ierror)
@@ -561,9 +567,9 @@
 
 
       ! reset displacements for adjoint propagation
-      displacement_old(:)=0.0_WP
-      displacement(:)=0.0_WP
-      newdisplacement(:)=0.0_WP
+      displacement_old(:) = 0.0_WP
+      displacement(:) = 0.0_WP
+      newdisplacement(:) = 0.0_WP
 
       ! time iteration of displacements
       if ( MASTER .and. VERBOSE ) print *,'  backward iteration...'
@@ -658,10 +664,13 @@
       use propagationStartup; use displacements; use phaseVelocityMap; use traveltime
       use adjointVariables; use parallel; use griddomain; use cells; use verbosity
       implicit none
-      integer:: vertex,timestep,n,index,vertexIndex
-      real(WP):: seismo(3),seismoAdjoint(3),seismoTmp(numofTimeSteps),timewindow
-      real(WP):: kernelVal,val1,val2,for1,for2,for3,for4
-      real(WP):: derivativeActual,derivativeNext,kernelfactor
+      integer,intent(in):: vertex,timestep
+      ! local parameters
+      integer:: n,index,vertexIndex
+      real(WP):: seismo(3),seismoAdjoint(3),seismoTmp(numofTimeSteps) !,timewindow
+      real(WP):: kernelVal,val1,val2,for1,for2,for3 !,for4
+      !real(WP):: derivativeActual,derivativeNext,
+      real(WP):: kernelfactor
 
       ! current time step index
       index = timestep - firsttimestep  + 1
@@ -702,13 +711,13 @@
         !seismo(2)=seismoTmp(index+1)
         !seismo(3)=seismoTmp(index+2)
 
-        seismo(1)=backwardNewdisplacement(vertex)
-        seismo(2)=backwardDisplacement(vertex)
-        seismo(3)=backwardDisplacement_old(vertex)
+        seismo(1) = backwardNewdisplacement(vertex)
+        seismo(2) = backwardDisplacement(vertex)
+        seismo(3) = backwardDisplacement_old(vertex)
 
-        seismoAdjoint(1)=newdisplacement(vertex)
-        seismoAdjoint(2)=displacement(vertex)
-        seismoAdjoint(3)=displacement_old(vertex)
+        seismoAdjoint(1) = newdisplacement(vertex)
+        seismoAdjoint(2) = displacement(vertex)
+        seismoAdjoint(3) = displacement_old(vertex)
 
         ! time derivative of seismo
         if (.not. PRECALCULATE_DERIVATIVES ) then
@@ -736,7 +745,7 @@
         !seismo(3)=backwardDisplacement_old(vertex)
         ! get adjoint seismogram
         !seismoAdjoint(1)=newdisplacement(vertex)
-        seismoAdjoint(2)=displacement(vertex)
+        seismoAdjoint(2) = displacement(vertex)
         !seismoAdjoint(3)=displacement_old(vertex)
 
         ! time derivative of seismo (by central-differences)
@@ -747,7 +756,7 @@
         if ( storeAsFile ) then
           call getForwardWave(vertexIndex,seismoTmp)
         else
-          seismoTmp(:)=wavefieldForward(vertexIndex,:)
+          seismoTmp(:) = wavefieldForward(vertexIndex,:)
         endif
 
         ! compute second time derivative (by central-difference time scheme)
@@ -782,7 +791,7 @@
       kernelVal = kernelfactor*kernelVal
 
       ! sum up to build adjointKernel value
-      adjointKernel(vertex)=adjointKernel(vertex)+kernelVal
+      adjointKernel(vertex) = adjointKernel(vertex)+kernelVal
 
       ! output to files (timestep: correct +1 by back-propagation and to account
       ! for values stored in displacement() and not newdisplacement() )
@@ -808,6 +817,7 @@
       use adjointVariables
       use cells; use propagationStartup
       implicit none
+      ! local parameters
       real(WP):: scalefactor,vertexCellArea,distance,arrivalTime
       integer:: iorbit
 
@@ -837,10 +847,11 @@
 ! determine adjoint kernel value when calculating NOT "on the fly"
 !
 ! return: stores values in the adjointKernel() array
-      use propagationStartup; use parallel; use griddomain; use splinefunction
+      use propagationStartup; use parallel; use griddomain
       use phaseVelocityMap; use filterType; use verbosity; use cells; use adjointVariables
       implicit none
-      integer:: timestep,index,indexadjoint,vertex,n,i,iorbit
+      ! local parameters
+      integer:: index,indexadjoint,vertex,n
       real(WP):: kernelVal,val1,val2,derivativeActual,derivativeNext,kernelfactor
       real(WP):: arrivalTime,distance,vertexCellArea,vertexCellAreaRad,timewindow,for1,for2,for3
       real(WP)::seismo(2,numofTimeSteps),seismoAdjoint(2,numofTimeSteps),seismoTmp(numofTimeSteps)
@@ -996,6 +1007,7 @@
 ! print the adjointKernel()-array values to a file 'adjointkernel.dat'
       use propagationStartup; use parallel; use adjointVariables;use verbosity; use cells
       implicit none
+      ! local parameters
       real(WP):: lat,lon,sum_kern
       integer:: i,ierror
       character(len=128):: kernelfile
@@ -1056,21 +1068,24 @@
 !-----------------------------------------------------------------------
 ! get forward seismogram for at given vertex location from the wavefield storage-files
       use propagationStartup; use parallel
-      real(WP),intent(OUT)::seismo(numofTimeSteps)
+      implicit none
+      integer,intent(in):: index
+      real(WP),intent(out):: seismo(numofTimeSteps)
+      ! local parameters
       character(len=8):: timestepstr
       character(len=3):: rankstr
-      integer:: i,timestep,index,ierror
+      integer:: i,timestep,ierror
 
       ! input
       write(rankstr,'(i3.3)') rank
       i = 0
-      do timestep= firsttimestep, lasttimestep
+      do timestep = firsttimestep, lasttimestep
         i = i+1
         write(timestepstr,'(i8.7)')timestep
         !if (rank == 1) print *,'    open timestep:',i,timestep
         open(10,file=datadirectory(1:len_trim(datadirectory))//'wavefield_'//&
             timestepstr//'.rank'//rankstr//'.dat', &
-            access='direct',recl=sizeof(PI),iostat=ierror)
+            access='direct',recl=WP,iostat=ierror)
         if ( ierror /= 0 ) call stopProgram('could not open for input, file wavefield_'//&
             timestepstr//'.rank'//rankstr//'.dat ...    ')
         ! fill in displacements
@@ -1093,20 +1108,23 @@
 !-----------------------------------------------------------------------
 ! set forward seismogram for at given vertex location to the wavefield storage-files
       use propagationStartup; use parallel
-      real(WP),intent(IN)::seismo(numofTimeSteps)
+      implicit none
+      integer,intent(in):: index
+      real(WP),intent(in):: seismo(numofTimeSteps)
+      ! local parameters
       character(len=8):: timestepstr
       character(len=3):: rankstr
-      integer:: i,timestep,index,ierror
+      integer:: i,timestep,ierror
 
       ! output
       write(rankstr,'(i3.3)') rank
       i = 0
-      do timestep= firsttimestep, lasttimestep
+      do timestep = firsttimestep, lasttimestep
         i = i+1
         write(timestepstr,'(i8.7)')timestep
         open(10,file=datadirectory(1:len_trim(datadirectory))//'wavefield_'//&
             timestepstr//'.rank'//rankstr//'.dat', &
-            access='direct',recl=sizeof(PI),iostat=ierror)
+            access='direct',recl=WP,iostat=ierror)
         if ( ierror /= 0 ) call stopProgram('could not open for output, file wavefield_'//&
             timestepstr//'.rank'//rankstr//'.dat ...    ')
         ! fill in displacements
@@ -1127,19 +1145,22 @@
 !-----------------------------------------------------------------------
 ! get adjoint seismogram for at given vertex location from the wavefield storage-files
       use propagationStartup; use parallel
-      real(WP),intent(OUT)::seismo(numofTimeSteps)
+      implicit none
+      integer,intent(in):: index
+      real(WP),intent(out)::seismo(numofTimeSteps)
+      ! local parameters
       character(len=8):: timestepstr
       character(len=3):: rankstr
-      integer:: i,timestep,index,ierror
+      integer:: i,timestep,ierror
 
       ! input
       write(rankstr,'(i3.3)') rank
       i = numofTimeSteps
-      do timestep= firsttimestep, lasttimestep
+      do timestep = firsttimestep, lasttimestep
         write(timestepstr,'(i8.7)')timestep
         open(10,file=datadirectory(1:len_trim(datadirectory))//'wavefieldAdj_'//&
             timestepstr//'.rank'//rankstr//'.dat', &
-            access='direct',recl=sizeof(PI),iostat=ierror)
+            access='direct',recl=WP,iostat=ierror)
         if ( ierror /= 0 ) call stopProgram('could not open for input, file wavefieldAdj_'//&
             timestepstr//'.rank'//rankstr//'.dat ...    ')
         ! fill in displacements
@@ -1162,23 +1183,25 @@
 !-----------------------------------------------------------------------
 ! delete wavefield files
       use propagationStartup; use adjointVariables; use parallel
+      implicit none
+      ! local parameters
       character(len=8):: timestepstr
       character(len=3):: rankstr
       integer:: timestep,ierror
 
       ! get rid of files
       write(rankstr,'(i3.3)') rank
-      do timestep= firsttimestep, lasttimestep
+      do timestep = firsttimestep, lasttimestep
         write(timestepstr,'(i8.7)')timestep
         ! forward wavefield files
         open(10,file=datadirectory(1:len_trim(datadirectory))//'wavefield_'//&
             timestepstr//'.rank'//rankstr//'.dat', &
-            access='direct',recl=sizeof(PI),iostat=ierror)
+            access='direct',recl=WP,iostat=ierror)
         if ( ierror == 0 ) close(10,status='DELETE')
         ! adjoint wavefield files
         open(20,file=datadirectory(1:len_trim(datadirectory))//'wavefieldAdj_'//&
             timestepstr//'.rank'//rankstr//'.dat', &
-            access='direct',recl=sizeof(PI),iostat=ierror)
+            access='direct',recl=WP,iostat=ierror)
         if ( ierror == 0 ) close(20,status='DELETE')
       enddo
       end subroutine
@@ -1190,8 +1213,9 @@
 ! this value should have a modulus close to 1
       use propagationStartup; use parallel; use adjointVariables;use verbosity; use cells
       implicit none
+      ! local parameters
       integer:: i
-      real(WP):: lat,lon,sum_kern
+      real(WP):: sum_kern
       real(WP),parameter:: EPS = 1.5
 
       ! get complete adjoint kernel array in case we run a single simulation on parallel processors
@@ -1226,12 +1250,12 @@
 ! denoted parameter J_i which is one half of the window:
 ! the total window includes three cycles of the center period
       use precisions; use parallel; use verbosity
-      use cells, only: vertices;
       use propagationStartup
       use filtertype, only: bw_waveperiod
       use adjointVariables
       implicit none
       integer,intent(out):: startindex,endindex,range
+      ! local parameters
       real(WP):: halfwidth,max
       real(WP):: arrivalTime,distance
       integer,dimension(1):: loc
@@ -1354,6 +1378,7 @@
       implicit none
       integer,intent(in):: timestep
       real(WP),intent(in):: time
+      ! local parameters
       character(len=4):: timestr
       integer:: n,k
 

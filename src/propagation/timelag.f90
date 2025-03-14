@@ -7,11 +7,12 @@
 ! then either filters or not the two and cross-correlates them.
 ! as result, the timelag (in sec) is printed to screen.
       use verbosity;
-      use filterType, only: WindowSIZE,bw_width,bw_waveperiod
+      use filterType, only: WindowSIZE
       use traveltime, only: t_lag
       use propagationStartup, only: lasttime,numofTimeSteps
       use parallel; use precisions
       implicit none
+      ! local parameters
       real(WP):: startingTime,endingTime,amplification,analytict_lag
       character(len=128):: fileDelta,fileReference
       integer:: entries
@@ -71,10 +72,12 @@
       ! beVerbose = .true.
       fileOutput = output_files
       call getMinimized(t_lag,amplification,fileDelta,fileReference,startingTime,endingTime)
+
       print *,'  nonlinear timelag       :',t_lag
       print *,'  nonlinear amplification :',amplification
       print *
-      end
+
+      end program
 
 
 !-----------------------------------------------------------------------
@@ -92,24 +95,24 @@
       character(len=128),intent(out)::fileDelta,fileReference
       real(WP),intent(out):: startingTime
       real(WP),intent(out):: endingTime
+      ! local parameters
       character(len=128):: inputName,tmp
       character(len=128):: line
-      integer:: i,ierror,length
+      integer:: i,ier,length
 
       ! open input parameter file
       i = 0
       inputName = 'Timelag_Input'
-      inputName = trim(inputName)
-      open(1,file=inputName,status='old',iostat=ierror)
-      if ( ierror /= 0) then
-        print *,'error opening file Timelag_Input'
+      open(10,file=trim(inputName),status='old',iostat=ier)
+      if ( ier /= 0) then
+        print *,'Error: opening file ',trim(inputName)
         stop 'abort - opening input'
       endif
 
       ! parse file for parameters
-      do while( ierror == 0)
-        read(1,'(A128)',iostat=ierror) line
-        if ( ierror /= 0 ) exit
+      do while( ier == 0)
+        read(10,'(A128)',iostat=ier) line
+        if ( ier /= 0 ) exit
 
         length = len_trim(line)
         if ( length == 0 ) then
@@ -118,7 +121,7 @@
           if ( line(1:1) == "%" .or. line(1:1) == " " .or. line(1:1) == "!" ) then
             continue
           else
-            select case( line(1:5) )
+            select case(line(1:5))
 
             ! start value to begin reading lines from
             case('START')
@@ -167,14 +170,15 @@
           endif
         endif
       enddo
+      close(10)
 
       ! check number of files
       if ( i /= 2) then
-        print *,'error reading input parameters'
+        print *,'Error: reading input parameters'
         stop
       endif
 
-      end
+      end subroutine
 
 
 !-----------------------------------------------------------------------
@@ -196,9 +200,10 @@
       real(WP),intent(in):: start,ending
       integer,intent(out):: entries
       real(WP),intent(out):: lasttime
-      integer:: size,ierror,i
+      ! local parameters
+      integer:: ier,i
       character(len=128):: line
-      real(WP):: time,sourceterm,displace,timediff,endtime
+      real(WP):: time,displace,timediff,endtime
       integer:: index, offset,ZEROLINE,FILELINES !tests: ZEROLINE/0/ ! approximate time 0 s line
 
       !initialize
@@ -207,20 +212,20 @@
 
       ! open seismogram file
       if (beVerbose) then
-        print *,'    ',trim(fileName)
+        print *,'  file: ',trim(fileName)
       endif
-      open(1,file=trim(fileName),status='old',iostat=ierror)
-      if ( ierror /= 0) then
-        print *,'error opening file ',trim(fileName)
+
+      open(10,file=trim(fileName),status='old',iostat=ier)
+      if (ier /= 0) then
+        print *,'Error: opening file ',trim(fileName)
         stop 'abort - determineFileLength taped'
       endif
 
       ! parse file for line with zero time and number of lines
-      ierror = 0
       index = 0
       offset = 0
-      do while( ierror == 0 )
-        read(1,*,iostat=ierror) line
+      do while( ier == 0 )
+        read(10,*,iostat=ier) line
         index = index+1
         line=trim(line)
 
@@ -234,17 +239,17 @@
       enddo
       FILELINES = index-1
       if ( start < 0.0) ZEROLINE= offset
-      rewind(1)
+      rewind(10)
 
       ! parse file for displacement values
       timediff = 0.0
       index = 0
-      ierror = 0
+      ier = 0
       do i = 1, FILELINES
         if (i >= ZEROLINE ) then
-          read(1, *, iostat=ierror) time,displace !,sourceterm
-          if ( ierror /= 0) then
-            print *,'error reading input. last line ',i,ZEROLINE,index
+          read(10, *, iostat=ier) time,displace !,sourceterm
+          if ( ier /= 0) then
+            print *,'Error: reading input. last line ',i,ZEROLINE,index
             stop 'abort - determineFileLength taped'
           endif
 
@@ -254,11 +259,11 @@
           endif
         else
           !read until end is reached
-          read(1, *, iostat=ierror) time,displace !,sourceterm
+          read(1, *, iostat=ier) time,displace !,sourceterm
           endtime = time
         endif
       enddo
-      close(1)
+      close(10)
 
       if ( beVerbose ) then
         print *,'    entry read:',index
@@ -271,34 +276,36 @@
       ! end time in file
       lasttime = endtime
 
-      end
+      end subroutine
 
 !-----------------------------------------------------------------------
       subroutine stopProgram_fixedlength(textline)
 !-----------------------------------------------------------------------
       use parallel
       implicit none
-      character(len=128):: textline
-      integer:: i,endindex,ierror
+      character(len=128),intent(in):: textline
+      ! local parameters
+      integer:: endindex,ier
       logical:: flag
 
       ! console output
-      endindex=index(textline,"  ")
+      endindex = index(textline,"  ")
       if ( endindex < 1 ) endindex = 128
       print *,textline(1:endindex)
 
       ! on linux machines : i/o unit 6 is the stdout , on SGI 101
-      call flush(6)
+      flush(6)
 
       ! stop MPI
-      call MPI_Initialized(flag,ierror)
-      if ( flag .eqv. .true. .and. ierror == 0) then
+      call MPI_Initialized(flag,ier)
+      if ( flag .eqv. .true. .and. ier == 0) then
         ! note: MPI_ABORT does not return, it makes the program exit with an error code of 30
-        call MPI_Abort(MPI_COMM_WORLD, 30, ierror )
-        call MPI_FINALIZE(ierror)
+        call MPI_Abort(MPI_COMM_WORLD, 30, ier )
+        call MPI_FINALIZE(ier)
       endif
 
       ! stop process
       stop 'abort - program '
-      end
+
+      end subroutine
 

@@ -16,14 +16,15 @@
 !-----------------------------------------------------------------
 module minimize_trace
 !-----------------------------------------------------------------
-  use nrtype; use precisions
+  use precisions
   implicit none
+
   real(WP),allocatable,dimension(:,:):: seismoHom,seismoHet
   integer:: trace_length
 
   contains
     !-----------------------------------------------------------------------
-    function costfunction(x)
+    real function costfunction(x)
     !-----------------------------------------------------------------------
     ! calculates the root-mean-square of the residual/difference between
     ! the shifted and reference trace
@@ -32,10 +33,10 @@ module minimize_trace
     !     x     - array containing parameters t_lag and amplification to optimize
     !
     ! returns: rms of residuals of traces
-      use nrtype; use precisions; use verbosity
+      use precisions; use verbosity
       implicit none
-      real(SP),dimension(:),intent(in):: x
-      real(SP):: costfunction
+      real,dimension(:),intent(in):: x
+      ! local parameters
       real(WP):: seismoDiff(trace_length),seismoShift(trace_length)
       integer:: i,margin
       real(WP):: t_lag, amplification
@@ -87,51 +88,51 @@ contains
   !------------------------------------------------------------------
   subroutine spline(x,y,yp1,ypn,y2)
   !------------------------------------------------------------------
-    USE nrtype
     implicit none
-    REAL(DP), DIMENSION(:), INTENT(IN) :: x,y
-    REAL(DP), INTENT(IN) :: yp1,ypn
-    REAL(DP), DIMENSION(:), INTENT(OUT) :: y2
-    INTEGER(I4B) :: n
-    REAL(DP), DIMENSION(size(x)) :: a,b,c,r
+    double precision, dimension(:), intent(in) :: x,y
+    double precision, intent(in) :: yp1,ypn
+    double precision, dimension(:), intent(out) :: y2
+    ! local parameters
+    integer:: n
+    double precision, dimension(size(x)) :: a,b,c,r
 
     n = size(x)
     if (n /= size(y) .or. n /= size(y2)) &
       call stopProgram('spline must have arrays with same size    ')
 
-    c(1:n-1)=x(2:n)-x(1:n-1)
-    r(1:n-1)=6.0_DP*((y(2:n)-y(1:n-1))/c(1:n-1))
-    r(2:n-1)=r(2:n-1)-r(1:n-2)
-    a(2:n-1)=c(1:n-2)
-    b(2:n-1)=2.0_DP*(c(2:n-1)+a(2:n-1))
-    b(1)=1.0_DP
-    b(n)=1.0_DP
-    if (yp1 > 0.99e30_DP) then
-       r(1)=0.0_DP
-       c(1)=0.0_DP
+    c(1:n-1) = x(2:n)-x(1:n-1)
+    r(1:n-1) = 6.0d0*((y(2:n)-y(1:n-1))/c(1:n-1))
+    r(2:n-1) = r(2:n-1)-r(1:n-2)
+    a(2:n-1) = c(1:n-2)
+    b(2:n-1) = 2.0d0*(c(2:n-1)+a(2:n-1))
+    b(1) = 1.0d0
+    b(n) = 1.0d0
+    if (yp1 > 0.99d30) then
+       r(1) = 0.0d0
+       c(1) = 0.0d0
     else
-       r(1)=(3.0_DP/(x(2)-x(1)))*((y(2)-y(1))/(x(2)-x(1))-yp1)
-       c(1)=0.5_DP
+       r(1) = (3.0d0/(x(2)-x(1)))*((y(2)-y(1))/(x(2)-x(1))-yp1)
+       c(1) = 0.5d0
     endif
-    if (ypn > 0.99e30_DP) then
-       r(n)=0.0_DP
-       a(n)=0.0_DP
+    if (ypn > 0.99d30) then
+       r(n) = 0.0d0
+       a(n) = 0.0d0
     else
-       r(n)=(-3.0_DP/(x(n)-x(n-1)))*((y(n)-y(n-1))/(x(n)-x(n-1))-ypn)
-       a(n)=0.5_DP
+       r(n) = (-3.0d0/(x(n)-x(n-1)))*((y(n)-y(n-1))/(x(n)-x(n-1))-ypn)
+       a(n) = 0.5d0
     endif
     call tridag_ser(a(2:n),b(1:n),c(1:n-1),r(1:n),y2(1:n))
-  end subroutine spline
+  end subroutine
+
   !------------------------------------------------------------------
-  function splint(xa,ya,y2a,x)
+  double precision function splint(xa,ya,y2a,x)
   !------------------------------------------------------------------
-    USE nrtype
     implicit none
-    REAL(DP), DIMENSION(:), INTENT(IN) :: xa,ya,y2a
-    REAL(DP), INTENT(IN) :: x
-    REAL(DP) :: splint
-    INTEGER(I4B) :: khi,klo,n,i
-    REAL(DP) :: a,b,h
+    double precision, dimension(:), intent(in) :: xa,ya,y2a
+    double precision, intent(in) :: x
+    ! local parameters
+    integer:: khi,klo,n,i
+    double precision :: a,b,h
 
     n = size(xa)
     if (n /= size(ya) .or. n /= size(y2a)) &
@@ -140,7 +141,7 @@ contains
     klo = max(min(locate(xa,x),n-1),1)
     khi = klo+1
     h = xa(khi)-xa(klo)
-    if (h == 0.0_DP) then
+    if (h == 0.0d0) then
           do i = 1,n
              print *,i,xa(i),khi,klo
           enddo
@@ -148,56 +149,57 @@ contains
     endif
     a = (xa(khi)-x)/h
     b = (x-xa(klo))/h
-    splint = a*ya(klo) + b*ya(khi) + ((a**3-a)*y2a(klo) + (b**3-b)*y2a(khi))*(h**2)/6.0_DP
-  end function splint
+    splint = a*ya(klo) + b*ya(khi) + ((a**3-a)*y2a(klo) + (b**3-b)*y2a(khi))*(h**2)/6.0d0
+  end function
+
   !------------------------------------------------------------------
   subroutine tridag_ser(a,b,c,r,u)
   !------------------------------------------------------------------
-    USE nrtype
     implicit none
-    REAL(DP), DIMENSION(:), INTENT(IN) :: a,b,c,r
-    REAL(DP), DIMENSION(:), INTENT(OUT) :: u
-    REAL(DP), DIMENSION(size(b)) :: gam
-    INTEGER(I4B) :: n,j
-    REAL(DP) :: bet
+    double precision, dimension(:), intent(in) :: a,b,c,r
+    double precision, dimension(:), intent(out) :: u
+    ! local parameters
+    double precision, dimension(size(b)) :: gam
+    integer:: n,j
+    double precision :: bet
 
     n = size(a)+1
     if (n /= size(b) .or. n /= size(c)+1 .or. n /= size(r) .or. n /= size(u)) &
       call stopProgram('tridag_ser: must have same sized arrays    ')
 
     bet = b(1)
-    if (bet == 0.0_DP) &
+    if (bet == 0.0d0) &
       call stopProgram('tridag_ser: Error at code stage 1    ')
 
     u(1) = r(1)/bet
     do j = 2,n
        gam(j) = c(j-1)/bet
        bet = b(j)-a(j-1)*gam(j)
-       if (bet == 0.0_DP) &
+       if (bet == 0.0d0) &
             call stopProgram('tridag_ser: Error at code stage 2    ')
        u(j) = (r(j)-a(j-1)*u(j-1))/bet
     enddo
     do j = n-1,1,-1
        u(j) = u(j)-gam(j+1)*u(j+1)
     enddo
-  end subroutine tridag_ser
+  end subroutine
+
   !-----------------------------------------------------------------
-  function locate(xx,x)
+  integer function locate(xx,x)
   !-----------------------------------------------------------------
-    USE nrtype
     implicit none
-    REAL(DP), DIMENSION(:), INTENT(IN) :: xx
-    REAL(DP), INTENT(IN) :: x
-    INTEGER(I4B) :: locate
-    INTEGER(I4B) :: n,jl,jm,ju
-    LOGICAL :: ascnd
-    n=size(xx)
+    double precision, dimension(:), intent(in) :: xx
+    double precision, intent(in) :: x
+    ! local parameters
+    integer :: n,jl,jm,ju
+    logical :: ascnd
+    n = size(xx)
     ascnd = (xx(n) >= xx(1))
     jl = 0
     ju = n+1
     do
        if (ju-jl <= 1) exit
-       jm=(ju+jl)/2
+       jm = (ju+jl)/2
        if (ascnd .eqv. (x >= xx(jm))) then
           jl = jm
        else
@@ -211,7 +213,7 @@ contains
     else
        locate = jl
     endif
-  end function locate
+  end function
 
 end module
 
@@ -231,12 +233,13 @@ end module
 !       startingTime                     - window start time of fourier transformation for correlation
 !
 ! returns: t_lag timelag in seconds
-      use verbosity; use nrtype; use nrutil; use filterType
+      use verbosity; use filterType
       implicit none
       real(WP),intent(out):: t_lag
       character(len=128),intent(in):: fileDelta,fileReference
       real(WP),intent(in):: startingTime
-      integer::i,entries,station,index,zeropad,ierror
+      ! local parameters
+      integer:: entries,ier
       real(WP):: seismo(2,WindowSIZE),seismoRef(2,WindowSIZE),lastseismotime,timedelta
       real(WP),allocatable,dimension(:,:):: seismo1,seismo2
 
@@ -247,15 +250,17 @@ end module
       ! read in from startingTime
       call readSeismo(seismoRef,WindowSIZE,fileReference,startingTime,timedelta,entries,lastseismotime)
       call readSeismo(seismo,WindowSIZE,fileDelta,startingTime,timedelta,entries,lastseismotime)
-      allocate(seismo1(2,entries),seismo2(2,entries),stat=ierror)
-      if ( ierror /= 0 ) stop "error allocating seismo1/2"
+
+      allocate(seismo1(2,entries),seismo2(2,entries),stat=ier)
+      if ( ier /= 0 ) stop "error allocating seismo1/2"
+
       seismo1(:,:) = seismoRef(:,1:entries)
       seismo2(:,:) = seismo(:,1:entries)
 
       ! get time lag
       call getTimelagSeismos(t_lag,seismo2,seismo1,entries,timedelta)
 
-      end
+      end subroutine
 
 !-----------------------------------------------------------------------
       subroutine getTimelagTaped(t_lag,fileDelta,fileReference,startingTime,endingTime)
@@ -272,12 +277,13 @@ end module
 !       startingTime                     - window start time of fourier transformation for correlation
 !
 ! returns: t_lag timelag in seconds
-      use verbosity; use nrtype; use nrutil; use filterType
+      use verbosity; use filterType
       implicit none
       character(len=128),intent(in):: fileDelta,fileReference
       real(WP),intent(in):: startingTime,endingTime
       real(WP),intent(out):: t_lag
-      integer::i,entries,station,index,zeropad,ierror
+      ! local parameters
+      integer:: entries,ier
       real(WP):: seismo(2,WindowSIZE),seismoRef(2,WindowSIZE),lastseismotime,timedelta
       real(WP),allocatable,dimension(:,:):: seismo1,seismo2
 
@@ -288,8 +294,10 @@ end module
       ! read in from startingTime
       call readSeismoTaped(seismoRef,WindowSIZE,fileReference,startingTime,endingTime,timedelta,entries,lastseismotime)
       call readSeismoTaped(seismo,WindowSIZE,fileDelta,startingTime,endingTime,timedelta,entries,lastseismotime)
-      allocate(seismo1(2,entries),seismo2(2,entries),stat=ierror)
-      if ( ierror /= 0 ) stop "error allocating seismo1/2"
+
+      allocate(seismo1(2,entries),seismo2(2,entries),stat=ier)
+      if ( ier /= 0 ) stop "error allocating seismo1/2"
+
       seismo1(:,:) = seismoRef(:,1:entries)
       seismo2(:,:) = seismo(:,1:entries)
       ! get time lag
@@ -312,10 +320,14 @@ end module
 !       startingTime                     - window start time of fourier transformation for correlation
 !
 ! returns: t_lag timelag in seconds
-      use verbosity;use nrtype; use nrutil; use propagationStartup;use filterType
+      use verbosity; use propagationStartup; use filterType
       implicit none
-      integer::i,station,index,zeropad,ierror
-      real(WP):: seismo(2,WindowSIZE),seismoRef(2,WindowSIZE),t_lag,startingTime,endtime,time,timeRef,displace,displaceRef
+      integer,intent(in):: station
+      real(WP),intent(in):: startingTime
+      real(WP),intent(out):: t_lag
+      ! local parameters
+      integer:: i,index,ier
+      real(WP):: seismo(2,WindowSIZE),seismoRef(2,WindowSIZE),endtime,time,timeRef,displace,displaceRef
       real(WP),allocatable,dimension(:,:):: seismo1,seismo2
 
       !initialize
@@ -352,14 +364,17 @@ end module
           endtime = time
         endif
       enddo
-      allocate(seismo1(2,index),seismo2(2,index),stat=ierror)
-      if ( ierror /= 0 ) stop "error allocating seismo1/2"
+
+      allocate(seismo1(2,index),seismo2(2,index),stat=ier)
+      if ( ier /= 0 ) stop "error allocating seismo1/2"
+
       seismo1(:,:) = seismoRef(:,1:index)
       seismo2(:,:) = seismo(:,1:index)
 
       ! get time lag
       call getTimelagSeismos(t_lag,seismo2,seismo1,index,dt)
-      end
+
+      end subroutine
 
 !-----------------------------------------------------------------------
       subroutine getTimelagSeismos(t_lag,seismo1,seismo2,seismoLength,timedelta)
@@ -379,20 +394,23 @@ end module
 ! returns: t_lag timelag in seconds ( uses dt )
       use verbosity;use filterType
       use propagationStartup
-      use nrtype; use nrutil; use nr, only: correl
       implicit none
       real(WP),intent(out):: t_lag
       integer,intent(in):: seismoLength
       real(WP),intent(in):: seismo1(2,seismoLength),seismo2(2,seismoLength)
       real(WP),intent(in):: timedelta
-      integer:: indexmax,ierror,i,j,entries,station,index
-      integer:: hannwindow,ileft,iright,xcorrlength,zeropad,centerfrequencyIndex
+      ! local parameters
+      integer:: i
+      integer:: xcorrlength,zeropad
       real(WP):: seismo(2,WindowSIZE),seismoRef(2,WindowSIZE)
-      real(WP):: sourceterm,correlation,max,sub, pointleft,pointright,samplingFreq,endtime
-      real(WP):: hannfactor,hannA,time,timeRef,displace,displaceRef,timedeltaWindow,td
+      real(WP):: sub
+      real(WP):: timedeltaWindow,td
       real(WP),allocatable,dimension(:):: seismoWindow,seismoRefWindow,crosscorrelation
       !real(WP):: crosscorrelation(WindowSIZE),seismoWindow(WindowSIZE),seismoRefWindow(WindowSIZE)
+
       real(WP),external:: getMaximum
+      real(WP),external:: correlation_traces
+
       logical,parameter:: NORMALIZE         = .false.
       logical,parameter:: STRETCH           = .false.
       logical,parameter:: TAPER             = .false.
@@ -417,15 +435,14 @@ end module
         call taperSeismogram(seismo2,seismoLength,seismoLength,beVerbose)
       endif
 
-
       ! debug output
       if ( fileOutput) then
         print *,'  printing to file:',datadirectory(1:len_trim(datadirectory))//'Timelag_read.dat'
-        open(10,file=datadirectory(1:len_trim(datadirectory))//'Timelag_read.dat')
+        open(IOUT,file=datadirectory(1:len_trim(datadirectory))//'Timelag_read.dat')
         do i = 1,seismoLength
-          write(10,*) seismo1(1,i),seismo1(2,i),seismo2(2,i)
+          write(IOUT,*) seismo1(1,i),seismo1(2,i),seismo2(2,i)
         enddo
-        close(10)
+        close(IOUT)
       endif
 
       ! copy arrays
@@ -501,7 +518,7 @@ end module
       endif
 
       ! gets cross-correlation
-      crosscorrelation = correl(seismoWindow,seismoRefWindow)
+      crosscorrelation = correlation_traces(seismoWindow,seismoRefWindow)
 
       ! alternative
       !call time_correl(seismoWindow,seismoRefWindow,crosscorrelation,WindowSIZE)
@@ -530,8 +547,8 @@ end module
       ! then you will need to pad the data with an equal number of zeros; this is the extreme
       ! case.
       if ( abs(sub) > zeropad ) then
-        print *,'correlation returns lag:',sub
-        print *,'which is bigger than the buffer zone:',zeropad
+        print *,'Error: correlation returns lag:',sub
+        print *,'       which is bigger than the buffer zone:',zeropad
         stop "error correlation"
       endif
 
@@ -561,9 +578,10 @@ end module
       integer,intent(in):: nbsteps
       real(WP),intent(in):: trace1(nbsteps),trace2(nbsteps)
       real(WP),intent(out):: corr(nbsteps)
+      ! local parameters
       integer:: m,n
       ! initiialize
-      corr(:)=0.0
+      corr(:) = 0.0_WP
       ! cross-correlation in time domain where both traces are real
       do m = 1,nbsteps/2
         do n = 1,nbsteps-m+1
@@ -581,43 +599,42 @@ end module
 !-----------------------------------------------------------
       subroutine resample_alt(trace1,size1,dta,traceout,sizeout,dtb)
 !-----------------------------------------------------------
-      use precisions
-      use splinefunction
+      use precisions; use splinefunction
       implicit none
       integer,intent(in) :: size1,sizeout
       real(WP),dimension(size1), intent(in) :: trace1
       real(WP),intent(in) :: dta,dtb
       real(WP),dimension(sizeout), intent(out):: traceout
-      integer:: i,length,ierror
+      ! local parameters
+      integer:: i,length,ier
       double precision:: loc
-      double precision,external:: mydrsple
+      double precision,external:: cubicspline_eval
 
       ! spline arrays
       length = size1
+
+      i1 = 1
+      i2 = length
+
       if ( allocated(X) ) deallocate(X,Y,Q,F)
-      allocate(X(length),Y(length),Q(3,length),F(3,length),stat=ierror)
-      if ( ierror /= 0) call stopProgram('resample error')
+      allocate(X(i2),Y(i2),Q(3,i2),F(3,i2),stat=ier)
+      if ( ier /= 0) call stopProgram('resample error')
 
       ! set spline arrays
-      ilength = length
-      i1 = 1
-      i2 = size1
       do i = i1,i2
-         X(i)=dble((i-1)*dta)
-         Y(i)=dble(trace1(i))
+        X(i) = dble((i-1)*dta)
+        Y(i) = dble(trace1(i))
       enddo
-      Q(:,:)=0.0d0
-      F(:,:)=0.0d0
-      call mydrspln(i1,i2,X,Y,Q,F,ilength)
+      call cubicspline_setup()
 
       ! interpolate values
       do i = 1,sizeout
          loc = (i-1)*dtb
          if ( loc <= X(size1) .and. loc >= X(1) ) then
             ! spline respresentation of trace at location loc
-            traceout(i) = mydrsple(i1,i2,X,Y,Q,ilength,loc)
+            traceout(i) = cubicspline_eval(loc)
          else
-            traceout(i)=0.0
+            traceout(i) = 0.0
          endif
       enddo
       ! free memory
@@ -635,30 +652,31 @@ end module
       real(WP),dimension(size1), intent(in) :: trace1
       real(WP),intent(in) :: dta,dtb
       real(WP),dimension(sizeout), intent(out):: traceout
-      doubleprecision, dimension(size1):: ya
+      ! local parameters
+      double precision, dimension(size1):: ya
       real, dimension(sizeout):: yb
-      doubleprecision, dimension(size1) :: xa,y2
+      double precision, dimension(size1) :: xa,y2
       integer :: i
-      doubleprecision :: yp1,ypn,x
-      doubleprecision,parameter:: EPS = 0.01
+      double precision :: yp1,ypn,x
+      double precision,parameter:: EPS = 0.01
 
       ! fill arrays
       ya(:) = trace1(:)
       do i = 1,size1
-         xa(i)=(i-1)*dta
+         xa(i) = (i-1)*dta
       enddo
 
-      yp1=(ya(2)-ya(1)    )/dta
-      ypn=(ya(size1)-ya(size1-1))/dta
+      yp1 = (ya(2)-ya(1)    )/dta
+      ypn = (ya(size1)-ya(size1-1))/dta
       call spline(xa,ya,yp1,ypn,y2)
 
       ! get interpolated values
       do i = 1,sizeout
-         x=(i-1)*dtb
+         x = (i-1)*dtb
          if (x <= xa(size1)+EPS .and. x >= xa(1)-EPS ) then
-            yb(i)=real(splint(xa,ya,y2,x))
+            yb(i) = real(splint(xa,ya,y2,x))
          else
-            yb(i)=0.0
+            yb(i) = 0.0
          endif
       enddo
 
@@ -690,10 +708,14 @@ end module
 ! returns: subsample precision maximum
       use verbosity;use precisions
       implicit none
-      integer:: length,i,indexmax
-      real(WP):: crosscorrelation(length),getMaximum,max,correlation
+      integer,intent(in):: length
+      real(WP),intent(in):: crosscorrelation(length)
+      real(WP):: getMaximum
+      ! local parameters
+      integer:: indexmax   !,i
+      real(WP):: max  !,correlation
       real(WP):: pointleft,pointright,maxestimate,peaklocation
-      real(WP):: abscorr(length)
+      !real(WP):: abscorr(length)
       integer,dimension(1):: indexmaxloc
 
       !Searches maximum correlation
@@ -722,12 +744,12 @@ end module
       !subsample precision
       ! first half (positive lag)
       if ( indexmax > 1 .and. indexmax <= length/2) then
-        pointleft=crosscorrelation(indexmax-1)
-        pointright=crosscorrelation(indexmax+1)
+        pointleft = crosscorrelation(indexmax-1)
+        pointright = crosscorrelation(indexmax+1)
       endif
       if ( indexmax == 1 ) then
-        pointleft=crosscorrelation(length)
-        pointright=crosscorrelation(indexmax+1)
+        pointleft = crosscorrelation(length)
+        pointright = crosscorrelation(indexmax+1)
       endif
       !if ( indexmax == length/2 ) then
       !  pointleft=crosscorrelation(indexmax-1)
@@ -736,12 +758,12 @@ end module
 
       ! second half (negative lag)
       if ( indexmax >= length/2+1 .and. indexmax < length) then
-        pointleft=crosscorrelation(indexmax-1)
-        pointright=crosscorrelation(indexmax+1)
+        pointleft = crosscorrelation(indexmax-1)
+        pointright = crosscorrelation(indexmax+1)
       endif
       if ( indexmax == length ) then
-        pointleft=crosscorrelation(indexmax-1)
-        pointright=crosscorrelation(1)
+        pointleft = crosscorrelation(indexmax-1)
+        pointright = crosscorrelation(1)
       endif
       !if ( indexmax == length/2+1 ) then
       !  pointleft=crosscorrelation(length/2)
@@ -778,9 +800,9 @@ end module
         print *,'        index:',indexmax
         print *,'        estimated maximum:',maxestimate
       endif
-      return
 
-      end
+      return
+      end function
 
 
 !-----------------------------------------------------------------------
@@ -789,11 +811,11 @@ end module
 ! reads in the seismogram
 !
 ! input:
-!     seismo    - data array
-!     size        - data array size
-!     fileName - data file name
+!     seismo        - data array
+!     size          - data array size
+!     fileName      - data file name
 !     start         - time position from which on data shall be read
-!     timediff              - time step dt
+!     timediff      - time step dt
 !     entries       - (optional) number of entries
 ! returns: seismo array and dt
       use verbosity;use precisions
@@ -804,15 +826,16 @@ end module
       real(WP),intent(out):: seismo(2,size)
       real(WP),intent(out):: timediff,lastseismotime
       integer,intent(out):: entries
-      integer:: ierror,i
+      ! local parameters
+      integer:: ier,i
       character(len=128):: line
-      real(WP):: time,sourceterm,displace,endtime
+      real(WP):: time,displace,endtime
       integer:: index, offset,ZEROLINE,FILELINES !tests: ZEROLINE/0/ ! approximate time 0 s line
 
       !initialize
       ZEROLINE = 0
       FILELINES = 1100
-      seismo(:,:)=0.0
+      seismo(:,:) = 0.0_WP
 
       ! open seismogram file
       if (beVerbose) then
@@ -820,20 +843,20 @@ end module
         print *,'  file :',trim(fileName)
         print *,'  start:',start
       endif
-      open(1, file=trim(fileName),status='old',iostat=ierror)
-      if ( ierror /= 0) then
+
+      open(IIN, file=trim(fileName),status='old',iostat=ier)
+      if ( ier /= 0) then
         print *,'Error: opening file ',trim(fileName)
         call stopProgram( 'abort - readSeismo   ')
       endif
 
       ! parse file for line with zero time and number of lines
-      ierror = 0
       index = 0
       offset = 0
-      do while( ierror == 0 )
-        read(1,*,iostat=ierror) line
+      do while( ier == 0 )
+        read(IIN,*,iostat=ier) line
         index = index+1
-        line=trim(line)
+        line = trim(line)
 
         ! check for additional data in file
         if ( line(1:3) == 'dis') offset=3
@@ -850,16 +873,16 @@ end module
         print *,'    zero line:',ZEROLINE
         print *,'    offset:',offset
       endif
-      rewind(1)
+      rewind(IIN)
 
       ! parse file for displacement values
       timediff = 0.0
       index = 0
-      ierror = 0
+      ier = 0
       do i = 1, FILELINES
         if (i >= ZEROLINE .and. index < size) then
-          read(1, *, iostat=ierror) time,displace !,sourceterm
-          if ( ierror /= 0) then
+          read(IIN, *, iostat=ier) time,displace !,sourceterm
+          if ( ier /= 0) then
             print *,'Error: reading input. last line ',i,ZEROLINE,index
             call stopProgram( 'abort - readSeismo   ')
           endif
@@ -881,19 +904,19 @@ end module
           !read until end is reached
           if ( index >= size) then
             !read values
-            read(1, *, iostat=ierror) time,displace !,sourceterm
+            read(IIN, *, iostat=ier) time,displace !,sourceterm
             endtime = time
           else
             !read a text line
-            read(1, *, iostat=ierror) line
-            if ( ierror /= 0) then
+            read(IIN, *, iostat=ier) line
+            if ( ier /= 0) then
               !print *,'error reading input. last line ',i
               exit
             endif
           endif
         endif
       enddo
-      close(1)
+      close(IIN)
 
       if ( beVerbose ) then
         print *,'    timestep dt:',timediff
@@ -909,7 +932,7 @@ end module
       ! end time in file
       lastseismotime = endtime
 
-      end
+      end subroutine
 
 !-----------------------------------------------------------------------
       subroutine readSeismoTaped(seismo,size,fileName,start,ending,timediff,entries,lastseismotime)
@@ -932,15 +955,16 @@ end module
       real(WP),intent(out):: seismo(2,size)
       real(WP),intent(out):: timediff,lastseismotime
       integer,intent(out):: entries
-      integer:: ierror,i
+      ! local parameters
+      integer:: ier,i
       character(len=128):: line
-      real(WP):: time,sourceterm,displace,endtime
+      real(WP):: time,displace,endtime
       integer:: index,offset,ZEROLINE,FILELINES !tests: ZEROLINE/0/ ! approximate time 0 s line
 
       !initialize
       ZEROLINE = 0
       FILELINES = 1100
-      seismo(:,:)=0.0
+      seismo(:,:) = 0.0_WP
 
       ! open seismogram file
       if (beVerbose) then
@@ -948,18 +972,18 @@ end module
         print *,'  file :',trim(fileName)
         print *,'  start:',start
       endif
-      open(1, file=trim(fileName),status='old',iostat=ierror)
-      if ( ierror /= 0) then
+
+      open(10, file=trim(fileName),status='old',iostat=ier)
+      if ( ier /= 0) then
         print *,'Error: opening file ',trim(fileName)
         call stopProgram( 'abort - readSeismo   ')
       endif
 
       ! parse file for line with zero time and number of lines
-      ierror = 0
       index = 0
       offset = 0
-      do while( ierror == 0 )
-        read(1,*,iostat=ierror) line
+      do while( ier == 0 )
+        read(10,*,iostat=ier) line
         index = index+1
         line=trim(line)
 
@@ -983,11 +1007,11 @@ end module
       ! parse file for displacement values
       timediff = 0.0
       index = 0
-      ierror = 0
+      ier = 0
       do i = 1, FILELINES
         if (i >= ZEROLINE .and. index < size) then
-          read(1, *, iostat=ierror) time,displace !,sourceterm
-          if ( ierror /= 0) then
+          read(10, *, iostat=ier) time,displace !,sourceterm
+          if ( ier /= 0) then
             print *,'Error: reading input. last line ',i,ZEROLINE,index
             call stopProgram( 'abort - readSeismo   ')
           endif
@@ -1009,19 +1033,19 @@ end module
           !read until end is reached
           if ( index >= size) then
             !read values
-            read(1, *, iostat=ierror) time,displace !,sourceterm
+            read(10, *, iostat=ier) time,displace !,sourceterm
             endtime = time
           else
             !read a text line
-            read(1, *, iostat=ierror) line
-            if ( ierror /= 0) then
+            read(10, *, iostat=ier) line
+            if ( ier /= 0) then
               !print *,'error reading input. last line ',i
               exit
             endif
           endif
         endif
       enddo
-      close(1)
+      close(10)
 
       if ( beVerbose ) then
         print *,'    timestep dt:',timediff
@@ -1037,8 +1061,7 @@ end module
       ! end time in file
       lastseismotime = endtime
 
-      end
-
+      end subroutine
 
 !-----------------------------------------------------------------------
       subroutine getGridvalues()
@@ -1046,27 +1069,30 @@ end module
 ! read in precalculated cell areas, edge lengths and center distances
       use propagationStartup;use cells
       implicit none
-      integer::ierror
+      ! local parameters
+      integer:: ier
 
       ! read in vertices array
       call readData(.true.)
 
       ! new arrays for precalculated cell attributes
-      allocate( cellAreas(numVertices),cellEdgesLength(numVertices,0:6), &
-              cellCenterDistances(numVertices,0:6), stat=ierror )
-      if ( ierror > 0 ) then
+      allocate( cellAreas(numVertices), &
+                cellEdgesLength(numVertices,0:6), &
+                cellCenterDistances(numVertices,0:6), stat=ier )
+      if ( ier /= 0 ) then
         print *,'Error: in allocating arrays for cell area,..'
         call stopProgram( 'abort - getGridvalues    ')
       endif
+
       if ( CORRECT_RATIO ) then
-        allocate( cellFractions(numVertices,0:6),stat=ierror)
-        if ( ierror /= 0 ) call stopProgram('error allocating cellFractions')
+        allocate( cellFractions(numVertices,0:6),stat=ier)
+        if ( ier /= 0 ) call stopProgram('error allocating cellFractions')
       endif
 
       ! read in cell areas
       call readPrecalculated()
 
-      end
+      end subroutine
 
 
 !-----------------------------------------------------------------------
@@ -1081,21 +1107,32 @@ end module
 ! returns: arrivalTime (module traveltime) and startTime
       use traveltime; use verbosity; use propagationStartup
       implicit none
-      character(len=128):: filename
+      character(len=128),intent(in):: filename
+      real(WP),intent(out):: startTime
+      ! local parameters
       integer:: numEntries,entries1
-      real(WP):: seismo(2,10000),startTime,endtime,timedelta,defaultStart
+      real(WP):: endtime,timedelta,defaultStart
+      real(WP),dimension(:,:),allocatable:: seismo
 
       !initialize
       numEntries = 10000
       defaultStart = FIRSTTIME
+      startTime = 0.0_WP
 
       ! read in seismograms (hopefully complete)
-      seismo(:,:)=0.0_WP
+      allocate(seismo(2,numEntries))
+      seismo(:,:) = 0.0_WP
+
       call readSeismo(seismo,numEntries,filename,defaultStart,timedelta,entries1,endtime)
+
       seismo_timestep = timedelta
+
       ! determine startTime and arrivaltime
       call getStartTimeSeismogram(seismo,numEntries,endtime,timedelta,startTime)
-      end
+
+      ! free memory
+      deallocate(seismo)
+      end subroutine
 
 
 !-----------------------------------------------------------------------
@@ -1113,13 +1150,17 @@ end module
 ! returns: arrivalTime (module traveltime) and startTime
       use traveltime;use verbosity;use propagationStartup; use filterType
       implicit none
-      integer:: seismoLength,i
-      real(WP),intent(in):: seismo(2,seismoLength),endtime,timedelta
-      real(WP),intent(out)::startTime
+      integer,intent(in):: seismoLength
+      real(WP),intent(in):: seismo(2,seismoLength)
+      real(WP),intent(in):: endtime,timedelta
+      real(WP),intent(out):: startTime
+      ! local parameters
+      integer:: i
       real(WP):: leftWindowTime,defaultStart
 
-      !initialize
+      ! initialize
       defaultStart = FIRSTTIME
+      startTime = 0.0_WP
 
       ! get time when seismogram is above threshold
       arrivalTime = defaultStart
@@ -1154,7 +1195,7 @@ end module
         startTime = defaultStart
       endif
 
-      end
+      end subroutine
 
 
 !-----------------------------------------------------------------------
@@ -1168,20 +1209,17 @@ end module
 ! returns: seismoPerturbed
       use precisions
       implicit none
-      integer length,i
-      real(WP):: seismoRef(length),seismoDelta(length),seismoPerturbed(length)
-
-      length=size(seismoRef)
-      if ( length /= size(seismoDelta)) then
-        print *,'Error: seismograms have different dimensions', length,size(seismoDelta)
-        call stopProgram( 'abort - getPerturbedSeismo   ')
-      endif
+      integer,intent(in):: length
+      real(WP),intent(in):: seismoRef(length),seismoDelta(length)
+      real(WP),intent(out):: seismoPerturbed(length)
+      ! local parameters
+      integer:: i
 
       do i = 1,length
-        seismoPerturbed(i)=seismoDelta(i)-seismoRef(i)
+        seismoPerturbed(i) = seismoDelta(i) - seismoRef(i)
       enddo
 
-      end
+      end subroutine
 
 !-----------------------------------------------------------------------
       subroutine getFirstDerivative(seismo,seismoOut,timedelta,length)
@@ -1193,24 +1231,24 @@ end module
 !       timedelta                          - time step size
 !       length                              - length of both seismograms seismo & seismoOut
 ! returns: first derivative in seismoOut
-      use precisions; use splinefunction, only: i1,i2,X,Y,Q,F,ilength
+      use precisions; use splinefunction
       use parallel; use verbosity
-      !use nrtype; use nr, only: dfridr
       implicit none
       integer,intent(in):: length
-      real(WP),intent(IN):: seismo(length)
-      real(WP),intent(OUT):: seismoOut(length)
+      real(WP),intent(in):: seismo(length)
+      real(WP),intent(out):: seismoOut(length)
       real(WP),intent(in):: timedelta
-      integer:: i,ierror
+      ! local parameters
+      integer:: i,ier
       double precision:: err
-      double precision,external:: splineRepresentation
-      double precision,external:: dfridr_spline
+      !double precision,external:: splineRepresentation
+      double precision,external:: cubicspline_derivative
       !interface
       !  double precision function splineRepresentation(location)
       !  use splinefunction, only: i1,i2,X,Y,Q
       !  implicit none
       !  double precision, INTENT(IN) :: location
-      !  double precision,external:: mydrsple
+      !  double precision,external:: cubicspline_eval
       !  end function splineRepresentation
       !end interface
       logical,parameter:: FINITE_DIFFERENCES = .true.
@@ -1233,31 +1271,23 @@ end module
       endif
 
       ! for spline representation
-      if ( allocated(X) ) deallocate(X,Y,Q,F)
-      allocate(X(length),Y(length),Q(3,length),F(3,length),stat=ierror)
-      if ( ierror /= 0) call stopProgram('getFirstDerivative() - error allocating spline arrays    ')
-
-      ! get spline representation
-      ! initialize
-      ilength = length
       i1 = 1
       i2 = length
-      do i = i1,i2
-        X(i)=dble((i-1)*timedelta)
-        Y(i)=dble(seismo(i))
-      enddo
 
-      Q(:,:)=0.0d0
-      F(:,:)=0.0d0
-      call mydrspln(i1,i2,X,Y,Q,F,ilength)
+      if ( allocated(X) ) deallocate(X,Y,Q,F)
+      allocate(X(i2),Y(i2),Q(3,i2),F(3,i2),stat=ier)
+      if ( ier /= 0) call stopProgram('getFirstDerivative() - error allocating spline arrays    ')
+
+      ! get spline representation
+      do i = i1,i2
+        X(i) = dble((i-1)*timedelta)
+        Y(i) = dble(seismo(i))
+      enddo
+      call cubicspline_setup()
 
       ! get time derivative
       do i = i1,i2
-        !if ( WP == 4 ) then
-        !  seismoOut(i)=sngl(dfridr_spline(splineRepresentation,X(i),dble(2*timedelta),err))
-        !else
-          seismoOut(i) = dfridr_spline( X(i),dble(2*timedelta),err )
-        !endif
+        seismoOut(i) = real(cubicspline_derivative( X(i),dble(2*timedelta),err ),kind=WP)
 
         ! check
         if ( MASTER .and. VERBOSE) then
@@ -1299,16 +1329,18 @@ end module
       use precisions
       implicit none
       integer,intent(in):: length
-      real(WP),intent(IN):: seismo(length)
-      real(WP),intent(OUT):: seismoOut(length)
+      real(WP),intent(in):: seismo(length)
+      real(WP),intent(out):: seismoOut(length)
       real(WP),intent(in):: timedelta
-      real(WP)::seismo1(length)
+      ! local parameters
+      real(WP):: seismo1(length)
 
       ! first time derivative
       call getFirstDerivative(seismo,seismo1,timedelta,length)
       ! second time
       call getFirstDerivative(seismo1,seismoOut,timedelta,length)
-      end
+
+      end subroutine
 
 !-----------------------------------------------------------------------
       subroutine getIntegral(seismo1,seismo2,integral,timedelta,length)
@@ -1319,24 +1351,23 @@ end module
 !       integral                                     - integral value
 !       timedelta                                              - time step size
 ! returns: integral
-      use precisions
-      use splinefunction; use parallel
-      use nr;use nrtype; use nrutil
+      use precisions; use splinefunction
+      use parallel
       implicit none
       integer,intent(in):: length
-      real(WP),intent(IN):: seismo1(length),seismo2(length)
+      real(WP),intent(in):: seismo1(length),seismo2(length)
       real(WP),intent(in):: timedelta
       real(WP),intent(out):: integral
-      integer:: i,ierror
-      real(WP):: val1
+      ! local parameters
+      integer:: i,ier
       interface
-        function spline_func(location)
-        USE nrtype
+        function myspline_func(location)
         implicit none
-        REAL(DP), DIMENSION(:),INTENT(IN) :: location
-        REAL(DP), DIMENSION(size(location)):: spline_func
-        end function spline_func
+        double precision, dimension(:),intent(in) :: location
+        double precision, dimension(size(location)):: myspline_func
+        end function
       end interface
+      double precision,external :: simpsons_integral_vecFunc
       logical,parameter:: FINITE_DIFFERENCES = .true.
 
       ! initialize
@@ -1351,32 +1382,29 @@ end module
       endif
 
       ! for spline representation
+      i1 = 1
+      i2 = length
+
       if (.not. allocated(X) ) then
-        allocate(X(length),Y(length),Q(3,length),F(3,length),stat=ierror)
-        if ( ierror /= 0) call stopProgram('error allocating spline arrays    ')
+        allocate(X(i2),Y(i2),Q(3,i2),F(3,i2),stat=ier)
+        if ( ier /= 0) call stopProgram('error allocating spline arrays    ')
       else
         ! check with previous spline representation
-        if ( length /= size(Y) ) then
+        if ( i2 /= size(Y) ) then
          print *,'Error: different array lengths:',length,size(Y)
          call stopProgram( 'abort - getIntegral   ')
         endif
       endif
 
       ! get spline representation
-      ! initialize
-      ilength = length
-      i1 = 1
-      i2 = length
       do i = i1,i2
-        X(i)=dble((i-1)*timedelta)
-        Y(i)=dble(seismo1(i)*seismo2(i))
+        X(i) = dble((i-1)*timedelta)
+        Y(i) = dble(seismo1(i)*seismo2(i))
       enddo
-      Q(:,:)=0.0d0
-      F(:,:)=0.0d0
-      call mydrspln(i1,i2,X,Y,Q,F,ilength)
+      call cubicspline_setup()
 
-      !get integral value
-      integral = qsimp(spline_func, X(i1), X(i2))
+      ! get integral value
+      integral = real(simpsons_integral_vecFunc(myspline_func, X(i1), X(i2)),kind=WP)
 
       !debug
       !  val1=0.0
@@ -1393,9 +1421,7 @@ end module
       ! free memory
       deallocate(X,Y,Q,F)
 
-      end
-
-
+      end subroutine
 
 !-----------------------------------------------------------------------
       subroutine getAnalyticalTimelag(t_lag,fileDelta,fileReference,startingTime)
@@ -1405,10 +1431,10 @@ end module
 ! (both seismograms must have the same time step size)
 ! input:
 !       t_lag                             - time lag
-!       fileDelta,fileReference  - file names of seismograms
+!       fileDelta,fileReference           - file names of seismograms
 !       startingTime                      - window start time of fourier transformation for correlation
-!       bandwidth,power - butterworth filter parameters
-!       waveperiod                      - wave period in seconds of butterworth bandwidth frequency
+!       bandwidth,power                   - butterworth filter parameters
+!       waveperiod                        - wave period in seconds of butterworth bandwidth frequency
 ! returns: t_lag timelag in seconds
       use verbosity, only: beVerbose
       use filterType, only: WindowSIZE
@@ -1417,22 +1443,25 @@ end module
       real(WP),intent(out):: t_lag
       character(len=128),intent(in):: fileDelta,fileReference
       real(WP),intent(in):: startingTime
-      integer:: entries,ierror
+      ! local parameters
+      integer:: entries,ier
       real(WP):: timedelta,lastseismotime
       real(WP):: seismo(2,WindowSIZE),seismoRef(2,WindowSIZE)
       real(WP),allocatable,dimension(:,:):: seismo1,seismo2
 
       ! read in complete seismograms
       if ( beVerbose ) print *,'analytical reading in... '
-      call readSeismo(seismoRef,WindowSIZE,fileReference,-1000.0,timedelta,entries,lastseismotime)
-      call readSeismo(seismo,WindowSIZE,fileDelta,-1000.0,timedelta,entries,lastseismotime)
-      allocate(seismo1(2,entries),seismo2(2,entries),stat=ierror)
-      if ( ierror /= 0 ) stop "error allocating seismo1/2"
+      call readSeismo(seismoRef,WindowSIZE,fileReference,startingTime,timedelta,entries,lastseismotime)
+      call readSeismo(seismo,WindowSIZE,fileDelta,startingTime,timedelta,entries,lastseismotime)
+
+      allocate(seismo1(2,entries),seismo2(2,entries),stat=ier)
+      if ( ier /= 0 ) stop "error allocating seismo1/2"
+
       seismo1(:,:) = seismoRef(:,1:entries)
       seismo2(:,:) = seismo(:,1:entries)
 
       ! return time lag calculated analytically
-      call getAnalyticalTimelagSeismos(t_lag,seismo1,seismo2,entries,startingTime,timedelta)
+      call getAnalyticalTimelagSeismos(t_lag,seismo1,seismo2,entries,timedelta)
 
       end subroutine
 
@@ -1445,7 +1474,7 @@ end module
 ! (both seismograms must have the same time step size)
 ! input:
 !       t_lag                             - time lag
-!       fileDelta,fileReference  - file names of seismograms
+!       fileDelta,fileReference           - file names of seismograms
 !       startingTime                      - window start time of fourier transformation for correlation
 ! returns: t_lag timelag in seconds
       use verbosity, only: beVerbose
@@ -1455,30 +1484,30 @@ end module
       real(WP),intent(out):: t_lag
       character(len=128),intent(in):: fileDelta,fileReference
       real(WP),intent(in):: startingTime,endingTime
-      integer:: entries,ierror
+      ! local parameters
+      integer:: entries,ier
       real(WP):: timedelta,lastseismotime
       real(WP):: seismo(2,WindowSIZE),seismoRef(2,WindowSIZE)
       real(WP),allocatable,dimension(:,:):: seismo1,seismo2
-
 
       ! read in complete seismograms
       if ( beVerbose ) print *,'analytical reading in... '
       call readSeismoTaped(seismoRef,WindowSIZE,fileReference,startingTime,endingTime,timedelta,entries,lastseismotime)
       call readSeismoTaped(seismo,WindowSIZE,fileDelta,startingTime,endingTime,timedelta,entries,lastseismotime)
-      allocate(seismo1(2,entries),seismo2(2,entries),stat=ierror)
-      if ( ierror /= 0 ) stop "error allocating seismo1/2"
+
+      allocate(seismo1(2,entries),seismo2(2,entries),stat=ier)
+      if ( ier /= 0 ) stop "error allocating seismo1/2"
+
       seismo1(:,:) = seismoRef(:,1:entries)
       seismo2(:,:) = seismo(:,1:entries)
 
       ! return time lag calculated analytically
-      call getAnalyticalTimelagSeismos(t_lag,seismo1,seismo2,entries, &
-                    startingTime,timedelta)
+      call getAnalyticalTimelagSeismos(t_lag,seismo1,seismo2,entries,timedelta)
 
       end subroutine
 
 !-----------------------------------------------------------------------
-      subroutine getAnalyticalTimelagSeismos(t_lag,seismoRef,seismo,seismoLength, &
-                            startingTime,timedelta)
+      subroutine getAnalyticalTimelagSeismos(t_lag,seismoRef,seismo,seismoLength,timedelta)
 !-----------------------------------------------------------------------
 ! determines the time lag between two seismograms analytically
 ! (both seismograms must have the same time step size)
@@ -1486,33 +1515,33 @@ end module
 ! definition: seismoRef shifted to the right of seismo, then timelag is positiv (i.e. waves arrive later in seismo1)
 !
 ! input:
-!       t_lag                                 - time lag
+!       t_lag                        - time lag
 !       seismoRef,seismo             - seismograms (array 2 x seismoLength, first index is time, second displacement)
-!       seismoLength                  - seismograms length (number of entries in seismogram)
-!       startingTime                     - window start time of fourier transformation for correlation
+!       seismoLength                 - seismograms length (number of entries in seismogram)
 !
 ! remember:
 !       FILTERSEISMOGRAMS                        - use filter before determining time lag
 ! returns: t_lag timelag in seconds ( uses dt )
       use verbosity, only: beVerbose,fileOutput
-      use filterType, only: WindowSIZE
       use propagationStartup, only: datadirectory
       use precisions
       implicit none
       real(WP),intent(out):: t_lag
       integer,intent(in):: seismoLength
-      real(WP),intent(in)::seismoRef(2,seismoLength),seismo(2,seismoLength)
-      real(WP),intent(in):: startingTime,timedelta
-      integer:: i,j,length
+      real(WP),intent(in):: seismoRef(2,seismoLength),seismo(2,seismoLength)
+      real(WP),intent(in):: timedelta
+      ! local parameters
+      integer:: i
       real(WP):: seismo1(seismoLength),seismo2(seismoLength),seismoPerturbed(seismoLength)
       real(WP):: integral1,integral2
+
       logical,parameter:: TAPER             = .true.
       logical,parameter:: TAPER_FILTERED    = .false.
 
       ! initialize working traces
-      seismo1(:)=0.0_WP
-      seismo2(:)=0.0_WP
-      seismoPerturbed(:)=0.0_WP
+      seismo1(:) = 0.0_WP
+      seismo2(:) = 0.0_WP
+      seismoPerturbed(:) = 0.0_WP
 
       ! tapering ends
       if ( TAPER ) then
@@ -1523,11 +1552,11 @@ end module
       ! debug output
       if ( fileOutput) then
         print *,'  printing to file:',datadirectory(1:len_trim(datadirectory))//'TimelagAnalytic_read.dat'
-        open(10,file=datadirectory(1:len_trim(datadirectory))//'TimelagAnalytic_read.dat')
+        open(IOUT,file=datadirectory(1:len_trim(datadirectory))//'TimelagAnalytic_read.dat')
         do i = 1,seismoLength
-          write(10,*) seismo(1,i),seismo(2,i),seismoRef(2,i)
+          write(IOUT,*) seismo(1,i),seismo(2,i),seismoRef(2,i)
         enddo
-        close(10)
+        close(IOUT)
       endif
 
       ! filter
@@ -1544,11 +1573,11 @@ end module
         ! debug output
         if ( fileOutput) then
           print *,'  printing to file:',datadirectory(1:len_trim(datadirectory))//'TimelagAnalytic_filter.dat'
-          open(10,file=datadirectory(1:len_trim(datadirectory))//'TimelagAnalytic_filter.dat')
+          open(IOUT,file=trim(datadirectory)//'TimelagAnalytic_filter.dat')
           do i = 1,seismoLength
-            write(10,*) seismo(1,i),seismo(2,i),seismoRef(2,i)
+            write(IOUT,*) seismo(1,i),seismo(2,i),seismoRef(2,i)
           enddo
-          close(10)
+          close(IOUT)
         endif
       endif
 
@@ -1559,11 +1588,11 @@ end module
       ! debug output
       if ( fileOutput) then
         print *,'  printing to file:',datadirectory(1:len_trim(datadirectory))//'TimelagAnalytic_perturbed.dat'
-        open(10,file=datadirectory(1:len_trim(datadirectory))//'TimelagAnalytic_perturbed.dat')
+        open(IOUT,file=trim(datadirectory)//'TimelagAnalytic_perturbed.dat')
         do i = 1,seismoLength
-          write(10,*) seismo(1,i),seismoPerturbed(i)
+          write(IOUT,*) seismo(1,i),seismoPerturbed(i)
         enddo
-        close(10)
+        close(IOUT)
       endif
 
       ! get first time derivative of reference seismogram
@@ -1573,11 +1602,11 @@ end module
       ! debug output
       if ( fileOutput) then
         print *,'  printing to file:',datadirectory(1:len_trim(datadirectory))//'TimelagAnalytic_first.dat'
-        open(10,file=datadirectory(1:len_trim(datadirectory))//'TimelagAnalytic_first.dat')
+        open(IOUT,file=trim(datadirectory)//'TimelagAnalytic_first.dat')
         do i = 1,seismoLength
-          write(10,*) seismo(1,i),seismo1(i)
+          write(IOUT,*) seismo(1,i),seismo1(i)
         enddo
-        close(10)
+        close(IOUT)
       endif
 
       ! get second time derivative of reference seismogram
@@ -1587,11 +1616,11 @@ end module
       ! debug output
       if ( fileOutput) then
         print *,'  printing to file:',datadirectory(1:len_trim(datadirectory))//'TimelagAnalytic_second.dat'
-        open(10,file=datadirectory(1:len_trim(datadirectory))//'TimelagAnalytic_second.dat')
+        open(IOUT,file=trim(datadirectory)//'TimelagAnalytic_second.dat')
         do i = 1,seismoLength
-          write(10,*) seismo(1,i),seismo2(i)
+          write(IOUT,*) seismo(1,i),seismo2(i)
         enddo
-        close(10)
+        close(IOUT)
       endif
 
       ! calculate integrals
@@ -1624,13 +1653,13 @@ end module
 !       startingTime                     - window start time of fourier transformation for correlation
 !
 ! returns: t_lag timelag in seconds
-      use verbosity; use nrtype; use nrutil; use filterType
-      use propagationStartup, only: datadirectory,dt
+      use verbosity; use filterType
       implicit none
       character(len=128),intent(in):: fileDelta,fileReference
       real(WP),intent(in):: startingTime,endingTime
       real(WP),intent(out):: t_lag,amplification
-      integer:: entries,ierror
+      ! local parameters
+      integer:: entries,ier
       real(WP):: lastseismotime,timedelta
       real(WP):: seismo(2,WindowSIZE),seismoRef(2,WindowSIZE)
       real(WP),allocatable,dimension(:,:):: seismo1,seismo2
@@ -1643,8 +1672,10 @@ end module
       ! read in from startingTime
       call readSeismoTaped(seismoRef,WindowSIZE,fileReference,startingTime,endingTime,timedelta,entries,lastseismotime)
       call readSeismoTaped(seismo,WindowSIZE,fileDelta,startingTime,endingTime,timedelta,entries,lastseismotime)
-      allocate(seismo1(2,entries),seismo2(2,entries),stat=ierror)
-      if ( ierror /= 0 ) stop "error allocating seismo1/2"
+
+      allocate(seismo1(2,entries),seismo2(2,entries),stat=ier)
+      if ( ier /= 0 ) stop "error allocating seismo1/2"
+
       ! sets convention:
       ! seismo1 is the heterogeneous trace
       ! seismo2 is the homogeneous trace
@@ -1673,21 +1704,22 @@ end module
 ! seismo2 is the homogeneous trace
 !
 ! returns: t_lag (timelag in seconds), amplification (factor to scale homogeneous seismogram with)
-      use verbosity; use nrtype; use nrutil; use filterType
+      use verbosity; use filterType
       use propagationStartup, only: datadirectory,dt
       implicit none
       real(WP),intent(out):: t_lag,amplification
       integer,intent(in):: seismoLength
       real(WP),intent(in):: seismo1(2,seismoLength),seismo2(2,seismoLength)
-      integer::i,station,index,zeropad,ierror
-      real(WP):: lastseismotime,timedelta,timedeltaWindow,td
+      ! local parameters
+      integer:: i
+      real(WP):: timedelta
       real(WP):: seismoWindow(WindowSIZE),seismoRefWindow(WindowSIZE)
       real(WP),allocatable,dimension(:):: seismoShift
+
       logical,parameter:: NORMALIZE         = .false.
       logical,parameter:: STRETCH           = .false.
       logical,parameter:: TAPER             = .true.
       logical,parameter:: TAPER_FILTERED    = .false.
-
 
       ! console
       if ( beVerbose ) then
@@ -1790,31 +1822,45 @@ end module
 !     seismoLength                - size/length of traces
 !
 ! returns: t_lag and amplification
-      use precisions; use nrtype; use nrutil; use nr; use verbosity
-      use minimize_trace
+      use precisions; use verbosity
+      use minimize_trace, only: costfunction,seismoHom,seismoHet,trace_length
       implicit none
       integer,intent(in):: seismoLength
       real(WP),dimension(2,seismoLength):: seismo1,seismo2
       real(WP),intent(out):: t_lag,amplification
-      real(SP):: ftol
-      integer:: i,ierror
-      integer(I4B):: iter
-      real(SP),dimension(3):: y
-      real(SP),dimension(3,2):: p
-      real(SP),dimension(2):: p_x
+      ! local parameters
+      integer:: i,ier
+      integer:: iter
+      real,dimension(3):: y
+      real,dimension(3,2):: p
+      real,dimension(2):: p_x
+      real,parameter:: ftol = 1.e-3  ! tolerance
+      interface
+        subroutine minimize_downhill_simplex(p, y, ftol, func, iter)
+          integer, intent(out) :: iter
+          real, intent(in) :: ftol
+          real, dimension(:), intent(inout) :: y
+          real, dimension(:,:), intent(inout) :: p
+          interface
+            function func(x)
+              implicit none
+              real, dimension(:), intent(in) :: x
+              real :: func
+            end function func
+          end interface
+        end subroutine
+      end interface
 
       ! set for costfunction
       if ( trace_length /= seismoLength ) then
         if ( allocated(seismoHom) ) deallocate(seismoHom,seismoHet)
-        allocate(seismoHom(2,seismoLength),seismoHet(2,seismoLength),stat=ierror)
-        if ( ierror /= 0 ) stop 'error allocating minimizing traces'
+        allocate(seismoHom(2,seismoLength),seismoHet(2,seismoLength),stat=ier)
+        if ( ier /= 0 ) stop 'error allocating minimizing traces'
       endif
+
       trace_length = seismoLength
       seismoHom(:,:) = seismo2(:,:)
       seismoHet(:,:) = seismo1(:,:)
-
-      ! tolerance
-      ftol = 1.e-3
 
       ! simplex startup values
       p(1,1) = 0.0  ! t_lag
@@ -1829,10 +1875,10 @@ end module
       enddo
 
       ! downhill simplex algorithm
-      call amoeba(p,y,ftol,costfunction,iter)
+      call minimize_downhill_simplex(p,y,ftol,costfunction,iter)
 
 !      if ( beVerbose ) then
-!        print *,'  amoeba:','iterations',iter
+!        print *,'  minimize by downhill simplex:','iterations',iter
 !        do i=1,3
 !          print *,'    array ',i
 !          print *,'    rms                 :',y(i)
@@ -1865,6 +1911,7 @@ end module
         integer,intent(in):: length
         real(WP),intent(in):: seismo(2,length),seismoRef(2,length)
         real(WP),intent(out):: seismoOut(length)
+        ! local parameters
         double precision:: ya(length), xa(length),y2(length),yp1,ypn,loc,yb,dta
         double precision,parameter:: EPS = 0.01
         integer:: i
@@ -1893,3 +1940,202 @@ end module
         enddo
       end subroutine
 
+!-----------------------------------------------------------------------
+subroutine minimize_downhill_simplex(p, y, ftol, func, iter)
+!-----------------------------------------------------------------------
+! Minimization of a function using the downhill simplex method of
+! Nelder and Mead in N dimensions.
+!
+! Input:
+!   p     - (N+1)xN matrix of simplex vertices.
+!   y     - function values at simplex vertices.
+!   ftol  - Convergence tolerance.
+!   func  - function to minimize.
+!
+! Output:
+!   p     - Updated simplex vertices.
+!   y     - Updated function values at vertices.
+!   iter  - Number of function evaluations taken.
+  implicit none
+  ! Input/Output parameters
+  integer, intent(out) :: iter
+  real, intent(in) :: ftol
+  real, dimension(:), intent(inout) :: y
+  real, dimension(:,:), intent(inout) :: p
+  ! function interface
+  interface
+    function func(x)
+      implicit none
+      real, dimension(:), intent(in) :: x
+      real :: func
+    end function func
+  end interface
+  ! local parameters
+  integer, parameter :: ITMAX = 500   ! Max iterations (reduced from 5000)
+  real, parameter :: TINY = 1.0e-10   ! Small value to prevent division errors
+  ! Internal variables
+  integer:: ihi, ndim
+  real, dimension(size(p, 2)) :: psum
+
+  ! Initialize and run the private routine
+  call minimize_func()
+
+CONTAINS
+
+  subroutine minimize_func()
+    !-----------------------------------------------------------------------
+    ! Internal routine that performs the actual minimization process.
+    !-----------------------------------------------------------------------
+    implicit none
+    ! local parameters
+    integer :: i, ilo, inhi, iloc(1)
+    real :: rtol, ysave, ytry, ytmp
+
+    ! Ensure proper array sizes
+    ndim = size(p,2)
+    if (ndim /= size(p,1)-1 .or. ndim /= size(y)-1) call stopProgram('minimize_func invalid ndim    ')
+
+    iter = 0
+    psum(:) = sum(p(:,:), dim=1)
+
+    do  ! Main iteration loop
+      ! Identify best (ilo), worst (ihi), and second worst (inhi) vertices
+      iloc = minloc(y(:))
+      ilo = iloc(1)
+
+      iloc = maxloc(y(:))
+      ihi = iloc(1)
+
+      ytmp = y(ihi)
+      y(ihi) = y(ilo)
+
+      iloc = maxloc(y(:))
+      inhi = iloc(1)
+
+      y(ihi) = ytmp
+
+      ! Convergence test: fractional range of function values
+      rtol = 2.0 * abs(y(ihi) - y(ilo)) / (abs(y(ihi)) + abs(y(ilo)) + TINY)
+
+      ! If convergence criterion met, exit
+      if (rtol < ftol) then
+        call swap_single(y(1), y(ilo))
+        call swap_vectors(p(1,:), p(ilo,:))
+        return
+      endif
+
+      ! Check for iteration limit
+      if (iter >= ITMAX) call stopProgram('minimize_func: ITMAX exceeded    ')
+
+      ! Reflect the simplex across the worst vertex
+      ytry = extrapolate(-1.0)
+      iter = iter + 1
+
+      ! Check if new point is better than the best
+      if (ytry <= y(ilo)) then
+        ytry = extrapolate(2.0)  ! Expand simplex
+        iter = iter + 1
+      else if (ytry >= y(inhi)) then
+        ! Contraction step if reflected point is still poor
+        ysave = y(ihi)
+        ytry = extrapolate(0.5)
+        iter = iter + 1
+
+        if (ytry >= ysave) then
+          ! If contraction fails, shrink simplex around best vertex
+          p(:,:) = 0.5 * (p(:,:) + spread(p(ilo,:), 1, size(p,1)))
+
+          do i = 1, ndim+1
+            if (i /= ilo) y(i) = func(p(i,:))
+          enddo
+          iter = iter + ndim
+          psum(:) = sum(p(:,:), dim=1)
+        endif
+      endif
+    enddo  ! End iteration loop
+
+  end subroutine
+
+  !-----------------------------------------------------------------------
+  subroutine swap_single(a, b)
+  !-----------------------------------------------------------------------
+  ! Swaps two single entries
+  !
+  ! Arguments:
+  !   a - First entry
+  !   b - Second entry
+  implicit none
+  real, intent(inout) :: a, b  ! Input/output
+  ! local parameters
+  real:: temp                  ! Temporary storage for swapping
+
+  ! Swap the contents of the two vectors
+  temp = a
+  a = b
+  b = temp
+
+  end subroutine
+
+  !-----------------------------------------------------------------------
+  subroutine swap_vectors(vector_a, vector_b)
+  !-----------------------------------------------------------------------
+  ! Swaps the contents of two vectors.
+  !
+  ! Arguments:
+  !   vector_a - First complex vector (modified in place).
+  !   vector_b - Second complex vector (modified in place).
+  implicit none
+  real, dimension(:), intent(inout) :: vector_a, vector_b  ! Input/output complex vectors
+  ! local parameters
+  real, dimension(size(vector_a)) :: temp_vector           ! Temporary storage for swapping
+
+  ! Swap the contents of the two vectors
+  temp_vector(:) = vector_a(:)
+  vector_a(:) = vector_b(:)
+  vector_b(:) = temp_vector(:)
+
+  end subroutine
+
+
+!-----------------------------------------------------------------------
+  real function extrapolate(fac)
+!-----------------------------------------------------------------------
+! Extrapolates a new point through the face opposite the worst point
+! and evaluates its function value.
+!
+! Input:
+!   fac - Factor determining the nature of extrapolation:
+!         -1.0 for reflection,
+!          2.0 for expansion,
+!          0.5 for contraction.
+!
+! Output:
+!   extrapolate - function value at new extrapolated point.
+!
+!-----------------------------------------------------------------------
+    implicit none
+    real, intent(in) :: fac
+    ! local parameters
+    real :: fac1, fac2, ytry
+    real, dimension(size(p,2)) :: ptry
+
+    ! Compute extrapolated point
+    fac1 = (1.0 - fac) / ndim
+    fac2 = fac1 - fac
+    ptry(:) = psum(:) * fac1 - p(ihi,:) * fac2
+
+    ! Evaluate function at trial point
+    ytry = func(ptry)
+
+    ! If better than worst point, replace it
+    if (ytry < y(ihi)) then
+      y(ihi) = ytry
+      psum(:) = psum(:) - p(ihi,:) + ptry(:)
+      p(ihi,:) = ptry(:)
+    endif
+
+    extrapolate = ytry
+    return
+  end function
+
+end subroutine minimize_downhill_simplex

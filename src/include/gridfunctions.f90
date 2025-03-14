@@ -17,8 +17,8 @@
 ! makes grid domains for parallelization
       use parallel;use griddomain;use propagationStartup; use cells; use verbosity
       implicit none
-      integer:: range,index,n,domain,numDomainVert(0:nprocesses-1),ierror,i
-      real(WP):: colat,long
+      ! local parameters
+      integer:: range,index,n,domain,numDomainVert(0:nprocesses-1),ierror
       integer,external:: getDomain
 
       ! domains only make sense for more then 1 processors
@@ -42,8 +42,8 @@
       ! allocate region information for this process
       if ( MASTER .and. VERBOSE ) then
         print *,'  allocating parallel domain arrays:'
-        print *,'    vertexDomain size   :  ',numVertices*sizeof(i)/1024./1024.,'Mb'
-        print *,'    domainVertices size :  ',range*sizeof(i)/1024./1024.,'Mb'
+        print *,'    vertexDomain size   :  ',numVertices * 4/1024./1024.,'Mb' ! assume integer == 4 bytes
+        print *,'    domainVertices size :  ',range * 4/1024./1024.,'Mb'
       endif
       allocate(vertexDomain(numVertices),stat=ierror)
       if ( ierror > 0 ) call stopProgram('abort - constructParallelDomains:error vertexDomain array   ')
@@ -58,7 +58,7 @@
       index = 0
       do n = 1,numVertices
         ! fill vertexRegion array (for all vertices)
-        vertexDomain(n)=getDomain(n)
+        vertexDomain(n) = getDomain(n)
 
         ! fill specific domain array (contains only vertices for this domain/process)
         if ( vertexDomain(n) == rank) then
@@ -97,6 +97,7 @@
       use parallel;use griddomain
       implicit none
       integer,intent(in):: vertex
+      ! local parameters
       real(WP):: colat,long,longitudeIncrement,latitudeIncrement
       integer:: n,m
 
@@ -402,7 +403,8 @@
 !               domain which lay on the boundary to the specific neighbor
       use parallel;use griddomain; use propagationStartup; use verbosity; use cells
       implicit none
-      integer:: numDomainVert(0:nprocesses,0:nprocesses),index,maxRange,range,i,n,k,domain,ierror
+      ! local parameters
+      integer:: numDomainVert(0:nprocesses,0:nprocesses),index,maxRange,n,k,domain,ierror
       logical:: isBoundary
       integer:: getDomain,neighbors(nprocesses-1)
       external:: isBoundary,getDomain
@@ -446,7 +448,7 @@
       !allocate array
       if ( MASTER .and. VERBOSE ) then
         print *,'  allocating boundary array:'
-        print *,'    size :  ',nprocesses*nprocesses*maxRange*sizeof(i)/1024./1024.,'Mb'
+        print *,'    size :  ',nprocesses*nprocesses*maxRange * 4/1024./1024.,'Mb'  ! assume integer == 4 bytes
       endif
       allocate(boundaries(0:nprocesses-1,0:nprocesses-1,maxRange), &
                 sendDisp(maxRange),receiveDisp(maxRange),stat=ierror)
@@ -492,8 +494,9 @@
 ! returns: true if this vertex has neighbors in a different domain
       use parallel;use griddomain; use cells
       implicit none
-      real(WP):: colat,long
-      integer:: vertex,k, domain
+      integer,intent(in):: vertex
+      ! local parameters
+      integer:: k,domain
 
       ! domain this reference vertex is in
       domain = vertexDomain(vertex)
@@ -522,13 +525,16 @@
 ! returns: neighbors of this domain (each element contains the domain number, -1 for no neighbor)
       use parallel;use griddomain; use cells
       implicit none
-      integer:: vertex,domain,domainRef,n,k,index,neighbors(nprocesses-1),getDomain
+      integer,intent(in):: vertex
+      integer,intent(out):: neighbors(nprocesses-1)
+      ! local parameters
+      integer:: domain,domainRef,n,k,index
       logical:: isnew
-      external:: getDomain
+      integer,external:: getDomain
 
       !init
-      neighbors(:)=-1
-      domainRef=getDomain(vertex)
+      neighbors(:) = -1
+      domainRef = getDomain(vertex)
 
       !find neighbor domain
       index = 0
@@ -561,7 +567,8 @@
 ! returns: domainNeighbors array (each element contains the domain number, -1 for no neighbor)
       use parallel;use griddomain; use verbosity
       implicit none
-      integer:: domain,neighbors(nprocesses-1),index,k,ierror,i
+      ! local parameters
+      integer:: domain,index,k,ierror
 
       !check
       if ( nprocesses == 1) return
@@ -569,7 +576,7 @@
       !init
       if ( MASTER .and. VERBOSE ) then
         print *,'  allocating domainNeighbors array:'
-        print *,'    size :  ',nprocesses*nprocesses*sizeof(i)/1024./1024.,'Mb'
+        print *,'    size :  ',nprocesses*nprocesses * 4/1024./1024.,'Mb'   ! assume integer == 4 bytes
       endif
       allocate(domainNeighbors(0:nprocesses-1,nprocesses-1),stat=ierror)
       if ( ierror > 0 ) call stopProgram( 'abort - findDomainNeighbors    ')

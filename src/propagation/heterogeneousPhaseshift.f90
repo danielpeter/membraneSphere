@@ -46,6 +46,7 @@
     use propagationStartup; use parallel
     use minimize_trace, only: trace_length
     implicit none
+    ! local parameters
     integer,parameter:: dataUnit = 81, newdataUnit = 82
     integer:: datacount
 
@@ -74,7 +75,7 @@
 
     ! end smoothly
     call finish()
-  end
+  end program
 
 
   !-----------------------------------------------------------------------
@@ -87,11 +88,13 @@
     implicit none
     integer,intent(in):: dataUnit,newdataUnit
     integer,intent(out):: datacount
-    integer:: stationscount,eventscount,i,ierror,slashindex
+    ! local parameters
+    integer:: stationscount,eventscount,i,ier,slashindex
     real:: stla_old,stlo_old,epla_old,eplo_old,epidelta
-    real:: stations(10000,2), events(20000,2)
+    real,dimension(:,:),allocatable:: stations, events
     logical:: stationfound,eventfound
-    character:: commentline*47,wave_type*1
+    character(len=47):: commentline
+    character(len=1):: wave_type
     real:: period,v0,omega
     real:: eplo,epla,stla,stlo,datum,error
     real:: epicentraldistance_min,epicentraldistance_max,datummax,datummin
@@ -103,12 +106,10 @@
 
     ! open data file
     print *,'  open datafile: '
-    print *,'      ',heterogeneousDataFile(1:len_trim(heterogeneousDataFile))
-    open(dataUnit,file=heterogeneousDataFile(1:len_trim(heterogeneousDataFile)), &
-            status="old",iostat=ierror)
-    if ( ierror /= 0 ) then
-      print *,'Error: process ',rank,' could not open data file: ', &
-                heterogeneousDataFile(1:len_trim(heterogeneousDataFile))
+    print *,'      ',trim(heterogeneousDataFile)
+    open(dataUnit,file=trim(heterogeneousDataFile),status="old",iostat=ier)
+    if ( ier /= 0 ) then
+      print *,'Error: process ',rank,' could not open data file: ',trim(heterogeneousDataFile)
       call stopProgram( "data file not found     ")
     endif
 
@@ -123,30 +124,31 @@
     omega = 1./period
 
  1003 format(8x,a1,7x,f8.4,10x,f8.5)
- 1002 format(4(f11.4,1x),1x,f11.6,1x,f11.7)
+ !1002 format(4(f11.4,1x),1x,f11.6,1x,f11.7)
 
     ! count data entries
-    stla_old = 0.
-    stlo_old = 0.
-    epla_old = 0.
-    eplo_old = 0.
-    stations(:,:)=0.
-    events(:,:)=0.
+    stla_old = 0.0
+    stlo_old = 0.0
+    epla_old = 0.0
+    eplo_old = 0.0
 
-    epicentraldistance_min=1000.0 ! modified d.peter (8.2.2006)
+    allocate(stations(10000,2), events(20000,2),stat=ier)
+    if (ier /= 0) call stopProgram('Error allocating stations/events    ')
+    stations(:,:) = 0.0
+    events(:,:) = 0.0
+
+    epicentraldistance_min = 1000.0 ! modified d.peter (8.2.2006)
     epicentraldistance_max = 0.0
     datummax = 0.0
     datummin = 0.0
 
-
-    ierror = 0
     datacount = 0
     stationscount = 0
     eventscount = 0
-    do while( ierror == 0 )
+    do while( ier == 0 )
       !read(2,1002,iostat=ierror) epla,eplo,stla,stlo,datum,error
-      read(dataUnit,*,iostat=ierror) epla,eplo,stla,stlo,datum,error
-      if ( ierror == 0 ) then
+      read(dataUnit,*,iostat=ier) epla,eplo,stla,stlo,datum,error
+      if ( ier == 0 ) then
         datacount = datacount + 1
 
         ! receivers: file is (normally) ordered by receiver location
@@ -163,7 +165,6 @@
           stations(stationscount,1)=stla
           stations(stationscount,2)=stlo
         endif
-
 
         ! events/sources: file is (normally) ordered by receiver location,
         !             the stations can have different number of events
@@ -225,9 +226,8 @@
     nameout = datadirectory(1:len_trim(datadirectory))// &
         heterogeneousDataFile(slashindex+1:len_trim(heterogeneousDataFile))&
         //'.new'
-    open(newdataUnit,file=trim(nameout),iostat=ierror)
-    if ( ierror /= 0 ) &
-      call stopProgram("error opening new data file .new for output   ")
+    open(newdataUnit,file=trim(nameout),iostat=ier)
+    if ( ier /= 0 ) call stopProgram("Error opening new data file .new for output   ")
 
     print *,'    new datum file will be:'
     print *,'      ',trim(nameout)
@@ -251,12 +251,10 @@
     use parallel; use phaseBlockData; use heterogeneousArrays
     implicit none
     integer,intent(in):: dataUnit,datacount
-    integer:: stationscount,eventscount,i,ierror,length
-    real:: stla_old,stlo_old,epla_old,eplo_old,epidelta
-    real:: stations(10000,2), events(20000,2)
-    logical:: stationfound,eventfound
+    ! local parameters
+    integer:: i,ierror,length
     character:: commentline*47,wave_type*1
-    real:: period,v0,omega
+    real:: period,v0
     real:: eplo,epla,stla,stlo,datum,error
 
     ! info
@@ -316,7 +314,6 @@
       close(dataUnit)
     endif
 
-
     ! synchronize datacount with processes
     length = 6*datacount
     if ( MASTER ) then
@@ -347,7 +344,7 @@
     call MPI_Barrier( MPI_COMM_WORLD, ierror )
     if ( ierror /= 0) call stopProgram('abort syncDataArray - MPI_Barrier failed    ')
 
-  end subroutine syncDataArray
+  end subroutine
 
   !-----------------------------------------------------------------------
   subroutine processDatafile(newdataUnit,datacount)
@@ -357,10 +354,10 @@
     use verbosity
     implicit none
     integer,intent(in):: newdataUnit,datacount
-    integer:: i,j,n,vertex,dataLoopIndex
+    ! local parameters
+    integer:: j,dataLoopIndex
     logical:: doCalc
     real:: benchmarkLoopStart,benchmarkLoopEnd,epidelta
-    character(len=5)::kernelstr
     integer:: isqre,ierror
     real:: eplo,epla,stla,stlo,datum,error
     real:: time_shift
@@ -454,7 +451,7 @@
       print *,'data written:',datacount
       call myflush(6)
     endif
-  end subroutine processDatafile
+  end subroutine
 
 
   !-----------------------------------------------------------------------
@@ -464,6 +461,7 @@
     use propagationStartup; use phaseVelocityMap; use parallel; use verbosity
     use heterogeneousArrays; use cells
     implicit none
+    ! local parameters
     integer:: ierror
 
     ! allocate memory
@@ -495,7 +493,7 @@
     endif
 
     ! synchronize between master and slave processes
-    call syncPhaseMap(rank,nprocesses)
+    call syncPhaseMap()
 
     ! get phase velocities
     call constructPhaseVelocitySquare()
@@ -506,7 +504,7 @@
 
     if ( MASTER .and. VERBOSE) print *
 
-  end subroutine constructPhaseVelocities
+  end subroutine
 
   !-----------------------------------------------------------------------
   logical function doCalc(index)
@@ -515,7 +513,7 @@
   ! and calculations should be done
     use parallel
     implicit none
-    integer:: index
+    integer,intent(in):: index
 
     ! default
     doCalc = .true.
@@ -536,7 +534,7 @@
     endif
 
     return
-  end function doCalc
+  end function
 
 
   !-----------------------------------------------------------------------
@@ -548,10 +546,11 @@
     implicit none
     integer,intent(in):: jrecord
     real,intent(out):: time_shift
+    ! local parameters
     real(WP),dimension(2,numofTimeSteps):: seismogramPREM,seismogramHET
     real(WP):: startTime,distance,amplification
-    integer:: ierror,i
-    character:: jstr*6
+    integer:: ier,i
+    character(len=6):: jstr
 
     ! be sure only one receiver at a time
     manyReceivers = .false.
@@ -563,12 +562,12 @@
     ! file output
     if ( MASTER .and. mod(jrecord,500) < nprocesses ) then
       write(jstr,'(i6.6)')jrecord
-      open(20,file=datadirectory(1:len_trim(datadirectory))//&
-                              'seismoPREM.'//jstr//'.txt')
+      open(IOUT,file=trim(datadirectory)//'seismoPREM.'//jstr//'.txt',iostat=ier)
+      if (ier /= 0) call stopProgram('Error opening seismoPREM output file    ')
       do i = 1,numofTimeSteps
-        write(20,*)seismogramPREM(1,i), seismogramPREM(2,i)
+        write(IOUT,*) seismogramPREM(1,i), seismogramPREM(2,i)
       enddo
-      close(20)
+      close(IOUT)
     endif
 
     ! heterogeneous simulation
@@ -577,12 +576,12 @@
     seismogramHET(:,:) = seismogramReceiver(:,:)
     ! file output
     if ( MASTER .and. mod(jrecord,500) < nprocesses ) then
-      open(20,file=datadirectory(1:len_trim(datadirectory))//&
-                              'seismoHET.'//jstr//'.txt')
+      open(IOUT,file=trim(datadirectory)//'seismoHET.'//jstr//'.txt',iostat=ier)
+      if (ier /= 0) call stopProgram('Error opening seismoHET output file    ')
       do i = 1,numofTimeSteps
-        write(20,*)seismogramHET(1,i), seismogramHET(2,i)
+        write(IOUT,*)seismogramHET(1,i), seismogramHET(2,i)
       enddo
-      close(20)
+      close(IOUT)
     endif
 
     ! determine phase shift:
@@ -629,7 +628,7 @@
       print *,'    time shift:',time_shift
       call myflush(6)
     endif
-  end subroutine doTimeIteration
+  end subroutine
 
   !-----------------------------------------------------------------------
   subroutine outputDataLine(jrecord,datacount,epla,eplo,stla,stlo,shift, &
@@ -640,6 +639,7 @@
     implicit none
     integer,intent(in):: jrecord,datacount,newdataUnit
     real,intent(in):: shift,epla,eplo,stla,stlo,error
+    ! local parameters
     integer:: restprocesses,i,ierror
     real:: epla_proc,eplo_proc,stla_proc,stlo_proc,shift_proc,error_proc
 
@@ -735,7 +735,7 @@
         call stopProgram("outputDataline    ")
       endif
     endif
-  end subroutine outputDataLine
+  end subroutine
 
   !-----------------------------------------------------------------------
   subroutine printDataLine(newdataUnit,epla,eplo,stla,stlo,shift,error)
@@ -743,11 +743,12 @@
   ! writes given data to file
     use heterogeneousArrays
     implicit none
-    integer:: newdataUnit
-    real:: epla,eplo,stla,stlo,shift,error
+    integer,intent(in):: newdataUnit
+    real,intent(in):: epla,eplo,stla,stlo,shift,error
 
     ! new data file output
     write(newdataUnit,1002) epla,eplo,stla,stlo,shift,error
+
  1002 format(4(f11.4,1x),1x,f11.6,1x,f11.7)
 
     call myflush(newdataUnit)
@@ -756,7 +757,7 @@
     if ( shift < shift_min ) shift_min = shift
     if ( shift > shift_max ) shift_max = shift
 
-  end subroutine printDataLine
+  end subroutine
 
   !-----------------------------------------------------------------------
   subroutine myflush(i)
@@ -771,9 +772,9 @@
     !  #ifdef _IBM_
       !call flush_(i)
     !#else
-      call FLUSH(i)
+      FLUSH(i)
     !#endif
-  end subroutine myflush
+  end subroutine
 
   !-----------------------------------------------------------------------
   subroutine finish()
@@ -781,6 +782,7 @@
   ! finalize MPI communication
     use parallel; use propagationStartup; use heterogeneousArrays
     implicit none
+    ! local parameters
     integer:: ierror
 
     ! benchmark
@@ -803,4 +805,4 @@
     call MPI_FINALIZE(ierror)
     if ( ierror /= 0) call stopProgram('abort - finalize failed    ')
 
-  end subroutine finish
+  end subroutine

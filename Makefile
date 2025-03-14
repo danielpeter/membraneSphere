@@ -6,7 +6,7 @@
 
 ## gfortran optimization 
 #FFLAGS = -O3    # -Jobj/ -I/opt/mpisrc/include/ -ffree-line-length-none
-FFLAGS = -O0 -g -ggdb -fbacktrace -fbounds-check -frange-check -Werror -Jobj/
+FFLAGS = -O0 -std=f2008 -g -ggdb -fbacktrace -fbounds-check -frange-check -Wall -Wno-conversion -Werror -Jobj/
 LDFLAGS =
 F90 = mpif90
 F77 = mpif77 #gfortran

@@ -24,11 +24,12 @@
 ! returns: sphericalHarmonics value
       use precisions
       implicit none
-      integer,intent(in)::vertex
+      integer,intent(in):: vertex
+      ! local parameters
       integer:: l, m
-      double precision:: colatitude,longitude,harmonical,generalizedLegendre
+      double precision:: colatitude,longitude,harmonical
       real(WP):: colat,lon
-      external:: generalizedLegendre
+      double precision,external:: generalizedLegendre
 
       !translate Cartesian to spherical coordinates for a
       ! given triangle corner on the sphere
@@ -37,8 +38,8 @@
       longitude = lon
 
       !calculate the real part of spherical harmonic function
-      l= DEGREE_L
-      m= DEGREE_M
+      l = DEGREE_L
+      m = DEGREE_M
       harmonical = generalizedLegendre(l,m,colatitude)
       if ( m /= 0) then
         harmonical = harmonical*dsin( m*longitude)
@@ -50,7 +51,7 @@
       ! return value
       sphericalHarmonics = harmonical
       return
-      end
+      end function
 
 
 !----------------------------------------------------------------------
@@ -69,13 +70,14 @@
       implicit none
       integer,intent(in):: l,m
       double precision,intent(in):: x
-      double precision:: fact1,fact2,associatedLegendre
+      ! local parameters
+      double precision:: fact1,fact2
       integer:: factorial,m_positive
+      double precision,external:: associatedLegendre
       double precision,parameter:: PI = 3.1415926535897931d0
-      external:: associatedLegendre
 
       ! range of m
-      if ( m_positive < 0) then
+      if ( m < 0) then
         m_positive = abs(m)
       else
         m_positive = m
@@ -84,12 +86,12 @@
       !multiplication factors
       fact1 = dsqrt( (2*l+1.0)/(4*PI) )
       fact2 = 1.0*factorial(l-m_positive)/(1.0*factorial(l+m_positive))
-      fact2= dsqrt( fact2 )
+      fact2 = dsqrt( fact2 )
 
       !calculates the generalized legendre function value
       generalizedLegendre = fact1*fact2*associatedLegendre(l,m_positive,dcos(x))
       return
-      end
+      end function
 
 
 !----------------------------------------------------------------------
@@ -107,12 +109,13 @@
       implicit none
       integer,intent(in):: l
       double precision,intent(in):: x
+      ! local parameters
       double precision:: associatedLegendre
       external:: associatedLegendre
 
       legendrePolynomial = associatedLegendre(l,0,x)
       return
-      end
+      end function
 
 
 !----------------------------------------------------------------------
@@ -137,6 +140,7 @@
       implicit none
       integer,intent(in):: l,m
       double precision,intent(in):: x
+      ! local parameters
       integer:: i,ll
       double precision:: pLegendre,fact,pll,pmm,pmmp1,somx2
 
@@ -183,7 +187,7 @@
 
       associatedLegendre = pLegendre
       return
-      end
+      end function
 
 
 
@@ -198,6 +202,7 @@
 ! return: factorial Product
       implicit none
       integer,intent(in):: N
+      ! local parameters
       integer:: i
 
       !check
@@ -208,7 +213,7 @@
         factorial = factorial*i
       enddo
       return
-      end
+      end function
 
 
 !----------------------------------------------------------------------
@@ -226,12 +231,13 @@
       implicit none
       double precision,intent(in):: l
       double precision,intent(in):: x
+      ! local parameters
       double precision:: associatedLegendre_cont
       external:: associatedLegendre_cont
 
       legendrePolynomial_cont = associatedLegendre_cont(l,0.0d0,x)
       return
-      end
+      end function
 
 
 !----------------------------------------------------------------------
@@ -256,6 +262,7 @@
       implicit none
       double precision,intent(in):: l,m
       double precision,intent(in):: x
+      ! local parameters
       double precision:: ll
       integer:: i
       double precision:: pLegendre,fact,pll,pmm,pmmp1,somx2
@@ -308,4 +315,4 @@
 
       associatedLegendre_cont = pLegendre
       return
-      end
+      end function

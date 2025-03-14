@@ -24,18 +24,14 @@
 ! calculation of the new displacement
 !
 ! uses: Carl Tape M.Sc. thesis, 2003, chap 5, (5.7)
-      use propagationStartup; use cells; use phaseVelocityMap; use parallel
-      use displacements; use griddomain; use loop; use phaseBlockData; use verbosity
+      use propagationStartup
+      use parallel
+      use verbosity
       implicit none
-      double precision:: u_t, u_tplus1, u_tminus1,forcing,initialShape,forcingRef
-      double precision:: D2,time,discreteLaplacian, precalc_discreteLaplacian
-      double precision:: forceTerm2Source, initialShapeTerm
-      double precision:: area,cphaseDefault,vectorV(3),lat,lon
-      integer::         n,k,i,timestep,vertex,index,ierror
-      character(len=1)::     rankstr, dstr
-      character(len=4)::     timestr
+      ! local parameters
+      integer:: i,ierror
       logical:: looping
-      external:: initialShapeTerm,discreteLaplacian,precalc_discreteLaplacian
+      real(WP), external:: discreteLaplacian,precalc_discreteLaplacian
 
       !-----------------------------------------------------------------------
       ! parameters
@@ -125,4 +121,4 @@
       call MPI_FINALIZE(ierror)
       if ( ierror /= 0) call stopProgram('abort - finalize failed    ')
 
-      end
+      end program

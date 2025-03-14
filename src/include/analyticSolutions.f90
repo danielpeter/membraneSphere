@@ -24,8 +24,7 @@ module ray_orbits
 end module
 
 !-----------------------------------------------------------------------
-      function u_shape(colatitude,longitude,time,cphase, &
-                                       mu,ACCURACY)
+      function u_shape(colatitude,longitude,time,cphase,mu,ACCURACY)
 !-----------------------------------------------------------------------
 ! calculation of the analytic solution for a source with only
 ! a given initial shape displacement (no time term)
@@ -37,9 +36,10 @@ end module
 ! returns: displacement u_shape
       use precisions
       implicit none
-      real(WP):: u_shape
       real(WP),intent(in):: colatitude,longitude,time,cphase,mu
       integer,intent(in):: ACCURACY
+      real(WP):: u_shape
+      ! local parameters
       real(WP):: eigenfrequency
       real(WP):: imu
       double precision,external:: legendrePolynomial
@@ -53,14 +53,14 @@ end module
       u_shape = 0.0
       do l = 0,ACCURACY
         !get eigenfrequency for this degree l
-        eigenfrequency= cphase*sqrt(l*(l+1.0))/EARTHRADIUS
+        eigenfrequency = cphase*sqrt(l*(l+1.0))/EARTHRADIUS
         !print *,"eigenfrequency = ",eigenfrequency
 
         !get integral value
-        call qsimp_degree(integrand,l,0.0d0,PI,imu,mu)
+        call simpsons_integral_degree(integrand,l,0.0d0,PI,imu,mu)
 
         !calculate displacement
-        u_shape= u_shape + &
+        u_shape = u_shape + &
                  (l+0.5)*imu*cos(eigenfrequency*time) &
                  *legendrePolynomial(l,dcos(dble(colatitude)) )
       enddo
@@ -86,9 +86,10 @@ end module
       use precisions
       use filterType, only: bw_waveperiod
       implicit none
-      real(WP):: u_f2
       real(WP),intent(in):: epiDelta,time,cphase,sigma,mu
       integer,intent(in):: ACCURACY
+      real(WP):: u_f2
+      ! local parameters
       integer:: l,l_min,l_max
       real(WP):: eigenfrequency,sigma2,reciEarthradius,cphaseSquare
       real(WP):: freq_min,freq_max,center_freq,result,integralvalue
@@ -151,10 +152,10 @@ end module
         !call system_clock(COUNT=cpustart,COUNT_RATE=cpurate,COUNT_MAX=cpumax)
 
         !get eigenfrequency for this degree l
-        eigenfrequency= cphase*sqrt(l*(l+1.0d0))*reciEarthradius
+        eigenfrequency = cphase*sqrt(l*(l+1.0d0))*reciEarthradius
 
         !get integral value with integral boundaries [0,PI]
-        call qsimp_degree(integrand,l,0.0,PI,integralvalue,mu)
+        call simpsons_integral_degree(integrand,l,0.0,PI,integralvalue,mu)
 
         !calculate displacement (sum of Tape, 2003: eq. 3.34)
         termSigma = exp(-sigma2*(eigenfrequency**2)*0.5d0)
@@ -196,9 +197,10 @@ end module
 ! returns: integrand value
       use precisions
       implicit none
-      real(WP):: integrand
       integer,intent(in):: degree
       real(WP),intent(in):: theta,mu
+      real(WP):: integrand
+      ! local parameters
       double precision,external:: legendrePolynomial
       real(WP):: mu2
 
@@ -211,7 +213,7 @@ end module
 
 !-----------------------------------------------------------------------
        subroutine u_f2_asymptoticSolutions(epiDelta,time,cphase,sigma,mu, &
-              ACCURACY,u_f2_asymptotic,u_f2_R1,u_f2_R2,u_f2_R3,u_f2_R4)
+                                           ACCURACY,u_f2_asymptotic,u_f2_R1,u_f2_R2,u_f2_R3,u_f2_R4)
 !-----------------------------------------------------------------------
 ! calculation of the analytic solution for a source with only a forcing term 2
 ! (solution by Tape, 2003: eq. 3.34)
@@ -232,6 +234,7 @@ end module
       real(WP),intent(in):: epiDelta,time,cphase,sigma,mu
       integer,intent(in):: ACCURACY
       real(WP),intent(out):: u_f2_asymptotic,u_f2_R1,u_f2_R2,u_f2_R3,u_f2_R4
+      ! local parameters
       integer:: l, l_min,l_max
       real(WP):: eigenfrequency,sigma2,reciEarthradius
       real(WP):: A_l,termSigma,termSpreading,termIntegral,integralvalue
@@ -304,14 +307,14 @@ end module
         call system_clock(COUNT=cpustart,COUNT_RATE=cpurate,COUNT_MAX=cpumax)
 
         !get eigenfrequency for this degree l
-        eigenfrequency= cphase*sqrt(l*(l+1.0d0))*reciEarthradius
+        eigenfrequency = cphase*sqrt(l*(l+1.0d0))*reciEarthradius
 
         !get integral value with integral boundaries [0,PI]
-        call qsimp_degree(integrand,l,0.0,PI,integralvalue,mu)
+        call simpsons_integral_degree(integrand,l,0.0,PI,integralvalue,mu)
 
         ! get asymptotic integral value
         ! does not work, gives NaN
-        !call qsimp_degree(integrand_asymptotic,l,0.0d0,PI,integralvalue,mu)
+        !call simpsons_integral_degree(integrand_asymptotic,l,0.0d0,PI,integralvalue,mu)
 
         ! coefficients A
         lplus = l+0.5d0
@@ -389,9 +392,10 @@ end module
 !
       use precisions
       implicit none
-      real(WP):: integrand_asymptotic
       integer,intent(in):: degree
       real(WP),intent(in):: theta,mu
+      real(WP):: integrand_asymptotic
+      ! local parameters
       real(WP):: mu2
       integer:: l
       !real(WP), parameter :: PI = 3.1415926535897931d0
@@ -409,8 +413,7 @@ end module
 
 
 !-----------------------------------------------------------------------
-      function u_f2_orbit(orbit,epiDelta,time,cphase,sigma,mu, &
-                                              ACCURACY)
+      function u_f2_orbit(orbit,epiDelta,time,cphase,sigma,mu,ACCURACY)
 !-----------------------------------------------------------------------
 ! calculation of the analytic solution for a source with only a forcing term 2
 ! (solution by Tape, 2003: eq. 3.34)
@@ -431,23 +434,26 @@ end module
       use splinefunction
       use ray_orbits
       implicit none
-      real(WP):: u_f2_orbit
       integer,intent(in):: orbit
       real(WP),intent(in):: epiDelta,time,cphase,sigma,mu
       integer,intent(in):: ACCURACY
+      real(WP):: u_f2_orbit
+      ! local parameters
       integer:: ierror,length,i,icount
       real(WP):: degreel,l_min,l_max
       real(WP):: integralvalue
       real(WP):: freq_min,freq_max,center_freq,result
       real(WP),external:: u_f2_asymptoticdisplacement
       real(WP),external:: integrand
-      double precision,external:: mydrsple
+      double precision,external:: cubicspline_eval
+
       real(WP):: lambda,deltal,omega_k
       integer:: cpustart,cpuend,cpurate,cpumax
       real:: cputime
       logical:: do_file_out
-      real(WP),external:: qromb77
-      real(WP),external:: qsimp_simple
+
+      real(WP),external:: romberg_integral
+      real(WP),external:: simpsons_integral
       ! filter in frequency range
       logical,parameter:: ONLY_FREQUENCY_RANGE        = .false.
       real(WP),parameter:: DEGREE_SHIFT              = 0.0
@@ -490,14 +496,14 @@ end module
       if (.not. allocated(X) ) then
         ! for spline representation
         length = l_max-l_min+1
-        allocate(X(length),Y(length),Q(3,length),F(3,length),stat=ierror)
+
+        ! initialize
+        i1 = 1
+        i2 = length
+        allocate(X(i2),Y(i2),Q(3,i2),F(3,i2),stat=ierror)
         if ( ierror /= 0) call stopProgram('u_f2_orbit - error allocating spline arrays ')
 
         ! get spline representation
-        ! initialize
-        ilength = length
-        i1 = 1
-        i2 = length
         icount = 0
         open(88,file='OUTPUT/integrals_discretel.dat')
         write(88,*) '#format: degree_l integralvalue'
@@ -505,26 +511,24 @@ end module
         do i = l_min,l_max
           ! starting degrees from 0 to degreeaccuracy, but array indices from 1 to length
           icount = icount + 1
-          X(icount)=dble(i)
+          X(icount) = dble(i)
 
           ! get integral value with integral boundaries [0,PI]
-          call qsimp_degree(integrand,i,0.0,PI,integralvalue,mu)
-          Y(icount)=dble(integralvalue)
+          call simpsons_integral_degree(integrand,i,0.0,PI,integralvalue,mu)
+          Y(icount) = dble(integralvalue)
 
           if ( do_file_out ) write(88,*) i,Y(icount)
         enddo
         close(88)
 
         ! calculates spline arrays
-        Q(:,:)=0.0d0
-        F(:,:)=0.0d0
-        call mydrspln(i1,i2,X,Y,Q,F,ilength)
+        call cubicspline_setup()
 
         ! test
         open(88,file='OUTPUT/integrals_nonintegerl.test.dat')
         write(88,*) '#format: degree_l integralvalue'
         do degreel = l_min,l_max,0.2d0
-          integralvalue = mydrsple(i1,i2,X,Y,Q,ilength,dble(degreel))
+          integralvalue = cubicspline_eval(dble(degreel))
           write(88,*) degreel,integralvalue
         enddo
         close(88)
@@ -562,10 +566,10 @@ end module
         freq_min = cphase*sqrt(l_min*(l_min+1.0d0))/EARTHRADIUS
         freq_max = cphase*sqrt(l_max*(l_max+1.0d0))/EARTHRADIUS
 
-        ! qsimp integration
-        u_f2_orbit = qsimp_simple(u_f2_asymptoticdisplacement,dble(freq_min),dble(freq_max))
+        ! integration
+        u_f2_orbit = simpsons_integral(u_f2_asymptoticdisplacement,dble(freq_min),dble(freq_max))
         ! qromb integration
-        !u_f2_orbit = qromb77(u_f2_asymptoticdisplacement,freq_min,freq_max)
+        !u_f2_orbit = romberg_integral(u_f2_asymptoticdisplacement,dble(freq_min),dble(freq_max))
 
 
         u_f2_orbit = u_f2_orbit*EARTHRADIUS/cphase
@@ -598,20 +602,21 @@ end module
 !-----------------------------------------------------------------------
       function u_f2_asymptoticdisplacement(omega)
 !-----------------------------------------------------------------------
-      use precisions
-      use splinefunction
+      use precisions; use splinefunction
       use ray_orbits
       implicit none
-      real(WP):: u_f2_asymptoticdisplacement
       real(WP),intent(in):: omega
+      real(WP):: u_f2_asymptoticdisplacement
+      ! local parameters
       integer:: orbit,iorb,length
       real(WP):: cphase,epiDelta,time,omegaSquare,sineDelta,radiusbycSquared
       real(WP):: sigma2half,integralvalue,lambda,degreel,termSigma, &
                 termSpreading,termIntegral,cphaseSquare,twoPI,PIby4
       complex(WP) :: A_lplus,A_lminus,A_even,A_odd,A_l
-      double precision,external:: mydrsple
+      double precision,external:: cubicspline_eval
+
       logical:: ODD_ORBIT
-      complex(WP),parameter:: II = ( 0.0, 1.0 )
+      complex(WP),parameter:: II = ( 0.0_WP, 1.0_WP )
 
       ! use ray parameters
       orbit = ray_orbit
@@ -632,8 +637,9 @@ end module
       lambda = sqrt(omegaSquare*radiusbycSquared + 0.25)
       degreel = lambda - 0.5
 
-      !get integral value with integral boundaries [0,PI]
-      integralvalue = mydrsple(i1,i2,X,Y,Q,ilength,dble(degreel))
+      ! get integral value with integral boundaries [0,PI]
+      integralvalue = cubicspline_eval(dble(degreel))
+
       ! coefficients A
       termSigma = exp(-omegaSquare*sigma2half)
       termSpreading = sqrt( 1.0/(twoPI*lambda*sineDelta))
@@ -680,9 +686,10 @@ end module
 ! returns: integrand value
       use precisions
       implicit none
-      real(WP):: integrand_cont
       real(WP),intent(in):: degree
       real(WP),intent(in):: theta,mu
+      real(WP):: integrand_cont
+      ! local parameters
       double precision,external:: legendrePolynomial_cont
       real(WP):: mu2
 
@@ -695,8 +702,7 @@ end module
 
 
 !-----------------------------------------------------------------------
-      function u_f2_R2(epiDelta,time,cphase,sigma,mu, &
-                                              ACCURACY)
+      function u_f2_R2(epiDelta,time,cphase,sigma,mu,ACCURACY)
 !-----------------------------------------------------------------------
 ! calculation of the analytic solution for a source with only a forcing term 2
 ! (solution by Tape, 2003: eq. 3.34)
@@ -715,9 +721,10 @@ end module
       use precisions
       use filterType, only: bw_waveperiod
       implicit none
-      real(WP):: u_f2_R2
       real(WP),intent(in):: epiDelta,time,cphase,sigma,mu
       integer,intent(in):: ACCURACY
+      real(WP):: u_f2_R2
+      ! local parameters
       integer:: l, l_min,l_max
       real(WP):: integralvalue
       real(WP):: eigenfrequency,sigma2,reciEarthradius
@@ -775,13 +782,13 @@ end module
       u_f2_R2 = 0.0d0
       do l = l_min,l_max
         !get eigenfrequency for this degree l
-        eigenfrequency= cphase*sqrt(l*(l+1.0d0))*reciEarthradius
+        eigenfrequency = cphase*sqrt(l*(l+1.0d0))*reciEarthradius
 
         !get integral value with integral boundaries [0,PI]
-        call qsimp_degree(integrand,l,0.0,PI,integralvalue,mu)
+        call simpsons_integral_degree(integrand,l,0.0,PI,integralvalue,mu)
 
         ! asymptotic gives NaN
-        !call qsimp_degree(integrand_asymptotic,l,0.0d0,PI,integralvalue,mu)
+        !call simpsons_integral_degree(integrand_asymptotic,l,0.0d0,PI,integralvalue,mu)
 
         !calculate displacement (sum of Tape, 2003: eq. 3.34, see notes)
         ! coefficients A
@@ -805,8 +812,7 @@ end module
       end
 
 !-----------------------------------------------------------------------
-      function u_f2_R3(epiDelta,time,cphase,sigma,mu, &
-                                              ACCURACY)
+      function u_f2_R3(epiDelta,time,cphase,sigma,mu,ACCURACY)
 !-----------------------------------------------------------------------
 ! calculation of the analytic solution for a source with only a forcing term 2
 ! (solution by Tape, 2003: eq. 3.34)
@@ -825,9 +831,10 @@ end module
       use precisions
       use filterType, only: bw_waveperiod
       implicit none
-      real(WP):: u_f2_R3
       real(WP),intent(in):: epiDelta,time,cphase,sigma,mu
       integer,intent(in):: ACCURACY
+      real(WP):: u_f2_R3
+      ! local parameters
       integer:: l, l_min,l_max
       real(WP):: integralvalue
       real(WP):: eigenfrequency,sigma2,reciEarthradius
@@ -885,13 +892,13 @@ end module
       u_f2_R3 = 0.0d0
       do l = l_min,l_max
         !get eigenfrequency for this degree l
-        eigenfrequency= cphase*sqrt(l*(l+1.0d0))*reciEarthradius
+        eigenfrequency = cphase*sqrt(l*(l+1.0d0))*reciEarthradius
 
         !get integral value with integral boundaries [0,PI]
-        call qsimp_degree(integrand,l,0.0,PI,integralvalue,mu)
+        call simpsons_integral_degree(integrand,l,0.0,PI,integralvalue,mu)
 
         ! asymptotic gives NaN
-        !call qsimp_degree(integrand_asymptotic,l,0.0d0,PI,integralvalue,mu)
+        !call simpsons_integral_degree(integrand_asymptotic,l,0.0d0,PI,integralvalue,mu)
 
         !calculate displacement (sum of Tape, 2003: eq. 3.34, see notes)
         ! coefficients A
@@ -914,8 +921,7 @@ end module
       end
 
 !-----------------------------------------------------------------------
-      function u_f2_R4(epiDelta,time,cphase,sigma,mu, &
-                                              ACCURACY)
+      function u_f2_R4(epiDelta,time,cphase,sigma,mu,ACCURACY)
 !-----------------------------------------------------------------------
 ! calculation of the analytic solution for a source with only a forcing term 2
 ! (solution by Tape, 2003: eq. 3.34)
@@ -934,9 +940,10 @@ end module
       use precisions
       use filterType, only: bw_waveperiod
       implicit none
-      real(WP):: u_f2_R4
       real(WP),intent(in):: epiDelta,time,cphase,sigma,mu
       integer,intent(in):: ACCURACY
+      real(WP):: u_f2_R4
+      ! local parameters
       integer:: l, l_min,l_max
       real(WP):: integralvalue
       real(WP):: eigenfrequency,sigma2,reciEarthradius
@@ -995,13 +1002,13 @@ end module
       u_f2_R4 = 0.0d0
       do l = l_min,l_max
         !get eigenfrequency for this degree l
-        eigenfrequency= cphase*sqrt(l*(l+1.0d0))*reciEarthradius
+        eigenfrequency = cphase*sqrt(l*(l+1.0d0))*reciEarthradius
 
         !get integral value with integral boundaries [0,PI]
-        call qsimp_degree(integrand,l,0.0,PI,integralvalue,mu)
+        call simpsons_integral_degree(integrand,l,0.0,PI,integralvalue,mu)
 
         ! asymptotic gives NaN
-        !call qsimp_degree(integrand_asymptotic,l,0.0d0,PI,integralvalue,mu)
+        !call simpsons_integral_degree(integrand_asymptotic,l,0.0d0,PI,integralvalue,mu)
 
         !calculate displacement (sum of Tape, 2003: eq. 3.34, see notes)
         ! coefficients A
@@ -1023,299 +1030,3 @@ end module
       return
       end
 
-
-
-!-----------------------------------------------------------------------
-!     originally from: Sample page from NUMERICAL RECIPES IN Fortran
-!     Copyright (C) 1986-1992 by Cambridge University
-!     chapter 4
-!     http://www.nr.com
-!-----------------------------------------------------------------------
-      function qsimp_simple(func,a,b)
-!-----------------------------------------------------------------------
-      ! USES trapzd
-      ! returns as s the integral of the function func from a to b.
-      ! The parameters EPS can be set to the desired fractional accuracy
-      ! and JMAX so that 2tothepowerJMAX-1 is the
-      ! maximum allowed number of steps.
-      ! Integration is performed by Simpson's rule.
-      use precisions
-      implicit none
-      real(WP):: qsimp_simple
-      double precision,intent(in):: a,b
-      real(WP),external:: func
-      integer,parameter:: JMAX = 40
-      double precision:: EPS = 1.e-4
-      integer:: j
-      double precision:: os,ost,st,s
-
-      ost= 0.0d0  ! originally: -1.e30
-      os= 0.0d0   ! originally: -1.e30
-      do j = 1,JMAX
-        ! trapezoid rule
-        call trapzdf77_simple(func,a,b,st,j)
-        s=(4.0*st-ost)/3.0
-        if (j > 5) then
-          !Avoidspurious earlyconvergence.
-          if (abs(s-os) < EPS*abs(os).or.(s == 0.0 .and. os == 0.0)) then
-            qsimp_simple = s
-            return
-          endif
-        endif
-        os = s
-        ost = st
-      enddo
-      print *,'qsimp_simple not converging:',a,b,s,st
-      stop "too many steps in qsimp_simple"
-      END
-
-!-----------------------------------------------------------------------
-      subroutine trapzdf77_simple(func,a,b,s,n)
-!-----------------------------------------------------------------------
-      use precisions
-      implicit none
-      integer,intent(in):: n
-      double precision,intent(in):: a,b
-      double precision,intent(out):: s
-      real(WP),external:: func
-      !integer degree
-      !This routine computes then th stage of refinementof
-      !an extended trapezoidal rule.
-      ! func is input as the name of the function to be integrated
-      ! between limits a and b, also input.
-      !When called with n=1, the routine returns as s the
-      ! crudest estimate of b a f(x)dx.
-      ! Subsequent calls with n=2,3,... (in that sequential order)will
-      ! improve the accuracy of s by adding 2n-2 additional interior points.
-      ! s should not be modified between sequential calls.
-      integer:: it,j
-      double precision:: del,sum,tnm,x,f_a,f_b
-
-      if (n == 1) then
-        if ( WP == 4 ) then
-          s = 0.5*(b-a)*dble(func(sngl(a))+func(sngl(b)))
-        else
-          s = 0.5*(b-a)*(func(a)+func(b))
-        endif
-      else
-        it=2**(n-2)
-        tnm = it
-        !Thisisthespacingof thepointstobeadded.
-        del=(b-a)/tnm
-        x = a+0.5*del
-        sum = 0.
-        do j = 1,it
-          if ( WP == 4 ) then
-            sum = sum+dble(func(sngl(x)))
-          else
-            sum=sum+func(x)
-          endif
-          x = x+del
-        enddo
-        !This replaces s byitsrefinedvalue.
-        s = 0.5*(s+(b-a)*sum/tnm)
-      endif
-      return
-      END
-
-
-!-----------------------------------------------------------------------
-!     originally from: Sample page from NUMERICAL RECIPES IN Fortran
-!     Copyright (C) 1986-1992 by Cambridge University
-!     chapter 4
-!     http://www.nr.com
-!-----------------------------------------------------------------------
-      subroutine qsimp_degree(func,degree,a,b,s,mu)
-!-----------------------------------------------------------------------
-      use precisions
-      implicit none
-      integer,intent(in):: degree
-      real(WP),intent(in):: a,b,mu
-      real(WP),intent(out):: s
-      real(WP),external:: func
-      integer,parameter:: JMAX = 40
-      real(WP),parameter:: EPS = 1.e-4
-      ! USES trapzd
-      ! returns as s the integral of the function func from a to b.
-      ! The parameters EPS can be set to the desired fractional accuracy
-      ! and JMAX so that 2tothepowerJMAX-1 is the
-      ! maximum allowed number of steps.
-      ! Integration is performed by Simpson's rule.
-      integer:: j
-      double precision:: os,ost,st
-
-      ost= 0.0  ! originally: -1.e30
-      os= 0.0   ! originally: -1.e30
-      do j = 1,JMAX
-        ! trapezoid rule
-        call trapzdf77(func,degree,dble(a),dble(b),st,j,dble(mu))
-        s=(4.0*st-ost)/3.0
-        if (j > 5) then
-          !Avoidspurious earlyconvergence.
-          if (abs(s-os) < EPS*abs(os).or.(s == 0.0 .and. os == 0.0)) return
-        endif
-        os = s
-        ost = st
-      enddo
-      print *,'qsimp not converging:',degree,a,b,s
-      stop "too many steps in qsimp"
-      END
-
-!-----------------------------------------------------------------------
-      subroutine trapzdf77(func,degree,a,b,s,n,mu)
-!-----------------------------------------------------------------------
-      use precisions
-      implicit none
-      integer,intent(in):: n,degree
-      double precision,intent(in):: a,b
-      double precision,intent(in):: mu
-      double precision,intent(out):: s
-      real(WP),external:: func
-      !integer degree
-      !This routine computes then th stage of refinementof
-      !an extended trapezoidal rule.
-      ! func is input as the name of the function to be integrated
-      ! between limits a and b, also input.
-      !When called with n=1, the routine returns as s the
-      ! crudest estimate of b a f(x)dx.
-      ! Subsequent calls with n=2,3,... (in that sequential order)will
-      ! improve the accuracy of s by adding 2n-2 additional interior points.
-      ! s should not be modified between sequential calls.
-      integer:: it,j
-      double precision:: del,sum,tnm,x,f_a,f_b
-
-      if (n == 1) then
-        if ( WP == 4 ) then
-          s = 0.5*(b-a)*dble(func(degree,sngl(a),sngl(mu))+func(degree,sngl(b),sngl(mu)))
-        else
-          s = 0.5*(b-a)*(func(degree,a,mu)+func(degree,b,mu))
-        endif
-      else
-        it=2**(n-2)
-        tnm = it
-        !Thisisthespacingof thepointstobeadded.
-        del=(b-a)/tnm
-        x = a+0.5*del
-        sum = 0.
-        do j = 1,it
-          if ( WP == 4 ) then
-            sum = sum+dble(func(degree,sngl(x),sngl(mu)))
-          else
-            sum=sum+func(degree,x,mu)
-          endif
-          x = x+del
-        enddo
-        !This replaces s byitsrefinedvalue.
-        s = 0.5*(s+(b-a)*sum/tnm)
-      endif
-      return
-      END
-
-
-!-----------------------------------------------------------------------
-      function qromb77(func,a,b)
-!-----------------------------------------------------------------------
-      !USE nrtype; USE nrutil, only: nrerror
-      !USE nr, only: polint,trapzd
-      use precisions
-      implicit none
-      REAL(WP), INTENT(IN) :: a,b
-      REAL(WP) ::qromb77
-      !INTERFACE
-      !function func(x)
-      !USE nrtype
-      !REAL(SP), DIMENSION(:), INTENT(IN) :: x
-      !REAL(SP), DIMENSION(size(x)) :: func
-      !end function func
-      !END INTERFACE
-      real(WP),external:: func
-      INTEGER, PARAMETER :: JMAX = 40,JMAXP = JMAX+1,K = 5,KM = K-1
-      REAL(WP), PARAMETER :: EPS=1.0e-4
-      real(WP), parameter:: EPS_ZERO = 1.e-4
-      ! returns the integral of the function func from a to b.
-      ! Integration is performed by Romberg's
-      ! method of order 2K, where, e.g., K=2 is Simpson's rule.
-      ! Parameters: EPS is the fractional accuracy desired, as determined by the extrapolation er-
-      ! ror estimate; JMAX limits the total number of steps; K is the number of points used in the
-      ! extrapolation.
-      REAL(WP), DIMENSION(JMAXP) :: h,s ! These store the successive trapezoidal ap-
-                                           ! proximations and their relative step sizes.
-      REAL(WP) ::dqromb77
-      INTEGER:: j
-
-      h(1)=1.0
-      do j = 1,JMAX
-        call trapzdf77_simple(func,a,b,s(j),j)
-        if (j >= K) then
-          call polint77(h(j-KM:j),s(j-KM:j),0.0,qromb77,dqromb77)
-
-          ! org:
-          if (abs(dqromb77) <= EPS*abs(qromb77)) return
-
-          ! from qsimp:
-          if (j > 5) then
-            !Avoid spurious early convergence.
-            if (abs(dqromb77) <= EPS*abs(qromb77) .or. (abs(qromb77) < EPS_ZERO .and. abs(dqromb77) < EPS_ZERO)) return
-          endif
-        endif
-        s(j+1)=s(j)
-        h(j+1)=0.25*h(j)    ! This is a key step: The factor is 0.25 even
-                            ! though the step size is decreased by only
-                            ! 0.5. This makes the extrapolation a poly-
-                            ! nomial in h2 as allowed by equation(4.2.1),
-                            ! not just a polynomial in h.
-      enddo
-      !call nrerror('qromb: too many steps')
-      print *,'qromb77:',a,b,qromb77,dqromb77
-      stop "qromb77 too many steps"
-      end function qromb77
-
-
-
-!-----------------------------------------------------------------------
-      subroutine polint77(xa,ya,n,x,y,dy)
-!-----------------------------------------------------------------------
-      use precisions
-      implicit none
-      integer,parameter:: nmax = 10
-      integer,intent(in):: n
-      real(WP),intent(in):: xa(n),ya(n),x
-      real(WP),intent(out):: y,dy
-      real(WP):: c(nmax),d(nmax),dif,dift,ho,hp,w,den
-      integer:: i,ns,m
-
-      ns = 1
-      dif = abs(x-xa(1))
-      do i = 1,n
-        dift = abs(x-xa(i))
-        if (dift < dif) then
-          ns = i
-          dif = dift
-        endif
-        c(i)=ya(i)
-        d(i)=ya(i)
-      enddo
-
-      y=ya(ns)
-      ns = ns-1
-      do m = 1,n-1
-        do i = 1,n-m
-          ho=xa(i)-x
-          hp=xa(i+m)-x
-          w = c(i+1)-d(i)
-          den = ho-hp
-          if (den == 0.) pause "Problem in Polint"
-          den = w/den
-          d(i)=hp*den
-          c(i)=ho*den
-        enddo
-        if (2*ns < n-m) then
-          dy=c(ns+1)
-        else
-          dy=d(ns)
-          ns = ns-1
-        endif
-        y = y+dy
-      enddo
-      return
-      end

@@ -26,10 +26,10 @@
       dn2 = 1.0d0/n !Normalizationfor inverseFFT.
       no2 = n/2
       do i = 1,no2+1
-        ans(i)=fft(i)*conjg(ans(i))*dn2     ! Multiply to find FFT of their correlation.
+        ans(i) = fft(i)*conjg(ans(i))*dn2     ! Multiply to find FFT of their correlation.
       enddo
 
-      ans(1)=dcmplx(dreal(ans(1)),dreal(ans(no2+1))) !Pack first and last into one element.
+      ans(1) = dcmplx(dreal(ans(1)),dreal(ans(no2+1))) !Pack first and last into one element.
 
       !do i=1,n
       !  print *,'complex:',i,ans(i)
@@ -63,11 +63,11 @@
       c1=dcmplx(0.5,0.0)
       c2=dcmplx(0.0,-0.5)
       do j = 1,n
-        fft1(j)=dcmplx(data1(j),data2(j)) !Packthe tworeal arrays intoone complex array.
+        fft1(j) = dcmplx(data1(j),data2(j)) !Packthe tworeal arrays intoone complex array.
       enddo
       call dfour177(fft1,n,1) !Transformthecomplexarray.
-      fft2(1)=dcmplx(dimag(fft1(1)),0.0)
-      fft1(1)=dcmplx(dreal(fft1(1)),0.0)
+      fft2(1) = dcmplx(dimag(fft1(1)),0.0)
+      fft1(1) = dcmplx(dreal(fft1(1)),0.0)
       n2 = n+2
       do j = 2,n/2+1
         h1 = c1*(fft1(j)+conjg(fft1(n2-j))) !Usesymmetriestoseparatethetwotransforms.
@@ -135,12 +135,12 @@
 
       if (isign == 1) then
         h1r=data(1)
-        data(1)=h1r+data(2)
-        data(2)=h1r-data(2) !Squeeze thefirst andlast datatogether toget themall withintheoriginal array.
+        data(1) = h1r+data(2)
+        data(2) = h1r-data(2) !Squeeze thefirst andlast datatogether toget themall withintheoriginal array.
       else
         h1r=data(1)
-        data(1)=c1*(h1r+data(2))
-        data(2)=c1*(h1r-data(2))
+        data(1) = c1*(h1r+data(2))
+        data(2) = c1*(h1r-data(2))
         call dfour177(data,n/2,-1) !Thisistheinversetransformforthecaseisign=-1.
       endif
       return
@@ -166,7 +166,7 @@
         if (j > i) then
           tempr=data(j) !Exchangethetwocomplexnumbers.
           tempi=data(j+1)
-          data(j)=data(i)
+          data(j) = data(i)
           data(j+1)=data(i+1)
           data(i)=tempr
           data(i+1)=tempi
@@ -193,9 +193,9 @@
             j = i+mmax !ThisistheDanielson-Lanczos formula:
             tempr = wr*data(j)-wi*data(j+1)
             tempi = wr*data(j+1)+wi*data(j)
-            data(j)=data(i)-tempr
+            data(j) = data(i)-tempr
             data(j+1)=data(i+1)-tempi
-            data(i)=data(i)+tempr
+            data(i) = data(i)+tempr
             data(i+1)=data(i+1)+tempi
           enddo
           wtemp = wr !Trigonometricrecurrence.

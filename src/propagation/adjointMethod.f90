@@ -29,7 +29,8 @@
       use parallel; use displacements
       use loop; use phaseBlockData; use griddomain; use adjointVariables;use verbosity
       implicit none
-      integer:: m,kernel,ierror
+      ! local parameters
+      integer:: kernel,ierror
       real(WP):: window_start_org,window_end_org
 
       !-----------------------------------------------------------------------
@@ -164,5 +165,5 @@
       call MPI_FINALIZE(ierror)
       if ( ierror /= 0) call stopProgram('abort - finalize failed    ')
 
-      end
+      end program
 

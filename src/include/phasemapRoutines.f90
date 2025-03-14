@@ -30,17 +30,18 @@
       use phaseVelocityMap; use propagationStartup; use cells; use adjointVariables
       use phaseBlockData; use verbosity
       implicit none
-      character(len=128):: fileName
-      logical:: given_as_percent
+      character(len=128),intent(in):: fileName
+      logical,intent(in):: given_as_percent
+      ! local parameters
       integer:: i,ioerror
-      integer:: lmx,lmax,lmaxuser,ialpha,ncoef
-      real(WP):: phasepercent,scale,vphase,lat,lon
+      integer:: lmax,lmaxuser,ialpha,ncoef
+      real(WP):: scale,vphase,lat,lon
       real(WP):: Vsource(3),Vreceiver(3),vtmp(3),rot(3,3)
-      real(WP):: blockdata
-      character:: nameout*128,chlmax*3,chialpha*1
-      real:: xlon,xlat,x,z,zmin,zmax
+      character(len=3):: chlmax
+      character(len=1):: chialpha
+      real:: xlon,xlat,z,zmin,zmax
       integer:: k,igrid
-      parameter(lmx=55)  !maximum harmonic expansion
+      integer, parameter:: lmx = 55  !maximum harmonic expansion
       real:: y((lmx+1)**2)
       double precision:: wkspc(9*(2*lmx+1))
       real:: cmod((LMX+1)**2)
@@ -61,10 +62,9 @@
       !read*,scale
 
       ! read phase map
-      fileName = trim(fileName)
       if ( VERBOSE) then
-        print *,'  reading gsh file: '
-        print *,'    ',trim(fileName)
+        print *,'  reading gsh model: '
+        print *,'    file: ',trim(fileName)
         if ( given_as_percent) then
           print *,'    values given in percentage %'
         else
@@ -73,25 +73,25 @@
       endif
 
       !open file
-      open(10,file=trim(fileName),status='old',iostat=ioerror)
+      open(IIN,file=trim(fileName),status='old',iostat=ioerror)
       if ( ioerror /= 0) then
         print *,'Error: could not open file ',trim(fileName)
         print *,'       Please check if file exists...'
         call stopProgram( 'abort - could not open GSHPhasemap    ')
       endif
-      read(10,*)lmax
+      read(IIN,*) lmax
 
-      cmod(:)=0.0
+      cmod(:) = 0.0
       lmaxuser = gsh_maximum_expansion
       if ( lmaxuser > lmax ) call stopProgram('error lmax expansion')
 
-      ncoef=(lmaxuser+1)**2
-      read(10,*) (cmod(i),i=1,ncoef)
-      close(10)
+      ncoef = (lmaxuser+1)**2
+      read(IIN,*) (cmod(i),i=1,ncoef)
+      close(IIN)
 
       if ( VERBOSE ) then
-        print *,"    maximum expansion      l=",lmax
-        print *,"    interrupt expansion at l=",lmaxuser
+        print *,"    maximum expansion     : l = ",lmax
+        print *,"    interrupt expansion at: l = ",lmaxuser
         if ( rotate_frame ) print *,"  rotate frame to equator"
       endif
 
@@ -116,21 +116,21 @@
 
       ! debug phase speed values on grid
       !nameout=fileName(1:len_trim(fileName) )//"-"//chlmax//'.spheregrid.xyz'
-      !open(20,file=nameout)
-      !open(30,file=fileName(1:len_trim(fileName) )//"-"//chlmax//'.spheregrid.relative.xyz')
+      !open(22,file=nameout)
+      !open(33,file=fileName(1:len_trim(fileName) )//"-"//chlmax//'.spheregrid.relative.xyz')
 
       ! phase speeds
-      open(40,file=datadirectory(1:len_trim(datadirectory))//'PhaseMap.percent.dat')
+      open(IOUT,file=trim(datadirectory)//'PhaseMap.percent.dat')
       ! header comment
-      write(40,*) '# Phase map - perturbations'
-      write(40,*) '# reference velocity = ',cphaseRef,'(km/s)'
-      write(40,*) '# format:'
-      write(40,*) '#lon #lat #phase-velocity-perturbation (in percent)'
+      write(IOUT,*) '# Phase map - perturbations'
+      write(IOUT,*) '# reference velocity = ',cphaseRef,'(km/s)'
+      write(IOUT,*) '# format:'
+      write(IOUT,*) '#lon #lat #phase-velocity-perturbation (in percent)'
 
       ! determine rotation matrix from (1,0,0)/... to source/receiver frame
       if ( rotate_frame ) then
-        Vsource(:)= vertices(originSourceVertex,:)
-        Vreceiver(:)= vertices(originReceiverVertex,:)
+        Vsource(:) = vertices(originSourceVertex,:)
+        Vreceiver(:) = vertices(originReceiverVertex,:)
         call getRotationMatrix(Vsource,Vreceiver,rot)
       endif
 
@@ -139,7 +139,7 @@
       zmax = 0.0
       do i = 1,numVertices
         ! vector to vertex
-        vtmp(:)=vertices(i,:)
+        vtmp(:) = vertices(i,:)
 
         ! get rotated vector
         if ( rotate_frame ) then
@@ -148,13 +148,9 @@
 
         ! get latitude/longitude of its location on the phase map
         call getSphericalCoordinates(vtmp,lat,lon)
-        if ( WP == 4 ) then
-          xlat = lat
-          xlon = lon
-        else
-          xlat=real(lat)
-          xlon=real(lon)
-        endif
+
+        xlat = real(lat,kind=4)
+        xlon = real(lon,kind=4)
 
         ! status display
         igrid = igrid+1
@@ -163,7 +159,7 @@
         ! determine value
         call ylmv0(xlat,xlon,lmx,y,wkspc)
 
-        z = 0.
+        z = 0.0
         ! scalar SH
         ncoef = (lmax+1)**2
         do k = 1,ncoef
@@ -190,16 +186,17 @@
         ! file output
         ! format: #lon #lat #phase-velocity-perturbation (in percent)
         if ( given_as_percent ) then
-          write(40,*) xlon,xlat,z
+          write(IOUT,*) xlon,xlat,z
         else
-          write(40,*) xlon,xlat,z*100.0
+          write(IOUT,*) xlon,xlat,z*100.0
         endif
       enddo
-      close(40)
+      close(IOUT)
 
       ! debug close output-file
-      !close(20)
-      !close(30)
+      !close(22)
+      !close(33)
+
       if ( VERBOSE ) then
         print *,'    total points readin   : ',igrid
         print *,'    values minimum/maximum: ',zmin,zmax
@@ -227,23 +224,24 @@
 ! returns: phaseBlock filled with file data blockdata1,..
       use phaseBlockData
       implicit none
+      character(len=128),intent(in):: fileName
+      ! local parameters
       integer:: i,ioerror,id
-      character(len=128):: fileName
-      real(WP):: phasepercent,blockdata
+      real(WP):: blockdata
 
       ! read phase map
-      fileName = trim(fileName)
-      print *,fileName
+      print *,'  reading pixel phase map:'
+      print *,'  file: ',trim(fileName)
 
       !open file
-      open(10, file= fileName,status='old',iostat=ioerror)
+      open(IIN, file=trim(fileName),status='old',iostat=ioerror)
       if ( ioerror /= 0) call stopProgram( 'abort - readPixelPhasemap()  ')
 
       !get file length
       numBlocks = 0
       ioerror = 0
       do while (ioerror == 0 )
-        read(10,*,iostat=ioerror) id, blockdata
+        read(IIN,*,iostat=ioerror) id, blockdata
         numBlocks = numBlocks + 1
       enddo
       numBlocks = numBlocks - 1
@@ -257,9 +255,9 @@
       endif
 
       !fill in values
-      rewind(10)
+      rewind(IIN)
       do i = 1, numBlocks
-        read(10, *, iostat=ioerror) id, phaseBlock(i)
+        read(IIN, *, iostat=ioerror) id, phaseBlock(i)
         if ( ioerror /= 0) then
           exit
         endif
@@ -268,7 +266,7 @@
 
       print *,'number of phase blocks: ',numBlocks
       print *
-      close(10)
+      close(IIN)
 
       end
 
@@ -279,13 +277,15 @@
 ! further information can be asked from Lapo Boschi
 !
 ! input:
-!     relat,reflon - reference latitude/longitude
-!     blockindex - index of blockdata which covers referenced location
+!     relat,reflon  - reference latitude/longitude
+!     blockindex    - index of blockdata which covers referenced location
 !
 ! returns: blockindex
-      use phaseBlockData
+      use phaseBlockData, only: heterogeneousPixelsize,compatible_refgridXrefgrid,numBlocks
       implicit none
-      real:: pixelsize
+      real,intent(in):: reflat, reflon
+      integer,intent(out):: blockindex
+      ! local parameters
       !--------this version creates an xyz file with regularly spaced grid
       !--the following parameters need to be changed depending on the model
       integer,parameter:: ifa      = 1
@@ -293,25 +293,19 @@
       real,parameter:: eastbo     = 45.
       real,parameter:: southbo    = 30.
       real,parameter:: rthnobo    = 20.
-
+      real,parameter:: PI         = 3.1415926535897931
       !--set iswit=1 to make the grid compatible with a refgridXrefgrid grid
       !   0 for L0035.jwkb.lsqr.mod.pcn-.2-.2, or L150.crust.2degree.gsh.modelVector.*.pcn.blk
       !   1 for L150.crust
-      integer,parameter::iswit     = compatible_refgridXrefgrid
-
+      integer,parameter:: iswit     = compatible_refgridXrefgrid
       real:: EQ_INCR,refgrid,eq_hi
       integer:: nlatzones,nlatzohi
       integer,allocatable,dimension(:):: nsqrs,nsqtot,nsqrsh,nsqtoth
-      integer:: blockindex
-      real:: reflat, reflon
-      integer:: iresolu(10000),ire2(50000)
-      integer:: inew(50000),iold(50000),inewh(50000),ioldh(50000)
-      character:: filename*80,dummy*80,outpo*80,colorname*30
-      integer:: irgb(100,3),rgb(3)
+      integer,dimension(:),allocatable:: inew,iold,inewh,ioldh,iresolu,ire2
       integer:: numto,numhi,kfine,ifine,kireso,kire2,ilat,ilon,icoarse,ifila,ico
       integer:: isqrl,isqre,superISQRE,icoar,icoblo,iche,nprime,iof,jsqre,isqrh,ifilo
-      integer:: i,j,k,n
-      real:: colat,theta,deltalon,parall,rmerid,v(100)
+      integer:: i,j,k
+      real:: colat,theta,deltalon,parall,rmerid
       real:: xlafi,xlofi,xlat,xlon,xlamin,xlamax,xlomin,xlomax
 
       ! initialize
@@ -320,50 +314,51 @@
       eq_hi = EQ_INCR/ifa
       nlatzones = 180./EQ_INCR
       nlatzohi = 180./eq_hi
+
       allocate(nsqrs(nlatzones),nsqtot(nlatzones+1))
       allocate(nsqrsh(nlatzohi),nsqtoth(nlatzohi+1))
+
+      allocate(inew(50000),iold(50000),inewh(50000),ioldh(50000),iresolu(10000),ire2(50000))
 
       !--determine nsqrs,nsqrsh
       NUMTO = 0
       numhi = 0
-      colat=-eq_incr/2.
+      colat = -eq_incr/2.
 
       do k = 1,nlatzones
          !print *,'k',k,nlatzones
          colat = colat+eq_incr
-         theta=(colat/180.)*PI
+         theta = (colat/180.)*PI
          deltalon = eq_incr/(sin(theta))
-         NSQRS(k)=(360./deltalon)+1
-         if (MOD(NSQRS(K),2) /= 0)nsqrs(k)=nsqrs(k)-1
+         NSQRS(k) = (360./deltalon)+1
+         if (MOD(NSQRS(K),2) /= 0) nsqrs(k) = nsqrs(k)-1
 
          !--if requested, correct nsqrs(k) so the grid is compatible to reference grid
          if (iswit == 1) then
           if (360./nsqrs(k) >= refgrid) then
- 100	     if (mod(360./nsqrs(k),refgrid) /= 0) then
-            nsqrs(k)=nsqrs(k)+1
-            goto 100
-           else
-           endif
+100         if (mod(360./nsqrs(k),refgrid) /= 0) then
+              nsqrs(k) = nsqrs(k)+1
+              goto 100
+            endif
           else if (360./nsqrs(k) < refgrid) then
- 101	     if (mod(refgrid,360./nsqrs(k)) /= 0) then
-            nsqrs(k)=nsqrs(k)+1
-            goto 101
-           else
-           endif
+101         if (mod(refgrid,360./nsqrs(k)) /= 0) then
+              nsqrs(k) = nsqrs(k)+1
+              goto 101
+            endif
           endif
          endif
 
          do j = 1,ifa
-            kfine=((k-1)*ifa)+j
-            nsqrsh(kfine)=NSQRS(k)*ifa
-            nsqtoth(kfine)=numhi
-            numhi=numhi+nsqrsh(kfine)
+            kfine = ((k-1)*ifa)+j
+            nsqrsh(kfine) = NSQRS(k)*ifa
+            nsqtoth(kfine) = numhi
+            numhi = numhi+nsqrsh(kfine)
          enddo
-         NSQTOT(K)=NUMTO
-         NUMTO=NUMTO+NSQRS(K)
+         NSQTOT(K) = NUMTO
+         NUMTO = NUMTO+NSQRS(K)
       enddo
-      nsqtot(nlatzones+1)=numto
-      nsqtoth(nlatzohi+1)=numhi
+      nsqtot(nlatzones+1) = numto
+      nsqtoth(nlatzohi+1) = numhi
       !print *,'numto=',numto,'  numhi=',numhi
 
       !--determine iresolu,ire2,kireso,kire2
@@ -382,18 +377,21 @@
             kireso = kireso+1
             ilat = parall*100.+0.5
             ilon = rmerid*100.+0.5
-            iresolu(kireso)=superISQRE(ilat,ilon,nsqrs,nsqtot,nlatzones,numto,eq_incr)
-            icoarse=iresolu(kireso)
-            call rang(icoarse,XLAMIN,XLAMAX,XLOMIN,XLOMAX,nsqrs,nsqtot,nlatzones,n,eq_incr)
+
+            iresolu(kireso) = superISQRE(ilat,ilon,nsqrs,nsqtot,nlatzones,numto,eq_incr)
+            icoarse = iresolu(kireso)
+
+            call coord_range(icoarse,XLAMIN,XLAMAX,XLOMIN,XLOMAX,nsqrs,nsqtot,nlatzones,eq_incr)
+
             do ifila = 1,ifa
-            do ifilo = 1,ifa
-               kire2 = kire2+1
-               xlafi = xlamin+((xlamax-xlamin)/ifa)*(ifila-0.5)
-               xlofi = xlomin+((xlomax-xlomin)/ifa)*(ifilo-0.5)
-               ilat = xlafi*100.+0.5
-               ilon = xlofi*100.+0.5
-               ire2(kire2)=superISQRE(ilat,ilon,nsqrsh,nsqtoth,nlatzohi,numhi,eq_hi)
-            enddo
+              do ifilo = 1,ifa
+                 kire2 = kire2+1
+                 xlafi = xlamin+((xlamax-xlamin)/ifa)*(ifila-0.5)
+                 xlofi = xlomin+((xlomax-xlomin)/ifa)*(ifilo-0.5)
+                 ilat = xlafi*100.+0.5
+                 ilon = xlofi*100.+0.5
+                 ire2(kire2) = superISQRE(ilat,ilon,nsqrsh,nsqtoth,nlatzohi,numhi,eq_hi)
+              enddo
             enddo
          enddo
       enddo
@@ -401,23 +399,23 @@
       !--count blocks used in parameterization
       icoar = 0
       do icoblo = 1,numto
-         do iche = 1,kireso
-            if (icoblo == iresolu(iche)) then
-               icoar = icoar+1
-               goto 37
-            endif
-         enddo
- 37   continue
+        do iche = 1,kireso
+          if (icoblo == iresolu(iche)) then
+            icoar = icoar+1
+            goto 37
+          endif
+        enddo
+37      continue
       enddo
       ifine = 0
       do icoblo = 1,numhi
-         do iche = 1,kire2
-            if (icoblo == ire2(iche)) then
-               ifine = ifine+1
-               goto 38
-            endif
-         enddo
- 38   continue
+        do iche = 1,kire2
+          if (icoblo == ire2(iche)) then
+            ifine = ifine+1
+            goto 38
+          endif
+        enddo
+38      continue
       enddo
       nprime = numto-icoar+ifine
 
@@ -438,34 +436,41 @@
       xlat = reflat
       xlon = reflon
 
-      ilat=int(xlat*100.)
-      ilon=int(xlon*100.)
+      ilat = int(xlat*100.)
+      ilon = int(xlon*100.)
       !print *,'looking for:',ilat,ilon
 
-      isqrl=isqre(ilat,ilon,nsqrs,nsqtot,nlatzones,numto,eq_incr)
-      jsqre=inew(isqrl)
+      isqrl = isqre(ilat,ilon,nsqrs,nsqtot,nlatzones,numto,eq_incr)
+      jsqre = inew(isqrl)
 
       !-----check whether such block belongs to the high resolution region
       do iche = 1,kireso
         if (isqrl == iresolu(iche)) then
-          isqrh=isqre(ilat,ilon,nsqrsh,nsqtoth,nlatzohi,numhi,eq_hi)
-          jsqre=inewh(isqrh)
+          isqrh = isqre(ilat,ilon,nsqrsh,nsqtoth,nlatzohi,numhi,eq_hi)
+          jsqre = inewh(isqrh)
         endif
       enddo
 
       ! return this block id
       blockindex = jsqre
+
+      ! free temporary arrays
+      deallocate(inew,iold,inewh,ioldh,iresolu,ire2)
+      deallocate(nsqrs,nsqtot)
+      deallocate(nsqrsh,nsqtoth)
+
       end
 
 !-----------------------------------------------------------------------
-      subroutine RANG(NSQ,XLAMIN,XLAMAX,XLOMIN,XLOMAX,nsqrs,nsqtot,nlatzones,n,eq_incr)
+      subroutine coord_range(NSQ,XLAMIN,XLAMAX,XLOMIN,XLOMAX,nsqrs,nsqtot,nlatzones,eq_incr)
 !-----------------------------------------------------------------------
 ! FINDS THE COORDINATE RANGE OF SQUARE NUMBER 'NSQ'
       implicit none
-      integer,intent(in):: nlatzones,n,nsq
+      integer,intent(in):: nlatzones,nsq
       integer,intent(in):: NSQRS(NLATZONES),NSQTOT(NLATZONES+1)
       real,intent(in):: eq_incr
       real,intent(out):: xlamin,xlamax,xlomin,xlomax
+      ! local parameters
       integer:: lazone,nnsq
       real:: grsize
 
@@ -476,14 +481,15 @@
       enddo
       LAZONE = LAZONE-1
 
-      NNSQ=NSQ-NSQTOT(LAZONE)
+      NNSQ = NSQ-NSQTOT(LAZONE)
       XLAMIN = 90.-LAZONE*eq_incr
       XLAMAX = XLAMIN+eq_incr
-      GRSIZE=360./NSQRS(LAZONE)
+      GRSIZE = 360./NSQRS(LAZONE)
       XLOMAX = NNSQ*GRSIZE
       XLOMIN = XLOMAX-GRSIZE
       return
       END
+
 !-----------------------------------------------------------------------
       integer function superisqre(LAT,LON,nsqrs,nsqtot,nlatzones,n,eq_incr)
 !-----------------------------------------------------------------------
@@ -492,19 +498,20 @@
       integer,intent(in):: nlatzones,n,lat,lon
       integer,intent(in):: NSQRS(nlatzones),NSQTOT(nlatzones+1)
       real,intent(in):: eq_incr
+      ! local parameters
       real:: incr
       integer:: llon,lazone
       !print *,'superisqre',nlatzones
       incr = eq_incr*100.
-      LAZONE=(9000-LAT)/incr+1
-      if (LAZONE > nlatzones)LAZONE=nlatzones
+      LAZONE = (9000-LAT)/incr+1
+      if (LAZONE > nlatzones) LAZONE = nlatzones
 
       LLON = LON
-      if (LLON < 0)LLON=36000+LLON
-      superISQRE=(LLON*NSQRS(LAZONE))/36000+1
-      superISQRE=superISQRE+NSQTOT(LAZONE)
+      if (LLON < 0) LLON = 36000+LLON
+      superISQRE = (LLON*NSQRS(LAZONE))/36000+1
+      superISQRE = superISQRE+NSQTOT(LAZONE)
 
-      if (superISQRE > n) superISQRE=n
+      if (superISQRE > n) superISQRE = n
       return
       END
 
@@ -516,63 +523,78 @@
       integer,intent(in):: nlatzones,n,lat,lon
       integer,intent(in):: NSQRS(nlatzones),NSQTOT(nlatzones+1)
       real,intent(in):: eq_incr
+      ! local parameters
       real:: incr
       integer:: llon,lazone
 
       incr = eq_incr*100.
-      LAZONE=(9000-LAT)/incr+1
-      if (LAZONE > nlatzones)LAZONE=nlatzones
+      LAZONE = (9000-LAT)/incr+1
+      if (LAZONE > nlatzones) LAZONE = nlatzones
 
       LLON = LON
-      if (LLON < 0)LLON=36000+LLON
+      if (LLON < 0) LLON = 36000+LLON
 
-      ISQRE=(LLON*NSQRS(LAZONE))/36000+1
-      ISQRE=ISQRE+NSQTOT(LAZONE)
+      ISQRE = (LLON*NSQRS(LAZONE))/36000+1
+      ISQRE = ISQRE+NSQTOT(LAZONE)
 
-      if (ISQRE > n) ISQRE=n
+      if (ISQRE > n) ISQRE = n
       return
       END
 
 !-----------------------------------------------------------------------
       subroutine correspc(iresolu,niresolu,kireso,n,ioffset,inew,ninew,iold,niold,ico)
 !-----------------------------------------------------------------------
-      dimension iresolu(niresolu),inew(ninew),iold(niold)
+      implicit none
+      integer,intent(in):: niresolu,kireso,n,ioffset,ninew,niold
+      integer,intent(in):: iresolu(niresolu)
+      integer,intent(inout):: inew(ninew),iold(niold)
+      integer,intent(out):: ico
+      ! local parameters
+      integer:: i,k
       !print *,'correspc',n
       ico = 0
       do i = 1,n
          do k = 1,kireso
          if (i == iresolu(k)) then
             ico = ico+1
-            inew(i)=-1
+            inew(i) = -1
             goto 42
          endif
          enddo
-         inew(i)=(i+ioffset)-ico
- 42	   iold(inew(i))=i
+         inew(i) = (i+ioffset)-ico
+
+42       iold(inew(i)) = i
       enddo
       return
       end
+
 !-----------------------------------------------------------------------
       subroutine corresph(iresolu,niresolu,kireso,n,ioffset,inew,ninew,iold,niold,ico)
 !-----------------------------------------------------------------------
-      dimension iresolu(niresolu),inew(ninew),iold(niold)
+      implicit none
+      integer,intent(in):: niresolu,kireso,n,ioffset,ninew,niold
+      integer,intent(in):: iresolu(niresolu)
+      integer,intent(inout):: inew(ninew),iold(niold)
+      integer,intent(out):: ico
+      ! local parameters
+      integer:: i,k
+
       !print *,'corresph',n
       ico = 0
       do i = 1,n
          do k = 1,kireso
          if (i == iresolu(k)) then
-            inew(i)=(i+ioffset)-ico
+            inew(i) = (i+ioffset)-ico
             goto 42
          endif
          enddo
          ico = ico+1
-         inew(i)=-1
- 42	   iold(inew(i))=i
+         inew(i) = -1
+
+42       iold(inew(i)) = i
       enddo
       return
       end
-
-
 
 !---------------------------------------------------------------------------
       subroutine ylmv0(xlat,xlon,lmax,y,d)
@@ -582,6 +604,7 @@
       real,intent(in):: xlat,xlon
       real,intent(out):: y((lmax+1)**2)
       double precision,intent(out):: d(9*(2*lmax+1))
+      ! local parameters
       integer:: l,k,ind,m
       double precision:: theta
       complex:: cfac,dfac
@@ -598,10 +621,10 @@
          do m = 0,l
             k = k+1
             ind = ind+1
-            y(k)=d(ind)*real(cfac)
+            y(k) = d(ind)*real(cfac)
             if (m /= 0) then
                k = k+1
-               y(k)=d(ind)*aimag(cfac)
+               y(k) = d(ind)*aimag(cfac)
             endif
             cfac = cfac*dfac
          enddo
@@ -616,20 +639,17 @@
 !---------------------------------------------------------------------------
 ! subroutine to calculate rotation matrix elements
   implicit none
-
   ! Input/output parameters
   integer, intent(in) :: nmax, l, id1, id2
   real(kind=8), intent(in) :: theta
   real(kind=8), intent(inout) :: d(id1, id2)
-
-  ! Local variables
+  ! local parameters
   integer :: im1ct, im2, im1, in1, in1ct, in2, in2ct, im2ct
   integer :: m1, nm2, nm2p1, nit, m2, mult, i
   integer :: isup, nm, nmp1, lp1, lm1, lp2, nrow, nmaxp1, lmn
   real(kind=8) :: shth, chth, sth, cth, dlogf, dlogs, t1, temp, rmod
   real(kind=8) :: csum, fac, sfac, rm1, sgn
   real(kind=8) :: th
-
   ! Constants
   real(kind=8), parameter :: big = 1.0d25
   real(kind=8), parameter :: small = 1.0d-25
@@ -872,13 +892,14 @@ end subroutine rotmx2
       use phaseVelocityMap; use propagationStartup; use cells
       use parallel; use verbosity
       implicit none
+      ! local parameters
       integer:: i,l,m,igrid
-      character:: chL*2,chM*2
+      character(len=2):: chL,chM
       real(WP):: vphase,xcolat,xlon,z,zmin,zmax,lat_degree,lon_degree
-      double precision:: colatitude,longitude,harmonical,generalizedLegendre,Nfactor
-      double precision:: associatedLegendre
-      integer:: factorial
-      external:: generalizedLegendre,factorial,associatedLegendre
+      double precision:: colatitude,longitude,harmonical,Nfactor
+      integer,external:: factorial
+      !double precision, external:: generalizedLegendre
+      double precision, external:: associatedLegendre
 
       ! checks that only master is executing this
       if (.not. MASTER ) return
@@ -886,10 +907,8 @@ end subroutine rotmx2
       ! file output
       write(chL,'(i2.2)') MAP_DEGREE_L
       write(chM,'(i2.2)') MAP_DEGREE_M
-      open(20,file=datadirectory(1:len_trim(datadirectory))//&
-                    'PhaseMap.L'//chL//'-M'//chM//'.dat')
-      open(40,file=datadirectory(1:len_trim(datadirectory))//&
-                    'PhaseMap.L'//chL//'-M'//chM//'.percent.dat')
+      open(20,file=trim(datadirectory)//'PhaseMap.L'//chL//'-M'//chM//'.dat')
+      open(40,file=trim(datadirectory)//'PhaseMap.L'//chL//'-M'//chM//'.percent.dat')
 
       igrid = 0
       l = MAP_DEGREE_L
@@ -979,6 +998,7 @@ end subroutine rotmx2
 ! returns: rotated cell index
 !      use propagationStartup;use phaseVelocityMap
 !      implicit none
+!      ! local parameters
 !      double precision,allocatable,dimension(:):: rotPhaseMap
 !      integer i,index,ierror
 !      double precision Vsource(3),Vreceiver(3),vtmp(3)

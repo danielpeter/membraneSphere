@@ -36,7 +36,7 @@
       call realft(data1,1,cdat1)
       call realft(data2,1,cdat2)
 
-      cdat1(1)=cmplx(real(cdat1(1))*real(cdat2(1))/no2, &
+      cdat1(1) = cmplx(real(cdat1(1))*real(cdat2(1))/no2, &
         aimag(cdat1(1))*aimag(cdat2(1))/no2, kind=spc)
       cdat1(2:)=cdat1(2:)*conjg(cdat2(2:))/no2
       call realft(correl_sp,-1,cdat1)
@@ -105,14 +105,14 @@
       call realft(data,1,tmpd)
       call realft(convlv,1,tmpr)
       if (isign == 1) then
-        tmpr(1)=cmplx(real(tmpd(1))*real(tmpr(1))/no2, &
+        tmpr(1) = cmplx(real(tmpd(1))*real(tmpr(1))/no2, &
           aimag(tmpd(1))*aimag(tmpr(1))/no2, kind=spc)
         tmpr(2:)=tmpd(2:)*tmpr(2:)/no2
       else if (isign == -1) then
         if (any(abs(tmpr(2:)) == 0.0) .or. real(tmpr(1)) == 0.0 &
           .or. aimag(tmpr(1)) == 0.0) call nrerror &
           ('deconvolving at response zero in convlv')
-        tmpr(1)=cmplx(real(tmpd(1))/real(tmpr(1))/no2, &
+        tmpr(1) = cmplx(real(tmpd(1))/real(tmpr(1))/no2, &
           aimag(tmpd(1))/aimag(tmpr(1))/no2, kind=spc)
         tmpr(2:)=tmpd(2:)/tmpr(2:)/no2
       else
@@ -481,7 +481,7 @@
       INTEGER(I4B),PARAMETER :: NTAB=10
       REAL(SP), PARAMETER :: CON=1.4_sp
       REAL(SP), PARAMETER :: CON2=CON*CON
-      REAL(SP), PARAMETER :: BIG= 1.e+30 !huge(real(x)) ! (e.g. XLF or SUN): BIG = huge(real(x))
+      REAL(SP), PARAMETER :: BIG = 1.e+30 !huge(real(x)) ! (e.g. XLF or SUN): BIG = huge(real(x))
       REAL(SP), PARAMETER :: SAFE=2.0
       INTEGER(I4B) :: ierrmin,i,j
       REAL(SP) :: hh
@@ -535,7 +535,7 @@
       INTEGER(I4B),PARAMETER :: NTAB=10
       REAL(SP), PARAMETER :: CON=1.4_sp
       REAL(SP), PARAMETER :: CON2=CON*CON
-      REAL(SP), PARAMETER :: BIG= 1.e+30 !huge(real(xin)) ! (e.g. XLF or SUN): BIG = huge(real(xin))
+      REAL(SP), PARAMETER :: BIG = 1.e+30 !huge(real(xin)) ! (e.g. XLF or SUN): BIG = huge(real(xin))
       REAL(SP), PARAMETER :: SAFE=2.0
       INTEGER(I4B) :: ierrmin,i,j
       REAL(SP) :: hh
@@ -616,7 +616,7 @@
 
 
 !-----------------------------------------------------------------------
-      function qsimp(func,a,b)
+      function qsimp(func, a,b)
 !-----------------------------------------------------------------------
       USE nrtype; USE nrutil, only: nrerror
       USE nr, only: trapzd
@@ -635,7 +635,7 @@
       INTEGER(I4B) :: j
       REAL(DP) :: os,ost,st
       ost = 0.0
-      os= 0.0
+      os = 0.0
       do j = 1,JMAX
         call trapzd(func,a,b,st,j)
         qsimp=(4.0_dp*st-ost)/3.0_sp
@@ -799,7 +799,7 @@
 
       ndim = assert_eq(size(p,2),size(p,1)-1,size(y)-1,'amoeba')
       iter = 0
-      psum(:)=sum(p(:,:),dim = 1)
+      psum(:) = sum(p(:,:),dim=1)
 
       do
         !Iterationloop.
@@ -809,7 +809,7 @@
 
         ihi = imaxloc(y(:))
         ytmp=y(ihi)
-        y(ihi)=y(ilo)
+        y(ihi) = y(ilo)
         inhi = imaxloc(y(:))
         y(ihi)=ytmp
 
@@ -858,13 +858,13 @@
 
             p(:,:)=0.5_sp*(p(:,:)+spread(p(ilo,:),1,size(p,1)))
             do i = 1,ndim+1
-              if (i /= ilo) y(i)=func(p(i,:))
+              if (i /= ilo) y(i) = func(p(i,:))
             enddo
             iter = iter+ndim
 
             !Keep track of function evaluations.
 
-            psum(:)=sum(p(:,:),dim = 1)
+            psum(:) = sum(p(:,:),dim=1)
           endif
         endif
       enddo
@@ -887,7 +887,7 @@
 
       fac1=(1.0_sp-fac)/ndim
       fac2 = fac1-fac
-      ptry(:)=psum(:)*fac1-p(ihi,:)*fac2
+      ptry(:) = psum(:)*fac1-p(ihi,:)*fac2
       !Evaluate the function at the trial point.
       ytry=func(ptry)
 
@@ -895,7 +895,7 @@
       ! If it's better than the highest, then replace the highest.
       if (ytry < y(ihi)) then
         y(ihi)=ytry
-        psum(:)=psum(:)-p(ihi,:)+ptry(:)
+        psum(:) = psum(:)-p(ihi,:)+ptry(:)
         p(ihi,:)=ptry(:)
       endif
       amotry = ytry

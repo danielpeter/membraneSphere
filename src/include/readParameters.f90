@@ -18,6 +18,7 @@
       use propagationStartup;use loop;use phaseBlockData;use parallel
       use verbosity; use adjointVariables; use cells
       implicit none
+      ! local parameters
       integer:: length,ierror,tmpInteger
       character(len=32):: inputName
       character(len=150):: line
@@ -27,14 +28,14 @@
       inputName = 'Parameter_Input'
       inputName = trim(inputName)
       !if (VERBOSE) print *,inputName
-      open(1, file=trim(inputName),status='old',iostat=ierror)
+      open(IIN, file=trim(inputName),status='old',iostat=ierror)
       if ( ierror /= 0) then
         print *,'Error: opening file ',trim(inputName)
         call stopProgram( 'abort - readParameters() opening input    ')
       endif
 
       do while( ierror == 0)
-        read(1,'(a150)', iostat=ierror) line
+        read(IIN,'(a150)', iostat=ierror) line
         if ( ierror /= 0 ) exit
 
         length = len_trim(line)
@@ -44,7 +45,7 @@
           if (line(1:1) == " " .or. line(1:1) == "!" ) then
             continue
           else
-            select case( line(1:5))
+            select case(line(1:5))
             case('VERBO')
               read(line(35:len_trim(line)),*) VERBOSE
               if (VERBOSE)print *,'verbose output'
@@ -189,9 +190,9 @@
       enddo
 
       !if (VERBOSE) print *,'delta location(lat/lon):',deltaLat,deltaLon
-      close(1)
+      close(IIN)
 
-      end
+      end subroutine
 
 
 !-----------------------------------------------------------------------
@@ -201,47 +202,78 @@
       use precisions
       implicit none
       integer,intent(in):: length
-      character(len=length):: ctype
+      character(len=length),intent(in):: ctype
       real(WP),intent(out):: cphase
 
       ! initialize
       cphase = -1.0
 
       ! gets phase speed
-      ctype = trim(ctype)
+      select case(trim(ctype))
 
       ! rayleigh waves
-      if ( ctype == 'R35')cphase =PHASEVELOCITY_R35
-      if ( ctype == 'R37')cphase =PHASEVELOCITY_R37
-      if ( ctype == 'R40')cphase =PHASEVELOCITY_R40
-      if ( ctype == 'R45')cphase =PHASEVELOCITY_R45
-      if ( ctype == 'R50')cphase =PHASEVELOCITY_R50
-      if ( ctype == 'R60')cphase =PHASEVELOCITY_R60
-      if ( ctype == 'R75')cphase =PHASEVELOCITY_R75
-      if ( ctype == 'R100')cphase =PHASEVELOCITY_R100
-      if ( ctype == 'R150')cphase =PHASEVELOCITY_R150
-      if ( ctype == 'R200')cphase =PHASEVELOCITY_R200
-      if ( ctype == 'R250')cphase =PHASEVELOCITY_R250
-      if ( ctype == 'R300')cphase =PHASEVELOCITY_R300
+      case('R35')
+        cphase = PHASEVELOCITY_R35
+      case('R37')
+        cphase = PHASEVELOCITY_R37
+      case('R40')
+        cphase = PHASEVELOCITY_R40
+      case('R45')
+        cphase = PHASEVELOCITY_R45
+      case('R50')
+        cphase = PHASEVELOCITY_R50
+      case('R60')
+        cphase = PHASEVELOCITY_R60
+      case('R75')
+        cphase = PHASEVELOCITY_R75
+      case('R100')
+        cphase = PHASEVELOCITY_R100
+      case('R150')
+        cphase = PHASEVELOCITY_R150
+      case('R200')
+        cphase = PHASEVELOCITY_R200
+      case('R250')
+        cphase = PHASEVELOCITY_R250
+      case('R300')
+        cphase = PHASEVELOCITY_R300
 
       ! love waves
-      if ( ctype == 'L35')cphase =PHASEVELOCITY_L35
-      if ( ctype == 'L37')cphase =PHASEVELOCITY_L37
-      if ( ctype == 'L40')cphase =PHASEVELOCITY_L40
-      if ( ctype == 'L45')cphase =PHASEVELOCITY_L45
-      if ( ctype == 'L50')cphase =PHASEVELOCITY_L50
-      if ( ctype == 'L60')cphase =PHASEVELOCITY_L60
-      if ( ctype == 'L75')cphase =PHASEVELOCITY_L75
-      if ( ctype == 'L100')cphase =PHASEVELOCITY_L100
-      if ( ctype == 'L150')cphase =PHASEVELOCITY_L150
-      if ( ctype == 'L200')cphase =PHASEVELOCITY_L200
-      if ( ctype == 'L250')cphase =PHASEVELOCITY_L250
-      if ( ctype == 'L300')cphase =PHASEVELOCITY_L300
-      if ( ctype == 'L450')cphase =PHASEVELOCITY_L450
-      if ( ctype == 'L600')cphase =PHASEVELOCITY_L600
+      case('L35')
+        cphase = PHASEVELOCITY_L35
+      case('L37')
+        cphase = PHASEVELOCITY_L37
+      case('L40')
+        cphase = PHASEVELOCITY_L40
+      case('L45')
+        cphase = PHASEVELOCITY_L45
+      case('L50')
+        cphase = PHASEVELOCITY_L50
+      case('L60')
+        cphase = PHASEVELOCITY_L60
+      case('L75')
+        cphase = PHASEVELOCITY_L75
+      case('L100')
+        cphase = PHASEVELOCITY_L100
+      case('L150')
+        cphase = PHASEVELOCITY_L150
+      case('L200')
+        cphase = PHASEVELOCITY_L200
+      case('L250')
+        cphase = PHASEVELOCITY_L250
+      case('L300')
+        cphase = PHASEVELOCITY_L300
+      case('L450')
+        cphase = PHASEVELOCITY_L450
+      case('L600')
+        cphase = PHASEVELOCITY_L600
+
+      case default
+        print *,'Error: phase speed not recognized:',trim(ctype)
+        call stopProgram('phase speed not recognized    ')
+      end select
 
       if ( cphase < 0.0 ) then
-        print *,'Error: phase speed not recognized:',ctype
+        print *,'Error: phase speed not recognized:',trim(ctype)
         call stopProgram('abort - readParameters')
       endif
 

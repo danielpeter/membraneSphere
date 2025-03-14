@@ -20,11 +20,12 @@
       use propagationStartup; use cells; use phaseVelocityMap; use parallel; use displacements
       use phaseBlockData; use griddomain; use adjointVariables; use verbosity
       implicit none
+      ! local parameters
       real(WP):: u_t, u_tplus1, u_tminus1,forcing
       real(WP):: D2,time,newdisp
-      integer:: n,k,timestep,vertex,index,jrec
-      real(WP),external:: forceTerm2Source,forceTermExact
-      real(WP),external:: discreteLaplacian,precalc_discreteLaplacian
+      integer:: n,timestep,vertex,index,jrec
+      real(WP), external:: forceTerm2Source,forceTermExact
+      real(WP), external:: discreteLaplacian,precalc_discreteLaplacian
 
       !initialize
       displacement(:)     = 0.0_WP
@@ -33,7 +34,7 @@
 
       ! time iteration of displacements
       index = 0
-      do timestep= firsttimestep, lasttimestep
+      do timestep = firsttimestep, lasttimestep
         ! model time
         time  = timestep*dt
         index = index+1
@@ -123,7 +124,7 @@
           call printWavefield(timestep,time,index)
         endif
       enddo !timestep
-      end
+      end subroutine
 
 !-----------------------------------------------------------------------
       subroutine recordManySeismograms(index,time,refRun)
@@ -131,49 +132,51 @@
 ! fill receivers seismograms with computed displacements
       use propagationStartup; use displacements
       implicit none
-      logical:: refRun
-      integer:: index,m,i
-      real(WP):: time
+      integer,intent(in) :: index
+      real(WP),intent(in):: time
+      logical,intent(in):: refRun
+      ! local parameters
+      integer:: m,i
 
       ! record seismograms
       if ( manyKernels ) then
         if ( refRun ) then
           do m = 1,numofKernels
             ! fill in the time seismogram first
-            kernelsReceiversSeismogramRef(m,numofReceivers+1,index)=time
+            kernelsReceiversSeismogramRef(m,numofReceivers+1,index) = time
             ! fill in the displacement seismograms for each receiver
             do i = 1,numofReceivers
-              kernelsReceiversSeismogramRef(m,i,index)=newdisplacement(kernelsReceivers(m,i))
+              kernelsReceiversSeismogramRef(m,i,index) = newdisplacement(kernelsReceivers(m,i))
             enddo
           enddo
         else
           do m = 1,numofKernels
             ! fill in the time seismogram first
-            kernelsReceiversSeismogram(m,numofReceivers+1,index)=time
+            kernelsReceiversSeismogram(m,numofReceivers+1,index) = time
             ! fill in the displacement seismograms for each receiver
             do i = 1,numofReceivers
-              kernelsReceiversSeismogram(m,i,index)=newdisplacement(kernelsReceivers(m,i))
+              kernelsReceiversSeismogram(m,i,index) = newdisplacement(kernelsReceivers(m,i))
             enddo
           enddo
         endif
       else
         if ( refRun ) then
           ! fill in the time seismogram first
-          receiversSeismogramRef(numofReceivers+1,index)=time
+          receiversSeismogramRef(numofReceivers+1,index) = time
           ! fill in the displacement seismograms for each receiver
           do i = 1,numofReceivers
-            receiversSeismogramRef(i,index)=newdisplacement(receivers(i))
+            receiversSeismogramRef(i,index) = newdisplacement(receivers(i))
           enddo
         else
           ! fill in the time seismogram first
-          receiversSeismogram(numofReceivers+1,index)=time
+          receiversSeismogram(numofReceivers+1,index) = time
           ! fill in the displacement seismograms for each receiver
           do i = 1,numofReceivers
-            receiversSeismogram(i,index)=newdisplacement(receivers(i))
+            receiversSeismogram(i,index) = newdisplacement(receivers(i))
           enddo
         endif
       endif
-      end
+      end subroutine
 
 
 !-----------------------------------------------------------------------
@@ -190,7 +193,7 @@
 ! return: latDelta,lonDelta,vertexDelta,move for new location
       use loop; use propagationStartup; use deltaSecondLocation
       implicit none
-      logical:: move
+      logical,intent(inout):: move
 
       ! increment latitude
       if ( abs(deltaLat-latitudeEnd) > deltaMoveIncrement/2 ) then
@@ -198,8 +201,8 @@
       else
         ! increment longitude
         ! if ( int(latDelta) > 50) then
-        deltaLat= latitudeStart
-        deltaLon= deltaLon+deltaMoveIncrement
+        deltaLat = latitudeStart
+        deltaLon = deltaLon + deltaMoveIncrement
       endif
 
       ! get nearest vertex for new location
@@ -207,13 +210,12 @@
 
       ! for 2 delta scatterers
       if ( SECONDDELTA) call placeSecondDelta(deltaLat,deltaLon,deltaSecondLat, &
-                            deltaSecondLon,deltaSecondVertex,deltaSecondDistance)
+                                              deltaSecondLon,deltaSecondVertex,deltaSecondDistance)
 
-
-      !stop iteration for high longitude
+      ! stop iteration for high longitude
       if ( deltaLon > (longitudeEnd + deltaMoveIncrement/2) ) move = .false.
 
-      end
+      end subroutine
 
 !-----------------------------------------------------------------------
       subroutine findnextLocation(move)
@@ -228,9 +230,10 @@
 ! return: latDelta,lonDelta,vertexDelta,move for new location
       use loop; use parallel; use propagationStartup; use deltaSecondLocation
       implicit none
-      real(WP):: lat,lon,newlon,olddeltaLon
-      logical:: move,bestfound
-      integer:: olddeltaVertex
+      logical,intent(inout):: move
+      ! local parameters
+      real(WP):: lat,lon,newlon
+      logical:: bestfound
 
       ! increment latitude
       if ( (deltaLat - (latitudeEnd-nprocesses*deltaMoveIncrement) ) < deltaMoveIncrement/2 ) then
@@ -243,7 +246,7 @@
           move = .false.
         else
           ! reset latitude to begining (take account of alternating which process will start from latitudeStart)
-          deltaLat= latitudeStart+( deltaLat-latitudeEnd+(nprocesses-1)*deltaMoveIncrement)
+          deltaLat = latitudeStart + ( deltaLat-latitudeEnd+(nprocesses-1)*deltaMoveIncrement)
           ! increment longitude
           deltaLon = deltaLon+deltaMoveIncrement
 
@@ -283,14 +286,14 @@
 
         ! for 2 delta scatterers
         if ( SECONDDELTA) call placeSecondDelta(deltaLat,newlon,deltaSecondLat, &
-                              deltaSecondLon,deltaSecondVertex,deltaSecondDistance)
+                                                deltaSecondLon,deltaSecondVertex,deltaSecondDistance)
       else
         ! for 2 delta scatterers
         if ( SECONDDELTA) call placeSecondDelta(deltaLat,deltaLon,deltaSecondLat, &
-                                deltaSecondLon,deltaSecondVertex,deltaSecondDistance)
+                                                deltaSecondLon,deltaSecondVertex,deltaSecondDistance)
       endif
 
-      end
+      end subroutine
 
 !-----------------------------------------------------------------------
       subroutine constructPhaseVelocitySquare()
@@ -302,20 +305,21 @@
       use propagationStartup; use phaseVelocityMap; use parallel; use cells
       use verbosity
       implicit none
+      ! local parameters
       integer:: i
       real(WP):: getPhaseSquare,lat,lon
 
       ! store to file
       if ( MASTER ) then
         if ( VERBOSE ) then
-          print *,'  writing to file: '//trim(datadirectory)//'PhaseMap.dat'
+          print *,'  writing to file: ',trim(datadirectory)//'PhaseMap.dat'
         endif
-        open(10,file=trim(datadirectory)//'PhaseMap.dat')
+        open(IOUT,file=trim(datadirectory)//'PhaseMap.dat')
         ! header info
-        write(10,*) '# Phase map'
-        write(10,*) '# format:'
+        write(IOUT,*) '# Phase map'
+        write(IOUT,*) '# format:'
         ! format: #lon #lat #phase-velocity #vertexID
-        write(10,*) '#lon #lat #phase-velocity #vertexID'
+        write(IOUT,*) '#lon #lat #phase-velocity #vertexID'
       endif
 
       ! for all grid vertices
@@ -327,15 +331,15 @@
         ! file output
         if ( MASTER ) then
           call getSphericalCoord_Lat(i,lat,lon)
+
           ! format: #lon #lat #phase-velocity #vertexID
-          write(10,*) lon,lat,sqrt(phaseVelocitySquare(i)),i
-          !write(11,*) i,real(phaseVelocitySquare(i))
+          write(IOUT,*) lon,lat,sqrt(phaseVelocitySquare(i)),i
         endif
       enddo
 
       ! close files
       if ( MASTER ) then
-        close(10)
+        close(IOUT)
       endif
 
       end subroutine
@@ -355,9 +359,11 @@
       use propagationStartup; use phaseVelocityMap; use parallel; use deltaSecondLocation
       use cells; use verbosity
       implicit none
+      real(WP):: getPhaseSquare
+      ! local parameters
       integer,intent(in):: n
       real(WP):: vectorV(3),vectorS(3),vectorSnd(3),referencePhaseVelocity
-      real(WP):: getPhaseSquare,distance,cphase,distanceSnd,lat,lon,csquare
+      real(WP):: distance,cphase,distanceSnd,lat,lon,csquare
 
       ! set reference velocity
       referencePhaseVelocity = cphaseRef
@@ -382,7 +388,7 @@
         call greatCircleDistance(vectorS,vectorV,distance)
         distance = EARTHRADIUS*distance
         if (SECONDDELTA) then
-          vectorSnd(:)=vertices(deltaSecondVertex,:)
+          vectorSnd(:) = vertices(deltaSecondVertex,:)
           call greatCircleDistance(vectorSnd,vectorV,distanceSnd)
           distanceSnd = EARTHRADIUS*distanceSnd
         endif
@@ -452,7 +458,8 @@
 ! *L* is wave type, *#* is receiver id, *lat* is latitude, *lon* is longitude of delta scatterer
       use parallel;use griddomain;use propagationStartup; use verbosity
       implicit none
-      integer:: i,n,domain,strlength,length,ierror
+      ! local parameters
+      integer:: i,n,domain,strlength,ierror
       character(len=6):: latstr,lonstr
       character(len=3):: recstr
       character(len=128):: filename
@@ -461,10 +468,10 @@
 
       write(latstr,'(f6.1)') deltaLat
       write(lonstr,'(f6.1)') deltaLon
-      latstr=trim(latstr)
-      lonstr=trim(lonstr)
-      cphasetype=trim(cphasetype)
-      strlength=len_trim(datadirectory)
+      latstr = trim(latstr)
+      lonstr = trim(lonstr)
+      cphasetype = trim(cphasetype)
+      strlength = len_trim(datadirectory)
 
       if (DELTA) then
         filename = datadirectory(1:strlength)//'seismo.'//cphasetype(1:4)//'.'//latstr//'.'//lonstr//'.dat'
@@ -476,7 +483,7 @@
       if ( MASTER .and. VERBOSE) print *,'seismogram output:'
 
       ! just to remove unneccessary spaces
-      filename=trim(filename)
+      filename = trim(filename)
 
       if (PARALLELSEISMO) then
         ! each process prints its own output to the current directory
@@ -504,13 +511,13 @@
               filename=trim(filename)
 
               ! write to file
-              open(100+i,file=filename,iostat=ierror)
+              open(200+i,file=filename,iostat=ierror)
               if ( ierror /= 0) call stopProgram('could not open '//filename//'   ')
-              write(100+i,*) 'receiver:',i,real(reclat),real(reclon),receivers(i)
+              write(200+i,*) 'receiver:',i,real(reclat),real(reclon),receivers(i)
               do n = 1,size( receiversSeismogram(size(receivers)+1,:) )
-                write(100+i,*) receiversSeismogram(size(receivers)+1,n),receiversSeismogram(i,n)
+                write(200+i,*) receiversSeismogram(size(receivers)+1,n),receiversSeismogram(i,n)
               enddo
-              close(100+i)
+              close(200+i)
             endif
           enddo
         else
@@ -521,11 +528,11 @@
           if ( MASTER ) then
             ! displacement at receiver
             print *,'    printing to file: '//filename
-            open(100,file=filename)
+            open(200,file=filename)
             do n = 1,size(seismogramReceiver(1,:))
-              write(100,*) seismogramReceiver(1,n),seismogramReceiver(2,n)
+              write(200,*) seismogramReceiver(1,n),seismogramReceiver(2,n)
             enddo
-            close(100)
+            close(200)
           endif
         endif
       else
@@ -551,21 +558,21 @@
             filename=trim(filename)
 
             ! write to file
-            open(100+i,file=filename,iostat=ierror)
+            open(200+i,file=filename,iostat=ierror)
             if ( ierror /= 0) call stopProgram('could not open '//filename//'   ')
-            write(100+i,*) 'receiver:',i,real(reclat),real(reclon),receivers(i)
+            write(200+i,*) 'receiver:',i,real(reclat),real(reclon),receivers(i)
             do n = 1,size( receiversSeismogram(size(receivers)+1,:) )
-              write(100+i,*) receiversSeismogram(size(receivers)+1,n),receiversSeismogram(i,n)
+              write(200+i,*) receiversSeismogram(size(receivers)+1,n),receiversSeismogram(i,n)
             enddo
-            close(100+i)
+            close(200+i)
           enddo
         else
           print *,'    printing to file: '//filename
-          open(100,file=filename)
+          open(200,file=filename)
           do n = 1,size(seismogramReceiver(1,:))
-            write(100,*) seismogramReceiver(1,n),seismogramReceiver(2,n)
+            write(200,*) seismogramReceiver(1,n),seismogramReceiver(2,n)
           enddo
-          close(100)
+          close(200)
         endif
       endif
       end subroutine
@@ -584,6 +591,7 @@
       implicit none
       integer,intent(in):: timestep,index
       real(WP),intent(in):: time
+      ! local parameters
       integer:: n,k
       character(len=5):: timestr
       real(WP):: lat,lon
@@ -610,40 +618,40 @@
           print *,'    file written: '//datadirectory(1:len_trim(datadirectory))//'simulation.'//timestr//'.dat'
         else
           ! vtk file
-          open(10,file=datadirectory(1:len_trim(datadirectory))//'simulation.'//timestr//'.vtk')
+          open(IOUT,file=datadirectory(1:len_trim(datadirectory))//'simulation.'//timestr//'.vtk')
 
-          write(10,'(a26)') "# vtk DataFile Version 3.1"
-          write(10,'(a14)') "membraneSphere"
-          write(10,'(a5)')  "ASCII"
-          write(10,'(a16)') "DATASET POLYDATA"
-          !write(10,'(a25)') "DATASET UNSTRUCTURED_GRID"
-          write(10,'(a6,i18,1x,a5)') "POINTS",numVertices,"float"
+          write(IOUT,'(a26)') "# vtk DataFile Version 3.1"
+          write(IOUT,'(a14)') "membraneSphere"
+          write(IOUT,'(a5)')  "ASCII"
+          write(IOUT,'(a16)') "DATASET POLYDATA"
+          !write(IOUT,'(a25)') "DATASET UNSTRUCTURED_GRID"
+          write(IOUT,'(a6,i18,1x,a5)') "POINTS",numVertices,"float"
           do n = 1,numVertices
-            write(10,'(3(f16.8))') (vertices(n,k),k=1,3)
+            write(IOUT,'(3(f16.8))') (vertices(n,k),k=1,3)
           enddo
-          write(10,*) ""
+          write(IOUT,*)
 
-          write(10,'(a8,i18,i18)') "POLYGONS",numTriangleFaces,numTriangleFaces*4
-          !write(10,'(a5,i,i)') "CELLS",numTriangleFaces,numTriangleFaces*4
+          write(IOUT,'(a8,i18,i18)') "POLYGONS",numTriangleFaces,numTriangleFaces*4
+          !write(IOUT,'(a5,i,i)') "CELLS",numTriangleFaces,numTriangleFaces*4
           ! VTK starts indexing at 0
           ! (by that we have to shift the arrays by -1)
           do n = 1,numTriangleFaces
-            write(10,*) 3,cellTriangleFace(n,1)-1,cellTriangleFace(n,2)-1,cellTriangleFace(n,3)-1
+            write(IOUT,*) 3,cellTriangleFace(n,1)-1,cellTriangleFace(n,2)-1,cellTriangleFace(n,3)-1
           enddo
-          write(10,*) ""
+          write(IOUT,*)
 
-          !write(10,'(a10,1x,i)') "CELL_TYPES",numTriangleFaces
-          !write(10,*) (5,k=1,numTriangleFaces)
-          !write(10,*)
+          !write(IOUT,'(a10,1x,i)') "CELL_TYPES",numTriangleFaces
+          !write(IOUT,*) (5,k=1,numTriangleFaces)
+          !write(IOUT,*)
 
-          write(10,'(a10,i18)') "POINT_DATA",numVertices
-          write(10,'(a26)') "SCALARS displacement float"
-          write(10,'(a20)') "LOOKUP_TABLE default"
+          write(IOUT,'(a10,i18)') "POINT_DATA",numVertices
+          write(IOUT,'(a26)') "SCALARS displacement float"
+          write(IOUT,'(a20)') "LOOKUP_TABLE default"
           do n = 1,numVertices
-            write(10,'(f16.8)') newdisplacement(n)
+            write(IOUT,'(f16.8)') newdisplacement(n)
           enddo
-          write(10,*) ""
-          close(10)
+          write(IOUT,*)
+          close(IOUT)
 
           print *,'    file written: '//datadirectory(1:len_trim(datadirectory))//'simulation.'//timestr//'.vtk'
         endif

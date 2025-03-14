@@ -3671,14 +3671,14 @@
         REAL(SP), DIMENSION(n) :: arth_r
         INTEGER(I4B) :: k,k2
         REAL(SP) :: temp
-        if (n > 0) arth_r(1)=first
+        if (n > 0) arth_r(1) = first
         if (n <= NPAR_ARTH) then
           do k = 2,n
-            arth_r(k)=arth_r(k-1)+increment
+            arth_r(k) = arth_r(k-1)+increment
           enddo
         else
           do k = 2,NPAR2_ARTH
-            arth_r(k)=arth_r(k-1)+increment
+            arth_r(k) = arth_r(k-1)+increment
           enddo
           temp = increment*NPAR2_ARTH
           k = NPAR2_ARTH
@@ -3698,14 +3698,14 @@
         REAL(DP), DIMENSION(n) :: arth_d
         INTEGER(I4B) :: k,k2
         REAL(DP) :: temp
-        if (n > 0) arth_d(1)=first
+        if (n > 0) arth_d(1) = first
         if (n <= NPAR_ARTH) then
           do k = 2,n
-            arth_d(k)=arth_d(k-1)+increment
+            arth_d(k) = arth_d(k-1)+increment
           enddo
         else
           do k = 2,NPAR2_ARTH
-            arth_d(k)=arth_d(k-1)+increment
+            arth_d(k) = arth_d(k-1)+increment
           enddo
           temp = increment*NPAR2_ARTH
           k = NPAR2_ARTH
@@ -3723,14 +3723,14 @@
         INTEGER(I4B), INTENT(IN) :: first,increment,n
         INTEGER(I4B), DIMENSION(n) :: arth_i
         INTEGER(I4B) :: k,k2,temp
-        if (n > 0) arth_i(1)=first
+        if (n > 0) arth_i(1) = first
         if (n <= NPAR_ARTH) then
           do k = 2,n
-            arth_i(k)=arth_i(k-1)+increment
+            arth_i(k) = arth_i(k-1)+increment
           enddo
         else
           do k = 2,NPAR2_ARTH
-            arth_i(k)=arth_i(k-1)+increment
+            arth_i(k) = arth_i(k-1)+increment
           enddo
           temp = increment*NPAR2_ARTH
           k = NPAR2_ARTH
@@ -3751,14 +3751,14 @@
         REAL(SP), DIMENSION(n) :: geop_r
         INTEGER(I4B) :: k,k2
         REAL(SP) :: temp
-        if (n > 0) geop_r(1)=first
+        if (n > 0) geop_r(1) = first
         if (n <= NPAR_GEOP) then
           do k = 2,n
-            geop_r(k)=geop_r(k-1)*factor
+            geop_r(k) = geop_r(k-1)*factor
           enddo
         else
           do k = 2,NPAR2_GEOP
-            geop_r(k)=geop_r(k-1)*factor
+            geop_r(k) = geop_r(k-1)*factor
           enddo
           temp = factor**NPAR2_GEOP
           k = NPAR2_GEOP
@@ -3778,14 +3778,14 @@
         REAL(DP), DIMENSION(n) :: geop_d
         INTEGER(I4B) :: k,k2
         REAL(DP) :: temp
-        if (n > 0) geop_d(1)=first
+        if (n > 0) geop_d(1) = first
         if (n <= NPAR_GEOP) then
           do k = 2,n
-            geop_d(k)=geop_d(k-1)*factor
+            geop_d(k) = geop_d(k-1)*factor
           enddo
         else
           do k = 2,NPAR2_GEOP
-            geop_d(k)=geop_d(k-1)*factor
+            geop_d(k) = geop_d(k-1)*factor
           enddo
           temp = factor**NPAR2_GEOP
           k = NPAR2_GEOP
@@ -3803,14 +3803,14 @@
         INTEGER(I4B), INTENT(IN) :: first,factor,n
         INTEGER(I4B), DIMENSION(n) :: geop_i
         INTEGER(I4B) :: k,k2,temp
-        if (n > 0) geop_i(1)=first
+        if (n > 0) geop_i(1) = first
         if (n <= NPAR_GEOP) then
           do k = 2,n
-            geop_i(k)=geop_i(k-1)*factor
+            geop_i(k) = geop_i(k-1)*factor
           enddo
         else
           do k = 2,NPAR2_GEOP
-            geop_i(k)=geop_i(k-1)*factor
+            geop_i(k) = geop_i(k-1)*factor
           enddo
           temp = factor**NPAR2_GEOP
           k = NPAR2_GEOP
@@ -3830,14 +3830,14 @@
         COMPLEX(SP), DIMENSION(n) :: geop_c
         INTEGER(I4B) :: k,k2
         COMPLEX(SP) :: temp
-        if (n > 0) geop_c(1)=first
+        if (n > 0) geop_c(1) = first
         if (n <= NPAR_GEOP) then
           do k = 2,n
-            geop_c(k)=geop_c(k-1)*factor
+            geop_c(k) = geop_c(k-1)*factor
           enddo
         else
           do k = 2,NPAR2_GEOP
-            geop_c(k)=geop_c(k-1)*factor
+            geop_c(k) = geop_c(k-1)*factor
           enddo
           temp = factor**NPAR2_GEOP
           k = NPAR2_GEOP
@@ -3890,10 +3890,10 @@
         if (n == 0_i4b) return
         sd = 0.0_sp
         if (present(seed)) sd = seed
-        ans(1)=arr(1)+sd
+        ans(1) = arr(1)+sd
         if (n < NPAR_CUMSUM) then
           do j = 2,n
-            ans(j)=ans(j-1)+arr(j)
+            ans(j) = ans(j-1)+arr(j)
           enddo
         else
           ans(2:n:2)=cumsum_r(arr(2:n:2)+arr(1:n-1:2),sd)
@@ -3910,10 +3910,10 @@
         if (n == 0_i4b) return
         sd = 0_i4b
         if (present(seed)) sd = seed
-        ans(1)=arr(1)+sd
+        ans(1) = arr(1)+sd
         if (n < NPAR_CUMSUM) then
           do j = 2,n
-            ans(j)=ans(j-1)+arr(j)
+            ans(j) = ans(j-1)+arr(j)
           enddo
         else
           ans(2:n:2)=cumsum_i(arr(2:n:2)+arr(1:n-1:2),sd)
@@ -3932,10 +3932,10 @@
         if (n == 0_i4b) return
         sd = 1.0_sp
         if (present(seed)) sd = seed
-        ans(1)=arr(1)*sd
+        ans(1) = arr(1)*sd
         if (n < NPAR_CUMPROD) then
           do j = 2,n
-            ans(j)=ans(j-1)*arr(j)
+            ans(j) = ans(j-1)*arr(j)
           enddo
         else
           ans(2:n:2)=cumprod(arr(2:n:2)*arr(1:n-1:2),sd)
@@ -4087,7 +4087,7 @@
           enddo
         else
           do i = 1,n
-            poly_rrv(i)=poly_rr(x(i),coeffs)
+            poly_rrv(i) = poly_rr(x(i),coeffs)
           enddo
         endif
         end function poly_rrv
@@ -4107,7 +4107,7 @@
           enddo
         else
           do i = 1,n
-            poly_ddv(i)=poly_dd(x(i),coeffs)
+            poly_ddv(i) = poly_dd(x(i),coeffs)
           enddo
         endif
         end function poly_ddv
@@ -4134,10 +4134,10 @@
         INTEGER(I4B) :: n,j
         n=size(a)
         if (n <= 0) return
-        u(1)=a(1)
+        u(1) = a(1)
         if (n < NPAR_POLYTERM) then
           do j = 2,n
-            u(j)=a(j)+b*u(j-1)
+            u(j) = a(j)+b*u(j-1)
           enddo
         else
           u(2:n:2)=poly_term_rr(a(2:n:2)+a(1:n-1:2)*b,b*b)
@@ -4152,10 +4152,10 @@
         INTEGER(I4B) :: n,j
         n=size(a)
         if (n <= 0) return
-        u(1)=a(1)
+        u(1) = a(1)
         if (n < NPAR_POLYTERM) then
           do j = 2,n
-            u(j)=a(j)+b*u(j-1)
+            u(j) = a(j)+b*u(j-1)
           enddo
         else
           u(2:n:2)=poly_term_cc(a(2:n:2)+a(1:n-1:2)*b,b*b)
@@ -4332,7 +4332,7 @@
         INTEGER(I4B) :: j
         j = assert_eq2(size(mat,1),size(mat,2),'get_diag_rv')
         do j = 1,size(mat,1)
-          get_diag_rv(j)=mat(j,j)
+          get_diag_rv(j) = mat(j,j)
         enddo
         end function get_diag_rv
       !BL
@@ -4342,7 +4342,7 @@
         INTEGER(I4B) :: j
         j = assert_eq2(size(mat,1),size(mat,2),'get_diag_dv')
         do j = 1,size(mat,1)
-          get_diag_dv(j)=mat(j,j)
+          get_diag_dv(j) = mat(j,j)
         enddo
         end function get_diag_dv
       !BL

@@ -19,6 +19,7 @@
       use loop;use verbosity;use cells
       implicit none
       integer,intent(in):: rankid,nproc
+      ! local parameters
       integer:: n,ierror
 
       ! check
@@ -106,7 +107,7 @@
           call MPI_Recv(heterogeneousPixelsize,1,MPI_REAL,0,rankid,MPI_COMM_WORLD,status,ierror)
           call MPI_Recv(gsh_maximum_expansion,1,MPI_INTEGER,0,rankid,MPI_COMM_WORLD,status,ierror)
       endif
-      end
+      end subroutine
 
 !-----------------------------------------------------------------------
       subroutine syncInitialData()
@@ -116,7 +117,8 @@
       use cells; use parallel !; use propagationStartup; use adjointVariables; use verbosity
       use propagationStartup, only: SIMULATIONOUTPUT
       implicit none
-      integer:: n,k,length,ierror
+      ! local parameters
+      integer:: n,length,ierror
 
       ! read vertices values from files
       if ( MASTER) then
@@ -247,55 +249,57 @@
       end subroutine
 
 
-!-----------------------------------------------------------------------
-      subroutine syncDisplacement( myrank, numberofprocesses )
-!-----------------------------------------------------------------------
-! synchronizes displacement and displacement_old arrays with
-! its slave processes
-      use displacements;use propagationStartup
-      use verbosity; use parallel; use cells
-      implicit none
-      integer:: myrank,length,n,numberofprocesses,ierror
-
-      if ( rank == 0) then
-        ! send to slaves
-        do n = 1, nprocesses-1
-          ! displacement
-          length = numVertices
-          tag = n
-          call MPI_Send(displacement,length,MPI_CUSTOM,n,tag,MPI_COMM_WORLD,ierror)
-          ! displacement_old
-          length = numVertices
-          tag = n
-          call MPI_Send(displacement_old,length,MPI_CUSTOM,n,tag,MPI_COMM_WORLD,ierror)
-        enddo
-      else
-        ! receive from master
-        ! displacement
-        length = numVertices
-        tag = rank
-        call MPI_RECV(displacement(1:numVertices),length,MPI_CUSTOM,0,tag,MPI_COMM_WORLD,status,ierror)
-        ! displacement_old
-        length = numVertices
-        tag = rank
-        call MPI_RECV(displacement_old(1:numVertices),length,MPI_CUSTOM,0,tag,MPI_COMM_WORLD,status,ierror)
-      endif
-
-      !debug
-      !  if (rank == 0) then
-      !    print *
-      !    print *,'master'
-      !    do n=1340,1350
-      !      print *,'  #',displacement(n)
-      !    enddo
-      !  else
-      !    print *
-      !    print *,'slave',rank
-      !    do n=1340,1350
-      !      print *,'  #',displacement(n)
-      !    enddo
-      !  endif
-      end
+!!-----------------------------------------------------------------------
+!      subroutine syncDisplacement( myrank, numberofprocesses )
+!!-----------------------------------------------------------------------
+!! synchronizes displacement and displacement_old arrays with
+!! its slave processes
+!      use displacements;use propagationStartup
+!      use verbosity; use parallel; use cells
+!      implicit none
+!      integer,intent(in):: myrank,numberofprocesses
+!      ! local parameters
+!      integer:: length,n,ierror
+!
+!      if ( rank == 0) then
+!        ! send to slaves
+!        do n = 1, nprocesses-1
+!          ! displacement
+!          length = numVertices
+!          tag = n
+!          call MPI_Send(displacement,length,MPI_CUSTOM,n,tag,MPI_COMM_WORLD,ierror)
+!          ! displacement_old
+!          length = numVertices
+!          tag = n
+!          call MPI_Send(displacement_old,length,MPI_CUSTOM,n,tag,MPI_COMM_WORLD,ierror)
+!        enddo
+!      else
+!        ! receive from master
+!        ! displacement
+!        length = numVertices
+!        tag = rank
+!        call MPI_RECV(displacement(1:numVertices),length,MPI_CUSTOM,0,tag,MPI_COMM_WORLD,status,ierror)
+!        ! displacement_old
+!        length = numVertices
+!        tag = rank
+!        call MPI_RECV(displacement_old(1:numVertices),length,MPI_CUSTOM,0,tag,MPI_COMM_WORLD,status,ierror)
+!      endif
+!
+!      !debug
+!      !  if (rank == 0) then
+!      !    print *
+!      !    print *,'master'
+!      !    do n=1340,1350
+!      !      print *,'  #',displacement(n)
+!      !    enddo
+!      !  else
+!      !    print *
+!      !    print *,'slave',rank
+!      !    do n=1340,1350
+!      !      print *,'  #',displacement(n)
+!      !    enddo
+!      !  endif
+!      end subroutine
 
 !-----------------------------------------------------------------------
       subroutine syncNewdisplacement()
@@ -304,7 +308,7 @@
 ! each process gets only the needed informations from the other ones
       use displacements;use griddomain;use parallel;use verbosity
       implicit none
-      integer:: startLocationVertex, endLocationVertex,recStartVertex,recEndVertex
+      ! local parameters
       integer:: dest,source,sendRange,recRange,n,k,neighbor,ierror
 
       ! check if many processes
@@ -358,7 +362,8 @@
       !  ! wait until all processes reached this point
       !  call MPI_Barrier( MPI_COMM_WORLD, ierror )
       !  if ( ierror /= 0) call stopProgram('abort - MPI_Barrier kernels failed    ')
-      end
+
+      end subroutine
 
 !-----------------------------------------------------------------------
       subroutine syncNewdisplacement_alt( rank, nprocesses )
@@ -368,7 +373,9 @@
       use displacements; use propagationStartup; use cells
       use mpi
       implicit none
-      integer:: rank,ierror,tag,n,nprocesses
+      integer,intent(in):: rank,nprocesses
+      ! local parameters
+      integer:: ierror,n
       integer:: status(MPI_STATUS_SIZE)
       integer:: startLocationVertex, endLocationVertex,recStartVertex,recEndVertex
       double precision, allocatable, dimension(:) :: tmpSend,tmpReceiv
@@ -378,12 +385,12 @@
       !startLocationVertex = rank*range+1
       !endLocationVertex = (rank+1)*range
       ! determine the first and last vertice to send
-      vertexpart=int(numVertices/nprocesses)
-      startLocationVertex= rank*vertexpart + 1
+      vertexpart = int(numVertices/nprocesses)
+      startLocationVertex = rank*vertexpart + 1
       endLocationVertex = (rank+1)*vertexpart
       ! add remaining vertices to the last process
       if ( rank+1 == nprocesses) then
-        endLocationVertex= endLocationVertex + mod(numVertices,nprocesses)
+        endLocationVertex = endLocationVertex + mod(numVertices,nprocesses)
       endif
 
       !check vertex range
@@ -402,13 +409,13 @@
       rangeMax = 0
       do n = 0, nprocesses -1
         ! determine the first and last vertice to receive
-        recStartVertex= n*int(numVertices/nprocesses) + 1
+        recStartVertex = n*int(numVertices/nprocesses) + 1
         recEndVertex = (n+1)*int(numVertices/nprocesses)
         if ( n+1 == nprocesses) then  ! add remaining vertices to the last process
-          recEndVertex= recEndVertex + mod(numVertices,nprocesses)
+          recEndVertex = recEndVertex + mod(numVertices,nprocesses)
         endif
         range = recEndVertex-recStartVertex+1
-        if ( range > rangeMax) rangeMax=range
+        if ( range > rangeMax) rangeMax = range
       enddo
       ! prepare array to receive data
       allocate( tmpReceiv(rangeMax), stat=ierror)
@@ -422,10 +429,10 @@
         ! only talk to other processes
         if ( n /= rank) then
           ! determine the first and last vertice to receive
-          recStartVertex= n*int(numVertices/nprocesses) + 1
+          recStartVertex = n*int(numVertices/nprocesses) + 1
           recEndVertex = (n+1)*int(numVertices/nprocesses)
           if ( n+1 == nprocesses) then  ! add remaining vertices to the last process
-            recEndVertex= recEndVertex + mod(numVertices,nprocesses)
+            recEndVertex = recEndVertex + mod(numVertices,nprocesses)
           endif
           recRange = recEndVertex-recStartVertex+1
 
@@ -441,177 +448,179 @@
           !these are the vertices we received
           !startLocationVertex = source*range+1
           !endLocationVertex = (source+1)*range
-          newdisplacement(recStartVertex:recEndVertex)=tmpReceiv(1:recRange)
+          newdisplacement(recStartVertex:recEndVertex) = tmpReceiv(1:recRange)
 
         endif
       enddo
-      end
-
-!-----------------------------------------------------------------------
-      subroutine syncNewdisplacement_alt2(rank, nprocesses)
-!-----------------------------------------------------------------------
-! synchronizes newdisplacement array with
-! its slave processes
-      use displacements; use propagationStartup; use cells
-      use mpi
-      implicit none
-      integer:: rank, ierror, tag, length, n, nprocesses, i
-      integer:: status(MPI_STATUS_SIZE)
-      integer:: startLocationVertex, endLocationVertex
-      double precision:: tmp(numVertices/nprocesses)
-      double precision:: tmpSend(numVertices/nprocesses)
-      double precision:: tmpReceiv(numVertices/nprocesses)
-      integer:: sendcount, sendtag, sendtype,dest, source,recvtag,comm,recvtype, recvcount,range
-
-      range = numVertices/nprocesses
-      if ( range < 1) call stopProgram( 'abort-syncNewdisplacement short range    ')
-
-      if ( rank == 0) then
-          ! receive from slaves
-          !print *,'sync newdisplacement' !debug
-          do n = 1, nprocesses-1
-            !print *,'receiving tmpdisp. from slave',n !debug
-            ! new displacements
-
-
-!            length=numVertices/nprocesses
-!            tag = n
-!            call MPI_Recv(tmp,length, &
-!     &                          MPI_DOUBLE_PRECISION,n,tag, &
-!     &                          MPI_COMM_WORLD,status,ierror)
-            !print *,'master ', range
-
-            tmpSend(1:range) = newdisplacement(1:range)
-            tmpReceiv = 0.0
-
-            sendcount = range
-            sendtype = MPI_DOUBLE_PRECISION
-            dest = n
-            sendtag = 0
-            recvcount = range
-            recvtype = MPI_DOUBLE_PRECISION
-            source = n
-            recvtag = n
-            comm = MPI_COMM_WORLD
-
-            !print *,'master sendreceiving...'
-
-            call MPI_SendRecv( tmpSend,sendcount, sendtype, dest, &
-                               sendtag, tmpReceiv, recvcount, recvtype, source, recvtag, &
-                               comm, status, ierror)
-            if ( ierror /= 0 ) then
-              print *,'Error: syncNewdisplacement - master ierror',ierror
-              call stopProgram( 'abort - syncNewdisplacement_alt2   ')
-            endif
-
-            ! fill in corresponding values
-            startLocationVertex = n*range + 1
-            endLocationVertex = (n+1)*range
-            !print *,'master received', startLocationVertex, endLocationVertex
-
-            newdisplacement(startLocationVertex:endLocationVertex)=tmpReceiv(1:range)
-
-            !do i=startLocationVertex, endLocationVertex
-            !  newdisplacement(i) = tmpReceiv(i)
-            !enddo
-!            if ( (numVertices/nprocesses) /= &
-!     &          (endLocationVertex-startLocationVertex+1) ) then
-!              stop 'syncNewdisplacement - wrong array size'
-!            endif
-
-!            newdisplacement(startLocationVertex:endLocationVertex) =                    &
-!     &                   tmp(1:numVertices/nprocesses)
-          enddo
-
-          ! send updated whole array to slaves
-
-!          do n=1, nprocesses-1
-!            !print *,'sending newdisp. to slave',n !debug
-!            length=numVertices
-!            tag = n
-!            call MPI_Send(newdisplacement,length,MPI_DOUBLE_PRECISION, &
-!     &                  n,tag,MPI_COMM_WORLD,ierror)
-!          enddo
-      else
-          ! send to master
-          !print *,'slave',rank,'sending newdisp. to master' !debug
-          ! new displacements
-!          startLocationVertex = rank*numVertices/nprocesses + 1
-!          endLocationVertex = (rank+1)*numVertices/nprocesses
-!          if ( (numVertices/nprocesses) /= &
-!     &      (endLocationVertex-startLocationVertex+1) ) then
-!              stop 'syncNewdisplacement - wrong array size'
-!          endif
-
-!          tmp(1:numVertices/nprocesses)=                                &
-!     &              newdisplacement(startLocationVertex:endLocationVertex)
-!          length=numVertices/nprocesses
-!          tag = rank
-!          call MPI_Send(tmp,length,MPI_DOUBLE_PRECISION, &
-!     &                0,tag,MPI_COMM_WORLD,ierror)
-
-          ! receive from master new updated array
-          !print *,'slave',rank,'receiving newdisp. from master'
-!          length=numVertices
-!          tag = rank
-!          call MPI_Recv(newdisplacement,length,MPI_DOUBLE_PRECISION, &
-!     &                0,tag,MPI_COMM_WORLD,status,ierror)
-
-            startLocationVertex = rank*range + 1
-            endLocationVertex = (rank+1)*range
-            !print *,'slave ', startLocationVertex, endLocationVertex
-
-            tmpSend(1:range) = newdisplacement(startLocationVertex:endLocationVertex)
-            tmpReceiv = 0.0
-
-            sendcount = range
-            sendtype = MPI_DOUBLE_PRECISION
-            dest = 0
-            sendtag = rank
-            recvcount = range
-            recvtype = MPI_DOUBLE_PRECISION
-            source = 0
-            recvtag = 0
-            comm = MPI_COMM_WORLD
-
-            !print *,'slave', rank,' sendreceiving...'
-
-            call MPI_SendRecv( tmpSend,sendcount, sendtype, dest, &
-                               sendtag, tmpReceiv, recvcount, recvtype, source, recvtag, &
-                               comm, status, ierror)
-            if ( ierror /= 0 ) then
-              print *,'Error: syncNewdisplacement - slave', rank,'ierror',ierror
-              call stopProgram( 'abort - syncNewdisplacement_alt2   ' )
-            endif
-
-            ! fill in corresponding values
-            !print *,'slave received', range
-            newdisplacement(1:range)=tmpReceiv(1:range)
-
-      endif
-
-      !debug
-      !if (rank == 0) then
-      !  print *
-      !  print *,'new master'
-      !  do l=1340,1350
-      !    print *,'  m#',newdisplacement(l)
-      !  enddo
-      !open(11,file='syncNew0.dat')
-      !  write(11,*) newdisplacement
-      !  close(11)
-      !else
-      !  print *
-      !  print *,'new slave',rank
-      !  do l=1340,1350
-      !    print *,'  #',newdisplacement(l)
-      !  enddo
-      !  open(12,file='syncNew1.dat')
-      !  write(12,*) newdisplacement
-      ! close(12)
-      !endif
-
       end subroutine
+
+!!-----------------------------------------------------------------------
+!      subroutine syncNewdisplacement_alt2(rank, nprocesses)
+!!-----------------------------------------------------------------------
+!! synchronizes newdisplacement array with
+!! its slave processes
+!      use displacements; use propagationStartup; use cells
+!      use mpi
+!      implicit none
+!      integer,intent(in):: rank,nprocesses
+!      ! local parameters
+!      integer:: ierror,n
+!      integer:: status(MPI_STATUS_SIZE)
+!      integer:: startLocationVertex, endLocationVertex
+!      !double precision:: tmp(numVertices/nprocesses)
+!      double precision:: tmpSend(numVertices/nprocesses)
+!      double precision:: tmpReceiv(numVertices/nprocesses)
+!      integer:: sendcount, sendtag, sendtype,dest, source,recvtag,comm,recvtype, recvcount,range
+!
+!      range = numVertices/nprocesses
+!      if ( range < 1) call stopProgram( 'abort-syncNewdisplacement short range    ')
+!
+!      if ( rank == 0) then
+!          ! receive from slaves
+!          !print *,'sync newdisplacement' !debug
+!          do n = 1, nprocesses-1
+!            !print *,'receiving tmpdisp. from slave',n !debug
+!            ! new displacements
+!
+!
+!!            length=numVertices/nprocesses
+!!            tag = n
+!!            call MPI_Recv(tmp,length, &
+!!     &                          MPI_DOUBLE_PRECISION,n,tag, &
+!!     &                          MPI_COMM_WORLD,status,ierror)
+!            !print *,'master ', range
+!
+!            tmpSend(1:range) = newdisplacement(1:range)
+!            tmpReceiv = 0.0
+!
+!            sendcount = range
+!            sendtype = MPI_DOUBLE_PRECISION
+!            dest = n
+!            sendtag = 0
+!            recvcount = range
+!            recvtype = MPI_DOUBLE_PRECISION
+!            source = n
+!            recvtag = n
+!            comm = MPI_COMM_WORLD
+!
+!            !print *,'master sendreceiving...'
+!
+!            call MPI_SendRecv( tmpSend,sendcount, sendtype, dest, &
+!                               sendtag, tmpReceiv, recvcount, recvtype, source, recvtag, &
+!                               comm, status, ierror)
+!            if ( ierror /= 0 ) then
+!              print *,'Error: syncNewdisplacement - master ierror',ierror
+!              call stopProgram( 'abort - syncNewdisplacement_alt2   ')
+!            endif
+!
+!            ! fill in corresponding values
+!            startLocationVertex = n*range + 1
+!            endLocationVertex = (n+1)*range
+!            !print *,'master received', startLocationVertex, endLocationVertex
+!
+!            newdisplacement(startLocationVertex:endLocationVertex)=tmpReceiv(1:range)
+!
+!            !do i=startLocationVertex, endLocationVertex
+!            !  newdisplacement(i) = tmpReceiv(i)
+!            !enddo
+!!            if ( (numVertices/nprocesses) /= &
+!!     &          (endLocationVertex-startLocationVertex+1) ) then
+!!              stop 'syncNewdisplacement - wrong array size'
+!!            endif
+!
+!!            newdisplacement(startLocationVertex:endLocationVertex) =                    &
+!!     &                   tmp(1:numVertices/nprocesses)
+!          enddo
+!
+!          ! send updated whole array to slaves
+!
+!!          do n=1, nprocesses-1
+!!            !print *,'sending newdisp. to slave',n !debug
+!!            length=numVertices
+!!            tag = n
+!!            call MPI_Send(newdisplacement,length,MPI_DOUBLE_PRECISION, &
+!!     &                  n,tag,MPI_COMM_WORLD,ierror)
+!!          enddo
+!      else
+!          ! send to master
+!          !print *,'slave',rank,'sending newdisp. to master' !debug
+!          ! new displacements
+!!          startLocationVertex = rank*numVertices/nprocesses + 1
+!!          endLocationVertex = (rank+1)*numVertices/nprocesses
+!!          if ( (numVertices/nprocesses) /= &
+!!     &      (endLocationVertex-startLocationVertex+1) ) then
+!!              stop 'syncNewdisplacement - wrong array size'
+!!          endif
+!
+!!          tmp(1:numVertices/nprocesses)=                                &
+!!     &              newdisplacement(startLocationVertex:endLocationVertex)
+!!          length=numVertices/nprocesses
+!!          tag = rank
+!!          call MPI_Send(tmp,length,MPI_DOUBLE_PRECISION, &
+!!     &                0,tag,MPI_COMM_WORLD,ierror)
+!
+!          ! receive from master new updated array
+!          !print *,'slave',rank,'receiving newdisp. from master'
+!!          length=numVertices
+!!          tag = rank
+!!          call MPI_Recv(newdisplacement,length,MPI_DOUBLE_PRECISION, &
+!!     &                0,tag,MPI_COMM_WORLD,status,ierror)
+!
+!            startLocationVertex = rank*range + 1
+!            endLocationVertex = (rank+1)*range
+!            !print *,'slave ', startLocationVertex, endLocationVertex
+!
+!            tmpSend(1:range) = newdisplacement(startLocationVertex:endLocationVertex)
+!            tmpReceiv = 0.0
+!
+!            sendcount = range
+!            sendtype = MPI_DOUBLE_PRECISION
+!            dest = 0
+!            sendtag = rank
+!            recvcount = range
+!            recvtype = MPI_DOUBLE_PRECISION
+!            source = 0
+!            recvtag = 0
+!            comm = MPI_COMM_WORLD
+!
+!            !print *,'slave', rank,' sendreceiving...'
+!
+!            call MPI_SendRecv( tmpSend,sendcount, sendtype, dest, &
+!                               sendtag, tmpReceiv, recvcount, recvtype, source, recvtag, &
+!                               comm, status, ierror)
+!            if ( ierror /= 0 ) then
+!              print *,'Error: syncNewdisplacement - slave', rank,'ierror',ierror
+!              call stopProgram( 'abort - syncNewdisplacement_alt2   ' )
+!            endif
+!
+!            ! fill in corresponding values
+!            !print *,'slave received', range
+!            newdisplacement(1:range)=tmpReceiv(1:range)
+!
+!      endif
+!
+!      !debug
+!      !if (rank == 0) then
+!      !  print *
+!      !  print *,'new master'
+!      !  do l=1340,1350
+!      !    print *,'  m#',newdisplacement(l)
+!      !  enddo
+!      !open(11,file='syncNew0.dat')
+!      !  write(11,*) newdisplacement
+!      !  close(11)
+!      !else
+!      !  print *
+!      !  print *,'new slave',rank
+!      !  do l=1340,1350
+!      !    print *,'  #',newdisplacement(l)
+!      !  enddo
+!      !  open(12,file='syncNew1.dat')
+!      !  write(12,*) newdisplacement
+!      ! close(12)
+!      !endif
+!
+!      end subroutine
 
 !-----------------------------------------------------------------------
       subroutine syncPrecalculated()
@@ -619,6 +628,7 @@
 ! synchronize precalculated array cellAreas, cellEdgesLength, cellCenterDistances
       use cells; use parallel; use propagationStartup; use verbosity
       implicit none
+      ! local parameters
       integer:: length,n,first,lastsent,i,ierror
       real(WP), allocatable, dimension(:):: tmpExchange
       integer,parameter::SLICE = 1000000 ! assuming MPI has a limited buffer size
@@ -679,14 +689,14 @@
               if ( ierror /= 0 ) call stopProgram('could not allocate temporary exchange array!      ')
 
               do i = 0,6
-                tmpExchange(:)=cellEdgesLength(first:lastsent,i)
+                tmpExchange(:) = cellEdgesLength(first:lastsent,i)
                 call MPI_Send(tmpExchange,length,MPI_CUSTOM,n,tag,MPI_COMM_WORLD,ierror)
 
-                tmpExchange(:)=cellCenterDistances(first:lastsent,i)
+                tmpExchange(:) = cellCenterDistances(first:lastsent,i)
                 call MPI_Send(tmpExchange,length,MPI_CUSTOM,n,tag,MPI_COMM_WORLD,ierror)
 
                 if ( CORRECT_RATIO ) then
-                  tmpExchange(:)=cellFractions(first:lastsent,i)
+                  tmpExchange(:) = cellFractions(first:lastsent,i)
                   call MPI_Send(tmpExchange,length,MPI_CUSTOM,n,tag,MPI_COMM_WORLD,ierror)
                 endif
               enddo
@@ -757,12 +767,13 @@
       end subroutine
 
 !-----------------------------------------------------------------------
-      subroutine syncPhaseMap(myrank,numberofprocesses)
+      subroutine syncPhaseMap()
 !-----------------------------------------------------------------------
 ! synchronize phase map
       use cells;use phaseVelocityMap;use propagationStartup;use verbosity;use parallel
       implicit none
-      integer:: myrank,length,n,numberofprocesses,ierror
+      ! local parameters
+      integer:: length,n,ierror
 
       if (rank == 0) then
         ! send to slaves
@@ -779,7 +790,7 @@
         tag = rank
         call MPI_RECV(phaseMap,length,MPI_CUSTOM,0,tag,MPI_COMM_WORLD,status,ierror)
       endif
-      end
+      end subroutine
 
 
 !-----------------------------------------------------------------------
@@ -788,6 +799,7 @@
 ! synchronize array receiversSeismogramRef
       use cells; use parallel; use propagationStartup; use verbosity
       implicit none
+      ! local parameters
       integer:: length,n,m,ierror
 
       if ( MASTER ) then
@@ -821,7 +833,7 @@
           call MPI_Recv(receiversSeismogramRef,length,MPI_CUSTOM,0,tag,MPI_COMM_WORLD,status,ierror)
         endif
       endif
-      end
+      end subroutine
 
 !-----------------------------------------------------------------------
       subroutine collectReceiversSeismogram(doReference)
@@ -829,10 +841,12 @@
 ! collects array receiversSeismogram from receivers not in the master domain
       use cells; use parallel; use propagationStartup;use griddomain; use verbosity
       implicit none
+      logical,intent(in):: doReference
+      ! local parameters
       integer:: i,countVertices,recRange,sendRange,n,m,ierror
       real(WP),allocatable,dimension(:,:)::tmpExchange
 !      real(WP),allocatable,dimension(:,:,:)::tmpManyExchange
-      logical:: doReference
+
 
       ! check if many processes
       if ( nprocesses == 1 ) return
@@ -1050,7 +1064,7 @@
           endif
         endif ! manykernels
       endif ! MASTER
-      end
+      end subroutine
 
 !-----------------------------------------------------------------------
       subroutine syncBackwardNewdisplacement()
@@ -1059,6 +1073,7 @@
 ! each process gets the needed (boundary) informations from the other ones
       use displacements;use griddomain;use parallel;use propagationStartup; use adjointVariables
       implicit none
+      ! local parameters
       integer:: dest,source,sendRange,recRange,n,k,neighbor,ierror
 
       ! check if many processes
@@ -1107,7 +1122,7 @@
           enddo
         endif
       enddo
-      end
+      end subroutine
 
 
 !-----------------------------------------------------------------------
@@ -1116,6 +1131,7 @@
 ! let seismogram at receiver be available for all processes
       use parallel;use propagationStartup; use verbosity
       implicit none
+      ! local parameters
       integer:: domain,i,length,ierror
       integer,external::getDomain
 
@@ -1151,7 +1167,8 @@
       use griddomain;use parallel;use propagationStartup
       use adjointVariables; use cells
       implicit none
-      integer:: sendRange,recRange,n,k,i,countVertices,ierror
+      ! local parameters
+      integer:: sendRange,recRange,n,i,countVertices,ierror
       real(WP),allocatable,dimension(:)::tmpExchange
 
       ! check if many processes
@@ -1190,7 +1207,7 @@
             ! check if entry is a valid vertex index in the neighbors boundary array
             if ( vertexDomain(i) == n ) then
               countVertices = countVertices+1
-              adjointKernel(i)=tmpExchange(countVertices)
+              adjointKernel(i) = tmpExchange(countVertices)
             endif
           enddo
 
@@ -1228,6 +1245,7 @@
       use displacements; use griddomain; use parallel
       use propagationStartup; use cells
       implicit none
+      ! local parameters
       integer:: sendRange,recRange,n,i,countVertices,ierror
 
       ! check if many processes
@@ -1261,7 +1279,7 @@
             ! check if entry is a valid vertex index in the neighbors boundary array
             if ( vertexDomain(i) == n ) then
               countVertices = countVertices+1
-              newdisplacement(i)=receiveDisp(countVertices)
+              newdisplacement(i) = receiveDisp(countVertices)
             endif
           enddo
         enddo
@@ -1269,7 +1287,7 @@
         !vertex range
         sendRange = size(domainVertices(:))
         do i = 1,sendRange
-          sendDisp(i)=newdisplacement(domainVertices(i))
+          sendDisp(i) = newdisplacement(domainVertices(i))
         enddo
 
         ! send to master
@@ -1279,7 +1297,7 @@
             print *,'collectFullNewdisplacement - ',rank,n,ierror
         endif
       endif
-      end
+      end subroutine
 
 !-----------------------------------------------------------------------
       subroutine syncInterpolationData()
@@ -1287,7 +1305,8 @@
 ! synchronizes data related to interpolation with its slave processes
       use cells; use parallel; use propagationStartup; use verbosity
       implicit none
-      integer:: n,k,length,ierror
+      ! local parameters
+      integer:: n,length,ierror
 
       ! read vertices values from files
       if ( MASTER) then
@@ -1345,7 +1364,7 @@
               call stopProgram( 'abort - syncInterpolation    ')
         endif
       endif
-      end
+      end subroutine
 
 !-----------------------------------------------------------------------
       subroutine syncPixelgridInput(rank,nprocesses,txtfile,filen,eq_incr,ifa)
@@ -1353,11 +1372,13 @@
 ! sync with other process
       use mpi
       implicit none
-      integer:: ierror,nprocesses,rank,i,length
+      integer,intent(in):: rank,nprocesses
+      character(len=128),intent(inout):: txtfile,filen
+      real,intent(inout):: eq_incr
+      integer,intent(inout):: ifa
+      ! local parameters
+      integer:: ierror,i,length
       integer:: status(MPI_STATUS_SIZE)
-      character:: filen*128,txtfile*128
-      real:: eq_incr
-      integer:: ifa
 
       ! string length
       length = 128
@@ -1390,7 +1411,7 @@
         call MPI_FINALIZE(ierror)
         stop 'abort - syncInput'
       endif
-      end
+      end subroutine
 
 
 !-----------------------------------------------------------------------
@@ -1399,9 +1420,12 @@
 ! sync with master process and print to file
       use mpi
       implicit none
-      integer:: ierror,nprocesses,rank,i,k,length,status(MPI_STATUS_SIZE)
-      integer:: nfree,datacount,jrecord,restprocesses
-      integer:: hitcount(nfree),hitcount_proc(nfree)
+      integer,intent(in):: rank,nprocesses
+      integer,intent(inout):: nfree
+      integer,intent(inout):: hitcount(nfree)
+      ! local parameters
+      integer:: ierror,i,k,status(MPI_STATUS_SIZE)
+      integer:: hitcount_proc(nfree)
 
       ! nothing to do for single processor job
       if ( nprocesses < 2 ) return
@@ -1422,7 +1446,7 @@
 
           ! add to master's hitcounts
           do k = 1,nfree
-            hitcount(k)=hitcount(k)+hitcount_proc(k)
+            hitcount(k) = hitcount(k)+hitcount_proc(k)
           enddo
         enddo
       else
@@ -1444,7 +1468,8 @@
       implicit none
       integer,intent(in):: rank,nprocesses
       logical,intent(inout):: flag
-      integer:: ierror,status(MPI_STATUS_SIZE)
+      ! local parameters
+      integer:: ierror
       logical:: sum_flag
 
       ! nothing to do for single processor job
@@ -1453,7 +1478,10 @@
       ! sees if a process has the flag set to true ( logical or )
       sum_flag = .false.
       call MPI_AllReduce(flag,sum_flag,1,MPI_LOGICAL,MPI_LOR,MPI_COMM_WORLD,ierror)
-      if ( ierror /= 0 ) call stopProgram("syncFlag error  " )
+      if ( ierror /= 0 ) then
+        print *,'Error: rank ',rank,' failed in allReduce'
+        call stopProgram("syncFlag error  " )
+      endif
 
       ! returns flag which should be the same for all processes now
       flag = sum_flag
@@ -1468,6 +1496,7 @@
 ! assumes that the flag by default is .false.
       use mpi
       implicit none
+      ! local parameters
       integer:: ierror
 
       ! wait until all processes reached this point

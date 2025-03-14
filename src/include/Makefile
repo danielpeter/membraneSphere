@@ -20,9 +20,6 @@ include_OBJECTS = \
 	$O/gridfunctions.o \
 	$O/initialize.o \
 	$O/kernelValue.o \
-	$O/numericalRecipes_correl.o \
-	$O/numericalRecipes_nr.o \
-	$O/numericalRecipes_splines.o \
 	$O/numericLaplacian.o \
 	$O/phasemapRoutines.o  \
 	$O/phaseshiftRoutines.o \
@@ -45,12 +42,6 @@ include_OBJECTS = \
 ## file compilation
 ##
 ################################################################
-
-## dependencies
-$O/numericalRecipes_correl.o: $O/numericalRecipes_nr.o
-$O/numericalRecipes_splines.o: $O/numericalRecipes_nr.o
-$O/filterRoutines.o: $O/numericalRecipes_nr.o
-$O/timelagRoutines.o: $O/numericalRecipes_nr.o
 
 #.SUFFIXES: $(SUFFIXES) .f90
 

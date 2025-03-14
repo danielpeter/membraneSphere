@@ -20,6 +20,7 @@
       use displacements; use cells; use verbosity; use propagationStartup
       implicit none
       integer,intent(in):: vertex
+      ! local parameters
       real(WP):: discreteLaplacian
       integer:: i,count
       real(WP):: centerDistances(0:6),edgesLength(0:6), &
@@ -47,7 +48,7 @@
           call stopProgram( 'discreteLaplacian - centerDistance too small   ')
         endif
 
-        sumFactor= sumFactor + edgesLength(i)/(centerDistances(i)*area)
+        sumFactor = sumFactor + edgesLength(i)/(centerDistances(i)*area)
 
         !influence by neighbors displacement
         sumNeighbors = sumNeighbors + (edgesLength(i)/(centerDistances(i)*area))* &
@@ -83,10 +84,11 @@
       use cells; use displacements; use verbosity; use propagationStartup
       implicit none
       integer,intent(in):: vertex
+      ! local parameters
       real(WP):: precalc_discreteLaplacian
-      integer:: i,count,index
+      integer:: i,count !,index
       real(WP):: area,areareci,sumNeighbors,sumFactor
-      real(WP):: ratioFactor,hr_ratio,alpha_minus1,alpha_plus1,alpha_i,alpha_zero
+      real(WP):: ratioFactor,hr_ratio,alpha_i,alpha_zero !,alpha_minus1,alpha_plus1
 
       ! get spherical area of vertex's cell
       area = cellAreas(vertex)
@@ -99,7 +101,7 @@
       count = 0
       do i = 1, cellNeighbors(vertex,0)
         !factor for own displacement
-        sumFactor= sumFactor + cellEdgesLength(vertex,i)/cellCenterDistances(vertex,i)
+        sumFactor = sumFactor + cellEdgesLength(vertex,i)/cellCenterDistances(vertex,i)
 
         !influence by neighbors displacement
         sumNeighbors = sumNeighbors + cellEdgesLength(vertex,i)/ &
@@ -160,7 +162,9 @@
 ! cellNeighbors() and backwarddisplacement()
       use cells; use propagationStartup; use adjointVariables; use verbosity
       implicit none
-      integer:: vertex,i,count
+      integer,intent(in):: vertex
+      ! local parameters
+      integer:: i,count
       real(WP):: precalc_backdiscreteLaplacian,area,areareci,sumNeighbors,sumFactor
 
       !get spherical area of vertex's cell
@@ -173,7 +177,7 @@
       count = 0
       do i = 1, cellNeighbors(vertex,0)
         !factor for own displacement
-        sumFactor= sumFactor+cellEdgesLength(vertex,i)/cellCenterDistances(vertex,i)
+        sumFactor = sumFactor+cellEdgesLength(vertex,i)/cellCenterDistances(vertex,i)
 
         !influence by neighbors displacement
         sumNeighbors = sumNeighbors+cellEdgesLength(vertex,i)/ &

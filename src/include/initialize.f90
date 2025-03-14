@@ -54,6 +54,7 @@
 ! initializes program parallelization
       use propagationStartup;use parallel
       implicit none
+      ! local parameters
       integer:: ierror
 
       ! parallelization
@@ -200,6 +201,7 @@
       use traveltime; use griddomain;use phaseBlockData;use loop;use deltaSecondLocation
       use filterType;use verbosity; use adjointVariables
       implicit none
+      ! local parameters
       real(WP):: lat,lon,distance
       integer:: ierror,i
 
@@ -332,8 +334,9 @@
       use traveltime; use griddomain;use phaseBlockData;use loop;use deltaSecondLocation
       use filterType;use verbosity; use adjointVariables
       implicit none
-      real(WP):: long,colat,distance
-      integer:: ierror,iorbit
+      ! local parameters
+      real(WP):: distance
+      integer:: iorbit
 
       ! console output
       if ( MASTER .and. VERBOSE) then
@@ -394,6 +397,7 @@
       use cells, only: numDomainVertices
       use verbosity
       implicit none
+      ! local parameters
       integer:: n,vertex,timestep,index,ierror,jrec
       real(WP),external:: forceTerm2Source,forceTermExact
       real(WP):: time,force,arraysize
@@ -423,7 +427,7 @@
         endif
         ! reallocates array
         if (.not. allocated(forceTermPrescribed) ) then
-          arraysize = numDomainVertices*numofTimeSteps*sizeof(PI)/1024./1024.
+          arraysize = numDomainVertices*numofTimeSteps*WP/1024./1024.
           ! console output
           if ( MASTER .and. VERBOSE ) then
             print *,'  allocating prescribedForce array: '
@@ -465,20 +469,20 @@
             datadirectory(1:len_trim(datadirectory))//'forceTermPrescribed'//rankstr//'.bin'
             ! opens file to store data for each process
             open(sourceFileID,file=datadirectory(1:len_trim(datadirectory))//'forceTermPrescribed'//rankstr//'.bin', &
-               access='direct',form='unformatted',recl=sizeof(PI))
+               access='direct',form='unformatted',recl=WP)
 
             ! storage in scratch dir
             !open(sourceFileID,file=temporaryDir(1:len_trim(temporaryDir))//'forceTermPrescribed'//rankstr//'.bin', &
-            !     access='direct',form='unformatted',recl=sizeof(real(WP)))
+            !     access='direct',form='unformatted',recl=WP)
           endif
         endif ! not allocated
 
         !init (critical: processes may stop here)
         if (.not. sourceOnFile) then
           !print *,'    intializing prescribedForce array: rank',rank
-          forceTermPrescribed(:,:)=0.0_WP
+          forceTermPrescribed(:,:) = 0.0_WP
         else
-          forcetrace(:)=0.0_WP
+          forcetrace(:) = 0.0_WP
         endif
 
         ! prescribe the source
@@ -541,6 +545,7 @@
       use traveltime; use griddomain;use phaseBlockData;use loop;use deltaSecondLocation
       use filterType;use verbosity; use adjointVariables
       implicit none
+      ! local parameters
       integer:: vertex,timestep,index,i,n,ierror,jrec
       character(len=8)::vertexstr
       real(WP)::seismo(2,numofTimeSteps)
@@ -665,8 +670,9 @@
       use propagationStartup; use phaseVelocityMap; use parallel; use phaseBlockData
       use cells; use adjointVariables; use verbosity; use griddomain
       implicit none
-      real(WP):: distance,vtmp(3),lat,lon
-      integer:: i,ierror
+      ! local parameters
+      real(WP):: distance,lat,lon
+      integer:: ierror
 
       ! reads in a heterogeneous phase velocity map
       if ( HETEROGENEOUS ) then
@@ -688,7 +694,7 @@
 
         ! synchronize between master and slave processes
         !print *,rank,'synchronizing phase map...'
-        call syncPhaseMap(rank,nprocesses)
+        call syncPhaseMap()
 
         if ( rotate_frame ) then
           ! rotated frame has the source sitting at equator (1,0,0)
@@ -768,7 +774,7 @@
       ! for 2 delta scatterers
       if ( SECONDDELTA) call placeSecondDelta(deltaLat,deltaLon,deltaSecondLat, &
                         deltaSecondLon,deltaSecondVertex,deltaSecondDistance)
-      end
+      end subroutine
 
 
 !-----------------------------------------------------------------------
@@ -783,21 +789,22 @@
 ! returns: rotated cell index
       use propagationStartup; use cells
       implicit none
-      integer:: n
+      integer,intent(inout):: n
+      ! local parameters
       real(WP):: Vsource(3),Vreceiver(3),vtmp(3),rot(3,3),lat,lon
 
       ! determine rotation matrix from source/receiver to (1,0,0)/... frame
-      Vsource(:)= vertices(originSourceVertex,:)
-      Vreceiver(:)= vertices(originReceiverVertex,:)
+      Vsource(:) = vertices(originSourceVertex,:)
+      Vreceiver(:) = vertices(originReceiverVertex,:)
       call getInverseRotationMatrix(Vsource,Vreceiver,rot)
 
       ! determine new cell index
-      vtmp(:)= vertices(n,:)
+      vtmp(:) = vertices(n,:)
       call rotateVector(rot,vtmp,vtmp)
       call getSphericalCoordinates(vtmp,lat,lon)
       call findVertex(lat,lon,n)
       !print *,'  rotated location',n,lat,lon
-      end
+      end subroutine
 
 
 !-----------------------------------------------------------------------
@@ -812,6 +819,7 @@
       use propagationStartup;use phaseVelocityMap;use phaseBlockData
       use cells; use adjointVariables; use verbosity; use parallel
       implicit none
+      ! local parameters
       integer:: index,i
       real(WP):: lat,lon,phasevelocity,vtmp(3),rot(3,3),Vsource(3),Vreceiver(3)
 
@@ -852,15 +860,15 @@
 
           if ( rotate_frame ) then
             ! determine rotation matrix from (1,0,0)/... to source/receiver frame
-            Vsource(:)= vertices(originSourceVertex,:)
-            Vreceiver(:)= vertices(originReceiverVertex,:)
+            Vsource(:) = vertices(originSourceVertex,:)
+            Vreceiver(:) = vertices(originReceiverVertex,:)
             call getRotationMatrix(Vsource,Vreceiver,rot)
           endif
 
           !print *
           do i = 1, numVertices
             ! vector to vertex
-            vtmp(:)= vertices(i,:)
+            vtmp(:) = vertices(i,:)
 
             ! get rotated vector
             if ( rotate_frame ) then
@@ -870,7 +878,7 @@
             ! determine lat/lon
             call getSphericalCoordinates(vtmp,lat,lon)
 
-            !get vertex block index
+            ! get vertex block index
             call determineBlock(real(lat),real(lon),index)
             if ( index < 0 .or. index > numBlocks) then
               print *,'Error: block error:',lat,lon
@@ -879,7 +887,7 @@
             endif
 
             ! set corresponding phase velocity
-            phaseMap(i)=phaseBlock(index)
+            phaseMap(i) = phaseBlock(index)
           enddo
         endif
       endif
@@ -893,6 +901,7 @@
       use traveltime; use griddomain; use phaseBlockData
       use loop;use deltaSecondLocation;use filterType;use verbosity
       implicit none
+      ! local parameters
       integer:: m,rounded,ierror
       real(WP):: exact,distance
 
@@ -994,6 +1003,7 @@
 ! returns: new receivers/... arrays
       use propagationStartup; use parallel; use verbosity
       implicit none
+      ! local parameters
       integer:: i,ierror
       real(WP):: lat,lon
       character(len=128):: datafile
@@ -1102,6 +1112,7 @@
 ! returns: new ttkernel.rank***.dat and ttkernel.rot.rank***.dat files
       use propagationStartup; use parallel; use verbosity
       implicit none
+      ! local parameters
       integer:: i,n,ioerror
       character(len=3):: rankstr,kernelstr
       character(len=128):: datafile
@@ -1145,26 +1156,26 @@
           !if ( ioerror == 0 ) close(10,status='DELETE')
 
           ! put two comment lines at beginning
-          open(10,file=trim(datafile),iostat=ioerror)
+          open(IOUT,file=trim(datafile),iostat=ioerror)
           if ( ioerror /= 0) then
             ! check if really we can not create the file
             print *,'could not open file: '//trim(datafile)
             print *,'  try again...'
-            open(10,file=trim(datafile),status='unknown',iostat=ioerror)
+            open(IOUT,file=trim(datafile),status='unknown',iostat=ioerror)
             if ( ioerror /= 0 ) call stopProgram('createKernelFiles() - still not possible. shutting down    ')
             print *,'  successed opening file'
           endif
           ! determine comment line text
           if ( n == 1 ) then
-            write(10,*) '# phase shift - sensitivity kernel'
+            write(IOUT,*) '# phase shift - sensitivity kernel'
           else
-            write(10,*) '# rotated phase shift - sensitivity kernel'
+            write(IOUT,*) '# rotated phase shift - sensitivity kernel'
           endif
 
           ! add a values legend
-          write(10,'(1x,"# lon lat kernel kernelAnalytic receiverVertex timelag " &
-                              & "timelagAnayltic vperturbation receiverLat receiverLon")')
-          close(10)
+          write(IOUT,*) '# lon lat kernel kernelAnalytic receiverVertex timelag ' // &
+                        'timelagAnayltic vperturbation receiverLat receiverLon'
+          close(IOUT)
         enddo
       enddo
       end subroutine
@@ -1181,7 +1192,8 @@
 ! returns: sets new desired locations
       use propagationStartup; use cells
       implicit none
-      real:: epla,eplo,stla,stlo
+      real,intent(in):: epla,eplo,stla,stlo
+      ! local parameters
       real(WP):: distance
       integer:: iorbit
 
@@ -1216,7 +1228,7 @@
 ! setup new receiver location
       use propagationStartup; use parallel; use verbosity
       implicit none
-      real(WP):: distance,lat,lon
+      real(WP),intent(in):: lat,lon
 
       ! find receiver location on the grid
       call findVertex(lat,lon,sourceVertex)
@@ -1238,6 +1250,7 @@
       use propagationStartup; use parallel; use verbosity; use cells
       implicit none
       real(WP),intent(in):: lat,lon
+      ! local parameters
       real(WP):: distance
       integer:: i
 
@@ -1256,7 +1269,6 @@
         call getClosestTriangle(desiredReceiverlat,desiredReceiverlon,interpolation_triangleIndex, &
                               interpolation_distances,interpolation_corners,interpolation_triangleLengths)
       endif
-
 
       if ( MASTER .and. VERBOSE) then
         print *,'    receiver(lat/lon) desired:',desiredReceiverLat,desiredReceiverLon
@@ -1280,6 +1292,7 @@
       use adjointVariables; use propagationStartup; use parallel; use cells; use verbosity
       implicit none
       real(WP),intent(in):: lat,lon
+      ! local parameters
       real(WP):: distance
       character(len=64),parameter::distanceFile     = 'Kernel_EpiDistances.dat'
       integer:: ierror,iorbit
@@ -1338,6 +1351,7 @@
       implicit none
       real(WP),intent(in)::distance
       integer,intent(in):: iorbit
+      ! local parameters
       real(WP):: arrivalTime,antipodeTime
 
       ! set last time
@@ -1374,6 +1388,7 @@
       use verbosity, only: VERBOSE
       use filterType, only: WindowSIZE
       implicit none
+      ! local parameters
       integer:: ierror,isteps
 
       ! stepings
@@ -1397,6 +1412,7 @@
         ! fft size
         call determineFFTWindowsize(numofTimeSteps,WindowSIZE)
       endif
+
       end subroutine
 
 !-----------------------------------------------------------------------
@@ -1410,14 +1426,13 @@
 !     distance, iorbit      -   epicentral distance between source/receiver, orbit number
 !
 ! returns: distance (in rad) and iorbit are set accordingly
-      use precisions; use parallel; use verbosity
-      use cells, only: vertices;
+      use precisions
+      use cells, only: vertices
       use propagationStartup
-      use filtertype, only: bw_waveperiod
-      use adjointVariables
       implicit none
       real(WP),intent(out):: distance
       integer,intent(out):: iorbit
+      ! local parameters
       real(WP):: minor_distance,arrivalTime
 
       ! gets minor arc distance (in rad)
@@ -1452,6 +1467,7 @@
       use cells, only: subdivisions
       use filterType; use verbosity
       implicit none
+      ! local parameters
       real(WP):: theta_radian,tmp
 
       ! calculates width parameter (see Carl Tape Thesis , eq. 3.21 )
@@ -1504,17 +1520,18 @@
 !-----------------------------------------------------------------------
       use parallel
       implicit none
-      character(len=*):: textline
-      integer:: i,endindex,ierror
+      character(len=*),intent(in):: textline
+      ! local parameters
+      integer:: endindex,ierror
       logical:: flag
 
       ! console output
-      endindex=index(textline,"  ")
+      endindex = index(textline,"  ")
       if ( endindex < 1 ) endindex = 128
       print *,textline(1:endindex)
 
       ! on linux machines : i/o unit 6 is the stdout , on SGI 101
-      call flush(6)
+      flush(6)
 
       ! stop MPI
       call MPI_Initialized(flag,ierror)

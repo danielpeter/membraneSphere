@@ -19,6 +19,7 @@
       module precisions
       !------------------------------------------------------------------------------------------
         ! user can modify these settings
+        implicit none
         ! working precision in bytes: real = 4,double precision = 8
         integer, parameter :: WP                   = 4
 
@@ -229,6 +230,10 @@
         real(WP), parameter :: PI                 = 3.1415926535897931_WP
         real(WP), parameter :: RAD2DEGREE         = 180.0_WP/PI
         real(WP), parameter :: DEGREE2RAD         = PI/180.0_WP
+
+        ! file I/O
+        integer, parameter :: IIN = 40
+        integer, parameter :: IOUT = 41
       end module precisions
 
 !-----------------------------------------------------------------------
@@ -236,7 +241,11 @@
 !-----------------------------------------------------------------------
       ! phaseVelocityMap module
       ! used for phase velocity maps
-        use precisions
+        use precisions, only: WP,IIN,IOUT, &
+          PRECALCULATED_CELLS, &
+          WINDOW_START,WINDOW_END, &
+          MAP_DEGREE_L,MAP_DEGREE_M,MAP_PERCENT_AMPLITUDE
+        implicit none
         integer:: numPhaseEntries
         real(WP), allocatable, dimension(:):: phaseMap
         real(WP), allocatable, dimension(:):: phaseVelocitySquare
@@ -245,6 +254,7 @@
 !-----------------------------------------------------------------------
       module verbosity
 !-----------------------------------------------------------------------
+        implicit none
         logical:: VERBOSE     = .true.         !for console verbosity
         logical:: beVerbose   = .false.         !for getTimelag verbosity
         logical:: fileOutput  = .false.        !for debuging: outputs to file 'tmp*.dat'
@@ -255,7 +265,8 @@
 !-----------------------------------------------------------------------
       ! adjoint module
       ! used for adjoint routines
-        use precisions
+        use precisions, only: WP,PRECALCULATED_CELLS,DO_CHECKERBOARD,MAP_DEGREE_L,MAP_DEGREE_M
+        implicit none
         ! adjoint parameters
         ! onthefly: instead of integration at the end, after each time step
         ! startatzero: start integration from zero, not for whole seismogram
@@ -289,14 +300,16 @@
 !-----------------------------------------------------------------------
       ! cells module
       ! used for precalculated values of cell areas etc.
-        use precisions
+        use precisions, only: WP,EARTHRADIUS,EARTHRADIUS_SQUARED,PI,DEGREE2RAD,IIN, &
+          CORRECT_RATIO,RELAXED_GRID,Station_Correction
+        implicit none
         integer:: subdivisions,MaxTriangles,MaxVertices
         integer,allocatable, dimension(:,:):: cellFace,cellNeighbors,cellTriangleFace
         integer:: numFaces,numNeighbors,numTriangleFaces,numCorners,numVertices, &
                  numDomainVertices
-        real(WP), allocatable, dimension(:)::cellAreas
-        real(WP), allocatable, dimension(:,:)::vertices,cellEdgesLength, &
-                                             cellCenterDistances,cellCorners,cellFractions
+        real(WP), allocatable, dimension(:):: cellAreas
+        real(WP), allocatable, dimension(:,:):: vertices,cellEdgesLength, &
+                                                cellCenterDistances,cellCorners,cellFractions
         real(WP):: interpolation_distances(3),interpolation_triangleLengths(3)
         integer:: interpolation_corners(3),interpolation_triangleIndex
       end module cells
@@ -306,7 +319,12 @@
 !-----------------------------------------------------------------------
       ! propagationStartup module
       ! used for initialization startup process
-        use precisions
+        use precisions, only: WP,IOUT,PI,EARTHRADIUS, &
+          SIMULATIONOVERTIMEPERCENT,USEOVERTIME,WINDOWEDINTEGRATION, &
+          FILTERINITIALSOURCE,PRESCRIBEDSOURCE, &
+          FILTERSEISMOGRAMS, &
+          Station_Correction,timeParameterSigma
+        implicit none
         logical:: Phaseshift_Program = .false.
         logical:: HetPhaseshift_Program = .false.
         logical:: HETEROGENEOUS,DELTA,SECONDDELTA,MOVEDELTA
@@ -319,7 +337,7 @@
                   originReceiverVertex
         integer:: numofReceivers,numofKernels,currentKernel
         integer,allocatable,dimension(:):: receivers
-        integer,allocatable,dimension(:,:)::kernelsReceivers
+        integer,allocatable,dimension(:,:):: kernelsReceivers
         character(len=8):: DELTAfunction,cphasetype
         character(len=128):: datadirectory
         real(WP):: FIRSTTIME,LASTTIME,DELTARADIUS
@@ -349,10 +367,11 @@
       module deltaSecondLocation
 !-----------------------------------------------------------------------
       ! additional delta location
-        use precisions
+        use precisions, only: WP
+        implicit none
         integer:: deltaSecondVertex
         real(WP):: deltaSecondLat,deltaSecondLon
-        real(WP),parameter:: deltaSecondDistance = 3.0
+        real(WP),parameter:: deltaSecondDistance = 3.0_WP
       end module
 
 !-----------------------------------------------------------------------
@@ -361,6 +380,7 @@
       ! parallel module
       ! used for MPI parallelization
         use mpi
+        implicit none
         logical:: PARALLELSEISMO,MASTER
         integer:: nprocesses,rank,tag,MPI_CUSTOM
         integer:: status(MPI_STATUS_SIZE)
@@ -370,7 +390,8 @@
       module displacements
 !-----------------------------------------------------------------------
       ! displacement arrays
-        use precisions
+        use precisions, only: WP
+        implicit none
         real(WP),allocatable,dimension(:):: displacement
         real(WP),allocatable,dimension(:):: displacement_old
         real(WP),allocatable,dimension(:):: newdisplacement
@@ -380,7 +401,8 @@
       module griddomain
 !-----------------------------------------------------------------------
       ! grid domain array
-        use precisions
+        use precisions, only: WP,PI
+        implicit none
         integer:: boundariesMaxRange
         integer,allocatable,dimension(:)::domainVertices
         integer,allocatable,dimension(:)::vertexDomain
@@ -393,6 +415,7 @@
       module loop
 !-----------------------------------------------------------------------
       ! looping delta location
+        implicit none
         integer:: latitudeStart, latitudeEnd
         integer:: longitudeEnd
       end
@@ -401,7 +424,8 @@
       module phaseBlockData
 !-----------------------------------------------------------------------
       ! phase module
-        use precisions
+        use precisions, only: WP,IIN,compatible_refgridXrefgrid
+        implicit none
         integer:: numBlocks
         real(WP), allocatable, dimension(:):: phaseBlock
         real(WP):: phaseBlockVelocityReference
@@ -414,7 +438,8 @@
       module traveltime
 !-----------------------------------------------------------------------
       ! traveltime common parameters
-        use precisions
+        use precisions, only: WP
+        implicit none
         real(WP):: t_lag,arrivalTime,vertexCellArea,t_lagAnalytic,seismo_timestep
         real(WP):: phasevelocity,kernel,kernelAnalytic
       end module
@@ -423,6 +448,7 @@
       module filterType
 !-----------------------------------------------------------------------
         use precisions
+        implicit none
         ! window size for fft
         integer:: WindowSIZE
         ! full bandwidth (in frequency domain)
@@ -434,14 +460,16 @@
 !-----------------------------------------------------------------------
       module splinefunction
 !-----------------------------------------------------------------------
-        integer:: i1,i2,ilength
-        double precision, allocatable,dimension(:):: X,Y
-        double precision, allocatable,dimension(:,:):: Q,F
+        implicit none
+        integer:: i1,i2
+        double precision, allocatable,dimension(:):: X,Y    ! dimension (i2)
+        double precision, allocatable,dimension(:,:):: Q,F  ! dimension (3,i2)
       end module
 
 !-----------------------------------------------------------------------
       module heterogeneousMatrix
 !-----------------------------------------------------------------------
+        implicit none
         real:: Amin,Amax
       end
 

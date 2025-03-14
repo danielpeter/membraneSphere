@@ -33,14 +33,13 @@ propagation_OBJECTS = \
 OBJS_COMMON = \
 	$O/adjointRoutines.o \
 	$O/cellfunctions.o \
+	$O/correlationRoutines.module.o \
 	$O/commonModules.module.o \
 	$O/filterRoutines.o \
 	$O/forcingTerms.o \
 	$O/gridfunctions.o \
 	$O/initialize.o \
 	$O/kernelValue.o \
-	$O/numericalRecipes_correl.o \
-	$O/numericalRecipes_nr.o \
 	$O/numericLaplacian.o \
 	$O/phasemapRoutines.o  \
 	$O/phaseshiftRoutines.o \

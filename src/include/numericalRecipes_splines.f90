@@ -23,7 +23,7 @@ function splin2(x1a,x2a,ya,y2a,x1,x2)
 	m = assert_eq(size(x1a),size(ya,1),size(y2a,1),'splin2: m')
 	ndum = assert_eq(size(x2a),size(ya,2),size(y2a,2),'splin2: ndum')
 	do j = 1,m
-		yytmp(j)=splint(x2a,ya(j,:),y2a(j,:),x2)
+		yytmp(j) = splint(x2a,ya(j,:),y2a(j,:),x2)
 	enddo
 	call spline(x1a,yytmp,1.0e30_sp,1.0e30_sp,y2tmp2)
 	splin2=splint(x1a,yytmp,y2tmp2,x1)
@@ -161,16 +161,16 @@ subroutine tridag_ser(a,b,c,r,u)
 	n = assert_eq((/size(a)+1,size(b),size(c)+1,size(r),size(u)/),'tridag_ser')
 	bet=b(1)
 	if (bet == 0.0) call nrerror('tridag_ser: Error at code stage 1')
-	u(1)=r(1)/bet
+	u(1) = r(1)/bet
 	do j = 2,n
-		gam(j)=c(j-1)/bet
+		gam(j) = c(j-1)/bet
 		bet = b(j)-a(j-1)*gam(j)
 		if (bet == 0.0) &
 			call nrerror('tridag_ser: Error at code stage 2')
 		u(j)=(r(j)-a(j-1)*u(j-1))/bet
 	enddo
 	do j = n-1,1,-1
-		u(j)=u(j)-gam(j+1)*u(j+1)
+		u(j) = u(j)-gam(j+1)*u(j+1)
 	enddo
 	end subroutine tridag_ser
 

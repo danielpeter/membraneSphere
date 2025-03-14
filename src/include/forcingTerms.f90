@@ -17,7 +17,7 @@
 !
 
 !-----------------------------------------------------------------------
-      double precision function forceTerm1(colatitude,longitude,time)
+!      double precision function forceTerm1(colatitude,longitude,time)
 !-----------------------------------------------------------------------
 ! calculation of the forcing term one
 !
@@ -26,17 +26,18 @@
 !   time                       - given time step
 !
 ! returns: forceTerm1
-      implicit none
-      double precision:: colatitude,longitude,time
-      double precision:: timeTerm1, widthTerm
-
-      forceTerm1 = timeTerm1(time)*widthTerm(colatitude)
-      return
-      end function
+!      implicit none
+!      double precision,intent(in):: colatitude,longitude,time
+!      ! local parameters
+!      double precision:: timeTerm1, widthTerm
+!
+!      forceTerm1 = timeTerm1(time)*widthTerm(colatitude)
+!      return
+!      end function
 
 
 !-----------------------------------------------------------------------
-      double precision function forceTerm2(colatitude,longitude,time)
+!      double precision function forceTerm2(colatitude,longitude,time)
 !-----------------------------------------------------------------------
 ! calculation of the forcing term two, assumes source on north pole
 !
@@ -45,28 +46,29 @@
 !   time                       - given time step
 !
 ! returns: forceTerm2
-      use precisions
-      use verbosity
-      implicit none
-      double precision,intent(in):: colatitude,longitude,time
-      double precision:: widthTerm
-      real(WP) :: time_wp
-      real(WP),external:: timeTerm2
-
+!      use precisions
+!      use verbosity
+!      implicit none
+!      double precision,intent(in):: colatitude,longitude,time
+!      ! local parameters
+!      double precision:: widthTerm
+!      real(WP) :: time_wp
+!      real(WP),external:: timeTerm2
+!
       ! approximative this term is too small to have an influence beyond this time
       ! if ( time > 7000.0d0) then
       !   forceTerm2 = 0.0d0
       !   return
       ! endif
-      time_wp = real(time,kind=WP)
-
-      forceTerm2 = timeTerm2(time_wp) * widthTerm(colatitude)
-      return
-      end function
+!      time_wp = real(time,kind=WP)
+!
+!      forceTerm2 = timeTerm2(time_wp) * widthTerm(colatitude)
+!      return
+!      end function
 
 
 !-----------------------------------------------------------------------
-      double precision function initialShapeTerm(colatitude,longitude,time)
+!      double precision function initialShapeTerm(colatitude,time)
 !-----------------------------------------------------------------------
 ! calculation of the forcing term two
 !
@@ -75,21 +77,22 @@
 !   time                       - given time step
 !
 ! returns: forceTerm2
-      implicit none
-      double precision:: colatitude,longitude,time
-      double precision:: widthTerm
-
-      if ( abs(time) < 1.e-7) then
-        initialShapeTerm= widthTerm(colatitude)
-      else
-        initialShapeTerm = 0.0
-      endif
-      return
-      end function
+!      implicit none
+!      double precision,intent(in):: colatitude,time
+!      ! local parameters
+!      double precision:: widthTerm
+!
+!      if ( abs(time) < 1.e-7) then
+!        initialShapeTerm = widthTerm(colatitude)
+!      else
+!        initialShapeTerm = 0.0
+!      endif
+!      return
+!      end function
 
 
 !-----------------------------------------------------------------------
-      double precision function timeTerm1(time)
+!      double precision function timeTerm1(time)
 !-----------------------------------------------------------------------
 ! calculation of the time term one
 !
@@ -97,16 +100,17 @@
 !   time                       - given time step
 !
 ! returns: timeTerm1
-      use propagationStartup;use verbosity
-      implicit none
-      double precision:: colatitude,longitude,time,sigma2
-      double precision,parameter:: sqrt2pi = 2.506628274631d0
-
-
-      sigma2 = timeParameterSigma*timeParameterSigma
-      timeTerm1 = dexp(-time*time/(sigma2+sigma2))/(sqrt2pi*timeParameterSigma)
-      return
-      end function
+!      use propagationStartup;use verbosity
+!      implicit none
+!      double precision,intent(in):: time
+!      ! local parameters
+!      double precision:: sigma2
+!      double precision,parameter:: sqrt2pi = 2.506628274631d0
+!
+!      sigma2 = timeParameterSigma*timeParameterSigma
+!      timeTerm1 = dexp(-time*time/(sigma2+sigma2))/(sqrt2pi*timeParameterSigma)
+!      return
+!      end function
 
 !-----------------------------------------------------------------------
       function timeTerm2(time)
@@ -121,6 +125,7 @@
       use propagationStartup, only: timeParameterSigma
       implicit none
       real(WP),intent(in):: time
+      ! local parameters
       real(WP):: timeTerm2,sigma2
       real(WP),parameter:: sqrt2pi = 2.506628274631_WP
 
@@ -141,6 +146,7 @@
       use propagationStartup, only: muSquare,muTwo
       implicit none
       double precision,intent(in):: theta
+      ! local parameters
       double precision:: col2
 
       col2 = theta*theta
@@ -162,8 +168,9 @@
       use precisions
       implicit none
       integer,intent(in):: sourceVertex, refVertex
+      real(WP),intent(in):: time
       real(WP):: forceTerm2Source
-      real(WP):: time
+      ! local parameters
       real(WP),external:: timeTerm2,widthTermSource
 
       ! approximative: this term is too small to have an influence beyond this time
@@ -190,7 +197,8 @@
       use propagationStartup; use cells
       implicit none
       integer,intent(in):: sourceLocationVertex, refVertex
-      real(WP):: widthTermSource,colatitude,longitude
+      real(WP):: widthTermSource
+      ! local parameters
       real(WP):: theta,col2
       real(WP):: vectorS(3),vectorRef(3)
 
@@ -228,8 +236,9 @@
       use propagationStartup; use adjointVariables; use cells; use verbosity
       implicit none
       integer,intent(in):: refVertex,step
-      integer:: i
       real(WP):: forceAdjointSource
+      ! local parameters
+      integer:: i
       real(WP):: distance,factor,dx
       logical:: isNeighbor
       logical,parameter:: extendedSource = .false.
@@ -254,7 +263,7 @@
 
           if ( Gaussian ) then
             ! factor determined empirically such that it's a nice curve to distances till 280 km (4*dx for grid level 6)
-            factor= exp(-distance*distance/(300*dx))
+            factor = exp(-distance*distance/(300*dx))
           else
             ! plateau means we take the same value as at the adjointSource vertex location for all the others as well
             factor = 1.0_WP
@@ -298,14 +307,19 @@
       use verbosity; use cells
       use propagationStartup, only: muSquare,muTwo
       implicit none
-      integer:: sourceVertex, refVertex
-      real(WP):: forceTermExact,time,width,sourceLat,sourceLon,theta
+      integer,intent(in):: refVertex
+      real(WP),intent(in):: time,sourceLat,sourceLon
+      real(WP):: forceTermExact
+      ! local parameters
+      real(WP):: width,theta
       real(WP):: vectorS(3),vectorRef(3),col2
       real(WP),external:: timeTerm2
 
       ! distance to source in radian
       call getVector(sourceLat,sourceLon,vectorS(1),vectorS(2),vectorS(3))
+
       vectorRef(:) = vertices(refVertex,:)
+
       call greatCircleDistance(vectorS,vectorRef,theta)
       if (theta > PI .or. theta < 0.0) then
         print *,"strange forcetermExact:",theta,time,forceTermExact,refVertex,width

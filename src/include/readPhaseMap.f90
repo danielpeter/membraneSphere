@@ -23,38 +23,39 @@
 ! returns: phaseMap array filled up
       use phaseVelocityMap; use propagationStartup; use verbosity; use cells
       implicit none
+      character(len=64),intent(in):: fileName
+      ! local parameters
       integer:: i,ioerror,id
-      character(len=64):: fileName
       real(WP):: phasepercent,lat,lon
 
       ! read phase map
-      fileName = trim(fileName)
-      if (VERBOSE)print *,fileName
+      if (VERBOSE) print *,trim(fileName)
 
       !open file
-      open(1, file= fileName,status='old',iostat=ioerror)
+      open(IIN, file=trim(fileName),status='old',iostat=ioerror)
       if ( ioerror /= 0) then
-        print *,'Error: opening file ',fileName
+        print *,'Error: opening file ',trim(fileName)
         call stopProgram( 'abort - readPhasemap   ')
       endif
 
       !fill in values
       do i = 1, numVertices
-        read(1, *, iostat=ioerror) lat,lon,phaseMap(i)
+        read(IIN, *, iostat=ioerror) lat,lon,phaseMap(i)
         if ( ioerror /= 0) then
           exit
         endif
         !print *,'vertex',lat,lon,phaseMap(i)
       enddo
 
-      close(1)
-      if (VERBOSE)print *,'number of phase velocities read in: ',i-1
+      close(IIN)
+
+      if (VERBOSE) print *,'number of phase velocities read in: ',i-1
       if ( numVertices /= i-1 ) then
         print *,'Error: read entries do not match'
         call stopProgram( 'abort - readPhaseMap   ')
       endif
 
-      end
+      end subroutine
 
 !-----------------------------------------------------------------------
       subroutine readPhaseMap()
@@ -65,15 +66,17 @@
 ! returns: phaseMap array filled up
       use cells
       implicit none
+      ! local parameters
       character(len=64):: fileName
       character(len=1):: divString
 
       ! parameters
       write(divString,'(i1)') subdivisions  ! grid level
+
       !filename of phase velocity map (values in absolute km/s)
       fileName = 'data/phasedata/phase.'//divString//'.L150.dat'
 
       ! read phase map
       call readPhaseVelocityMap(fileName)
 
-      end
+      end subroutine

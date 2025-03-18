@@ -112,7 +112,7 @@ end module
       center_freq = 0.0
 
 !      ! determine angular degree depending on desired frequency range
-!      if ( ONLY_FREQUENCY_RANGE ) then
+!      if (ONLY_FREQUENCY_RANGE) then
 !        center_freq = 2.0*PI/WAVEPERIOD_L150
 !        freq_min = center_freq - 2.0*PI*BW_HALFFREQUENCY
 !        freq_max = center_freq + 2.0*PI*BW_HALFFREQUENCY
@@ -126,7 +126,7 @@ end module
 !      endif
 
 !      ! angular frequency range (output only at begining)
-!      if ( abs(time) <= 1.e-4) then
+!      if (abs(time) <= 1.e-4) then
 !        print *,'solution f2:'
 !        print *,'    angular degrees min/max:',l_min,l_max
 !        print *,'    source sigma/mu:',sngl(sigma),sngl(mu)
@@ -139,7 +139,7 @@ end module
 !        print *,'         period range min/max:', &
 !                sngl(2*PI/(cphase*sqrt(l_min*(l_min+1.0d0))/EARTHRADIUS)), &
 !                sngl(2*PI/(cphase*sqrt(l_max*(l_max+1.0d0))/EARTHRADIUS))
-!        if ( l_min > 0 ) then
+!        if (l_min > 0) then
 !          print *,'    center frequency/period:',sngl(center_freq), &
 !                      sngl(2*PI/center_freq)
 !        endif
@@ -167,15 +167,15 @@ end module
 
         ! skip if accuracy enough
         !print *,'u_f2 =',u_f2,l,result
-        !if ( mod(l,2)==0 .and. abs( result ) < MACHINE_PRECISION) exit
+        !if (mod(l,2)==0 .and. abs( result) < MACHINE_PRECISION) exit
         !call system_clock(cpuend)
         !cputime = real(cpuend-cpustart)/real(cpurate)
         !print *,'u_f2=',u_f2,l,cputime
-        !if ( abs(cputime) > 0.1 ) then
+        !if (abs(cputime) > 0.1) then
         !  print *,'  getting slower...'
         !  print *,'    u_f2 = ',u_f2,l,result
         !endif
-        !if ( abs(cputime) > 0.3 ) then
+        !if (abs(cputime) > 0.3) then
         !  print *,'  getting too slow...',l
         !  !print *,'    u_f2 = ',u_f2,l,result
         !  exit
@@ -259,7 +259,7 @@ end module
       freq_max = huge(freq_max)
       center_freq = 0.0
       ! determine angular degree depending on desired frequency range
-      if ( ONLY_FREQUENCY_RANGE ) then
+      if (ONLY_FREQUENCY_RANGE) then
         center_freq = 2.0*PI/bw_waveperiod
         freq_min = center_freq - 2.0*PI*BW_HALFFREQUENCY
         freq_max = center_freq + 2.0*PI*BW_HALFFREQUENCY
@@ -273,7 +273,7 @@ end module
       endif
 
       ! angular frequency range (output only at begining)
-      if ( abs(time) <= 1.e-4) then
+      if (abs(time) <= 1.e-4) then
       !  l = 0
       !  freq_min = cphase*sqrt(l*(l+1.0d0))*reciEarthradius
       !  l = ACCURACY
@@ -290,7 +290,7 @@ end module
         print *,'         period range min/max:', &
                 sngl(2*PI/(cphase*sqrt(l_min*(l_min+1.0d0))/EARTHRADIUS)), &
                 sngl(2*PI/(cphase*sqrt(l_max*(l_max+1.0d0))/EARTHRADIUS))
-        if ( l_min > 0 ) then
+        if (l_min > 0) then
           print *,'    center frequency/period:',sngl(center_freq), &
                       sngl(2*PI/center_freq)
         endif
@@ -348,15 +348,15 @@ end module
 
 
         ! skip if accuracy enough
-        !if ( mod(l,2)==0 .and. abs( result ) < MACHINE_PRECISION) exit
+        !if (mod(l,2)==0 .and. abs( result) < MACHINE_PRECISION) exit
         call system_clock(cpuend)
         cputime = real(cpuend-cpustart)/real(cpurate)
         !print *,'u_f2=',u_f2,l,cputime
-        !if ( abs(cputime) > 0.1 ) then
+        !if (abs(cputime) > 0.1) then
         !  print *,'  getting slower...'
         !  print *,'    u_f2 = ',u_f2,l,result
         !endif
-        if ( abs(cputime) > 0.3 ) then
+        if (abs(cputime) > 0.3) then
           !print *,'  getting too slow...',l
           !print *,'    u_f2_asymptotic = ',u_f2_asymptotic,l,result
           exit
@@ -468,7 +468,7 @@ end module
       ray_time = time
 
       ! determine angular degree depending on desired frequency range
-      if ( ONLY_FREQUENCY_RANGE ) then
+      if (ONLY_FREQUENCY_RANGE) then
         center_freq = 2.0*PI/bw_waveperiod
         freq_min = center_freq - 2.0*PI*BW_HALFFREQUENCY
         freq_max = center_freq + 2.0*PI*BW_HALFFREQUENCY
@@ -482,7 +482,7 @@ end module
       endif
 
       ! angular frequency range (output only at begining)
-      if ( abs(time) <= 1.e-8 .and. orbit == 1) then
+      if (abs(time) <= 1.e-8 .and. orbit == 1) then
         ! determine frequencies
         freq_min = cphase*sqrt(l_min*(l_min+1.0d0))/EARTHRADIUS
         freq_max = cphase*sqrt(l_max*(l_max+1.0d0))/EARTHRADIUS !huge(freq_max)
@@ -493,7 +493,7 @@ end module
         print *,'    period min/max    :',sngl(2*PI/freq_min),sngl(2*PI/freq_max)
       endif
 
-      if (.not. allocated(X) ) then
+      if (.not. allocated(X)) then
         ! for spline representation
         length = l_max-l_min+1
 
@@ -501,7 +501,7 @@ end module
         i1 = 1
         i2 = length
         allocate(X(i2),Y(i2),Q(3,i2),F(3,i2),stat=ierror)
-        if ( ierror /= 0) call stopProgram('u_f2_orbit - error allocating spline arrays ')
+        if (ierror /= 0) call stopProgram('u_f2_orbit - error allocating spline arrays ')
 
         ! get spline representation
         icount = 0
@@ -517,7 +517,7 @@ end module
           call simpsons_integral_degree(integrand,i,0.0,PI,integralvalue,mu)
           Y(icount) = dble(integralvalue)
 
-          if ( do_file_out ) write(88,*) i,Y(icount)
+          if (do_file_out) write(88,*) i,Y(icount)
         enddo
         close(88)
 
@@ -544,7 +544,7 @@ end module
       !call system_clock(COUNT=cpustart,COUNT_RATE=cpurate,COUNT_MAX=cpumax)
 
       ! summation or integration
-      if ( DO_BY_SUMMATION ) then
+      if (DO_BY_SUMMATION) then
         ! summation
         deltal = 0.5d0
         u_f2_orbit = 0.0d0
@@ -584,7 +584,7 @@ end module
       ! skip if accuracy enough
       !call system_clock(cpuend)
       !cputime = real(cpuend-cpustart)/real(cpurate)
-      !if ( abs(cputime) > 0.3 ) then
+      !if (abs(cputime) > 0.3) then
       !  print *,'  getting too slow...',l
       !  print *,'    u_f2_orbit = ',u_f2_orbit
       !  stop
@@ -630,7 +630,7 @@ end module
       sineDelta = ray_sineDelta
 
       ! check
-      if ( orbit < 1 ) stop "u_f2_asymptoticdisplacement - wrong orbit"
+      if (orbit < 1) stop "u_f2_asymptoticdisplacement - wrong orbit"
 
       ! get corresponding lambda and degree
       omegaSquare = omega**2
@@ -650,7 +650,7 @@ end module
       !!! termIntegral = termIntegral * sqrt(1.0 - 1.0/(4*lambda*lambda))
 
       ! orbit adding: epiDelta + 2PI + 2PI + ...
-      if ( mod(orbit,2) == 1 ) then
+      if (mod(orbit,2) == 1) then
         ! iorbit = 0,1,2,3,4,.. for R1,R3,R5,R7,...
         iorb = (orbit-1)/2
         ODD_ORBIT = .true.
@@ -659,7 +659,7 @@ end module
         iorb = orbit/2
         ODD_ORBIT = .false.
       endif
-      if ( ODD_ORBIT ) then
+      if (ODD_ORBIT) then
         ! R1,R3,.. orbit
         A_lminus = termSigma*termSpreading*termIntegral*exp(+II*PIby4)
         A_odd = (-1)**iorb*A_lminus*exp(-II*lambda*(twoPI*iorb+epiDelta) )
@@ -741,7 +741,7 @@ end module
       freq_max = huge(freq_max)
       center_freq = 0.0
       ! determine angular degree depending on desired frequency range
-      if ( ONLY_FREQUENCY_RANGE ) then
+      if (ONLY_FREQUENCY_RANGE) then
         center_freq = 2.0*PI/bw_waveperiod
         freq_min = center_freq - 2.0*PI*BW_HALFFREQUENCY
         freq_max = center_freq + 2.0*PI*BW_HALFFREQUENCY
@@ -755,7 +755,7 @@ end module
       endif
 
       ! angular frequency range (output only at begining)
-      if ( abs(time) <= 1.e-4) then
+      if (abs(time) <= 1.e-4) then
       !  l = 0
       !  freq_min = cphase*sqrt(l*(l+1.0d0))*reciEarthradius
       !  l = DEGREEACCURACY
@@ -772,7 +772,7 @@ end module
         print *,'         period range min/max:', &
                 sngl(2*PI/(cphase*sqrt(l_min*(l_min+1.0d0))/EARTHRADIUS)), &
                 sngl(2*PI/(cphase*sqrt(l_max*(l_max+1.0d0))/EARTHRADIUS))
-        if ( l_min > 0 ) then
+        if (l_min > 0) then
           print *,'    center frequency/period:',sngl(center_freq), &
                       sngl(2*PI/center_freq)
         endif
@@ -851,7 +851,7 @@ end module
       freq_max = huge(freq_max)
       center_freq = 0.0
       ! determine angular degree depending on desired frequency range
-      if ( ONLY_FREQUENCY_RANGE ) then
+      if (ONLY_FREQUENCY_RANGE) then
         center_freq = 2.0*PI/bw_waveperiod
         freq_min = center_freq - 2.0*PI*BW_HALFFREQUENCY
         freq_max = center_freq + 2.0*PI*BW_HALFFREQUENCY
@@ -865,7 +865,7 @@ end module
       endif
 
       ! angular frequency range (output only at begining)
-      if ( abs(time) <= 1.e-4) then
+      if (abs(time) <= 1.e-4) then
       !  l = 0
       !  freq_min = cphase*sqrt(l*(l+1.0d0))*reciEarthradius
       !  l = DEGREEACCURACY
@@ -882,7 +882,7 @@ end module
         print *,'         period range min/max:', &
                 sngl(2*PI/(cphase*sqrt(l_min*(l_min+1.0d0))/EARTHRADIUS)), &
                 sngl(2*PI/(cphase*sqrt(l_max*(l_max+1.0d0))/EARTHRADIUS))
-        if ( l_min > 0 ) then
+        if (l_min > 0) then
           print *,'    center frequency/period:',sngl(center_freq), &
                       sngl(2*PI/center_freq)
         endif
@@ -961,7 +961,7 @@ end module
       center_freq = 0.0
 
       ! determine angular degree depending on desired frequency range
-      if ( ONLY_FREQUENCY_RANGE ) then
+      if (ONLY_FREQUENCY_RANGE) then
         center_freq = 2.0*PI/bw_waveperiod
         freq_min = center_freq - 2.0*PI*BW_HALFFREQUENCY
         freq_max = center_freq + 2.0*PI*BW_HALFFREQUENCY
@@ -975,7 +975,7 @@ end module
       endif
 
       ! angular frequency range (output only at begining)
-      if ( abs(time) <= 1.e-4) then
+      if (abs(time) <= 1.e-4) then
       !  l = 0
       !  freq_min = cphase*sqrt(l*(l+1.0d0))*reciEarthradius
       !  l = ACCURACY
@@ -992,7 +992,7 @@ end module
         print *,'         period range min/max:', &
                 sngl(2*PI/(cphase*sqrt(l_min*(l_min+1.0d0))/EARTHRADIUS)), &
                 sngl(2*PI/(cphase*sqrt(l_max*(l_max+1.0d0))/EARTHRADIUS))
-        if ( l_min > 0 ) then
+        if (l_min > 0) then
           print *,'    center frequency/period:',sngl(center_freq), &
                       sngl(2*PI/center_freq)
         endif

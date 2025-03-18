@@ -15,7 +15,7 @@
       subroutine determineFFTWindowsize(numofTimeSteps,WindowSIZE)
 !-----------------------------------------------------------------------
 ! determines the length of the fft-seismograms (must be power of 2)
-      use parallel, only: MASTER
+      use parallel, only: MAIN_PROCESS
       use verbosity, only: VERBOSE
       implicit none
       integer,intent(in):: numofTimeSteps
@@ -27,7 +27,7 @@
       log2 = log(real(numofTimeSteps))/log(2.0)
       WindowSIZE = 2**(ceiling(log2))
 
-      if (MASTER .and. VERBOSE) print *,'    fft window size =',WindowSIZE,'time steps=',numofTimeSteps
+      if (MAIN_PROCESS .and. VERBOSE) print *,'    fft window size =',WindowSIZE,'time steps=',numofTimeSteps
       end
 
 !-----------------------------------------------------------------------
@@ -39,34 +39,34 @@
       implicit none
 
       ! determine wave period
-      if ( cphasetype == 'R35') bw_waveperiod=WAVEPERIOD_R35
-      if ( cphasetype == 'R37') bw_waveperiod=WAVEPERIOD_R37
-      if ( cphasetype == 'R40') bw_waveperiod=WAVEPERIOD_R40  ! wave period in seconds
-      if ( cphasetype == 'R45') bw_waveperiod=WAVEPERIOD_R45
-      if ( cphasetype == 'R50') bw_waveperiod=WAVEPERIOD_R50
-      if ( cphasetype == 'R60') bw_waveperiod=WAVEPERIOD_R60
-      if ( cphasetype == 'R75') bw_waveperiod=WAVEPERIOD_R75
-      if ( cphasetype == 'R100') bw_waveperiod=WAVEPERIOD_R100
-      if ( cphasetype == 'R150') bw_waveperiod=WAVEPERIOD_R150
-      if ( cphasetype == 'R200') bw_waveperiod=WAVEPERIOD_R200
-      if ( cphasetype == 'R250') bw_waveperiod=WAVEPERIOD_R250
-      if ( cphasetype == 'R300') bw_waveperiod=WAVEPERIOD_R300
+      if (cphasetype == 'R35') bw_waveperiod=WAVEPERIOD_R35
+      if (cphasetype == 'R37') bw_waveperiod=WAVEPERIOD_R37
+      if (cphasetype == 'R40') bw_waveperiod=WAVEPERIOD_R40  ! wave period in seconds
+      if (cphasetype == 'R45') bw_waveperiod=WAVEPERIOD_R45
+      if (cphasetype == 'R50') bw_waveperiod=WAVEPERIOD_R50
+      if (cphasetype == 'R60') bw_waveperiod=WAVEPERIOD_R60
+      if (cphasetype == 'R75') bw_waveperiod=WAVEPERIOD_R75
+      if (cphasetype == 'R100') bw_waveperiod=WAVEPERIOD_R100
+      if (cphasetype == 'R150') bw_waveperiod=WAVEPERIOD_R150
+      if (cphasetype == 'R200') bw_waveperiod=WAVEPERIOD_R200
+      if (cphasetype == 'R250') bw_waveperiod=WAVEPERIOD_R250
+      if (cphasetype == 'R300') bw_waveperiod=WAVEPERIOD_R300
 
-      if ( cphasetype == 'L35') bw_waveperiod=WAVEPERIOD_L35
-      if ( cphasetype == 'L37') bw_waveperiod=WAVEPERIOD_L37
-      if ( cphasetype == 'L40') bw_waveperiod=WAVEPERIOD_L40
-      if ( cphasetype == 'L45') bw_waveperiod=WAVEPERIOD_L45
-      if ( cphasetype == 'L50') bw_waveperiod=WAVEPERIOD_L50
-      if ( cphasetype == 'L60') bw_waveperiod=WAVEPERIOD_L60
-      if ( cphasetype == 'L75') bw_waveperiod=WAVEPERIOD_L75
-      if ( cphasetype == 'L100') bw_waveperiod=WAVEPERIOD_L100
-      if ( cphasetype == 'L150') bw_waveperiod=WAVEPERIOD_L150
-      if ( cphasetype == 'L200') bw_waveperiod=WAVEPERIOD_L200
-      if ( cphasetype == 'L250') bw_waveperiod=WAVEPERIOD_L250
-      if ( cphasetype == 'L300') bw_waveperiod=WAVEPERIOD_L300
+      if (cphasetype == 'L35') bw_waveperiod=WAVEPERIOD_L35
+      if (cphasetype == 'L37') bw_waveperiod=WAVEPERIOD_L37
+      if (cphasetype == 'L40') bw_waveperiod=WAVEPERIOD_L40
+      if (cphasetype == 'L45') bw_waveperiod=WAVEPERIOD_L45
+      if (cphasetype == 'L50') bw_waveperiod=WAVEPERIOD_L50
+      if (cphasetype == 'L60') bw_waveperiod=WAVEPERIOD_L60
+      if (cphasetype == 'L75') bw_waveperiod=WAVEPERIOD_L75
+      if (cphasetype == 'L100') bw_waveperiod=WAVEPERIOD_L100
+      if (cphasetype == 'L150') bw_waveperiod=WAVEPERIOD_L150
+      if (cphasetype == 'L200') bw_waveperiod=WAVEPERIOD_L200
+      if (cphasetype == 'L250') bw_waveperiod=WAVEPERIOD_L250
+      if (cphasetype == 'L300') bw_waveperiod=WAVEPERIOD_L300
 
       ! get (upper) half-bandwidth frequency for filtering
-      if ( BW_FIXFREQUENCY ) then
+      if (BW_FIXFREQUENCY) then
         bw_frequency = BW_HALFFREQUENCY
       else
         bw_frequency = BW_PERCENT/((BW_PERCENT+1.0)*bw_waveperiod)
@@ -98,7 +98,7 @@
 
       ! attention of seismo arrays: zero padding of length WindowSIZE at the end to get corresponding length of cross-correlation
       !allocate(seismoTmp(2,xcorrlength),stat=ierror)
-      !if ( ierror /= 0) call stopProgram( 'abort - dofilterSeismogram       ')
+      !if (ierror /= 0) call stopProgram( 'abort - dofilterSeismogram       ')
 
       ! determine startingTime
       endtime=seismo(1,seismoLength)
@@ -109,7 +109,7 @@
       call captureSeismogram(seismo,seismoLength,seismoTmp,xcorrlength,startingTime,entries,endtime)
 
       ! console output
-      if ( beVerbose ) then
+      if (beVerbose) then
         print *,'    captured seismogram:'
         print *,'      dt                  : ',dt
         print *,'      time first entry      : ',seismoTmp(1,1) !,seismoTmp(2,1)
@@ -133,7 +133,7 @@
       !bw_width= 2*abs(centerfrequencyIndex-nint(bw_frequency*dt*xcorrlength))
 
       ! console output
-      if ( beVerbose ) then
+      if (beVerbose) then
         print *
         print *,'  filter parameter:'
         print *,'    sampling frequency    : ',samplingFreq
@@ -144,18 +144,18 @@
         print *,'      index               : ',centerfrequencyIndex
         print *,'    bandwidth (full/half) : ',bw_width,bw_width/2
         print *,'        as frequency      : ',bw_width*samplingFreq,bw_width/2*samplingFreq
-        if ( BUTTERWORTHFILTER) print *,'    power                 : ',BUTTERWORTH_POWER
+        if (BUTTERWORTHFILTER) print *,'    power                 : ',BUTTERWORTH_POWER
         print *,'    windowsize            : ',xcorrlength
       endif
 
       ! check if filter frequency is correct
-      if ( centerfrequencyIndex < 1 .or. centerfrequencyIndex > xcorrlength/2 ) then
+      if (centerfrequencyIndex < 1 .or. centerfrequencyIndex > xcorrlength/2) then
         print *,'Error: filter is incorrect:',centerfrequencyIndex,xcorrlength
         call stopProgram('abort filterSeismogram() - incorrect centerfrequencyIndex    ')
       endif
 
       ! debug output
-      if ( fileOutput .and. MASTER .and. beVerbose) then
+      if (fileOutput .and. MAIN_PROCESS .and. beVerbose) then
         print *,'printing to file:',datadirectory(1:len_trim(datadirectory))//'Filter_input.dat'
         open(10,file=datadirectory(1:len_trim(datadirectory))//'Filter_input.dat')
         do i = 1,xcorrlength
@@ -177,7 +177,7 @@
       !call taperSeismogram(seismo,seismoLength,seismoLength,beVerbose)
 
       ! debug output
-      if ( fileOutput .and. MASTER .and. beVerbose ) then
+      if (fileOutput .and. MAIN_PROCESS .and. beVerbose) then
         print *,'printing to file:',datadirectory(1:len_trim(datadirectory))//'Filter_output.dat'
         open(10,file=datadirectory(1:len_trim(datadirectory))//'Filter_output.dat')
         do i = 1,seismoLength
@@ -255,7 +255,7 @@
       fftdata(:) = cmplx(seismodata(:),0.0d0,kind=8)
 
       ! test fourier transformation
-      if ( TEST .and. fileOutput .and. MASTER ) then
+      if (TEST .and. fileOutput .and. MAIN_PROCESS) then
         fftdataTest(:) = fftdata(:)
 
         ! debug output
@@ -298,7 +298,7 @@
       call FFT_complex(fftdata,1)
 
       ! debug output
-      if ( TEST .and. fileOutput .and. MASTER ) then
+      if (TEST .and. fileOutput .and. MAIN_PROCESS) then
         print *,'  printing to file:',datadirectory(1:len_trim(datadirectory))//'FilterSeismo_data.dat'
         open(IOUT,file=datadirectory(1:len_trim(datadirectory))//'FilterSeismo_data.dat')
         do i = 1,dataLength
@@ -308,8 +308,8 @@
       endif
 
       ! apply filter
-      if ( beVerbose) then
-        if ( BUTTERWORTHFILTER) then
+      if (beVerbose) then
+        if (BUTTERWORTHFILTER) then
           print *,'    butterworth bandpass filter'
         else
           print *,'    bandpass filter'
@@ -317,7 +317,7 @@
       endif
 
       ! debug output
-      if ( TEST .and. fileOutput .and. MASTER ) then
+      if (TEST .and. fileOutput .and. MAIN_PROCESS) then
         print *,'  printing to file:',datadirectory(1:len_trim(datadirectory))//'FilterSeismo_datafiltered.dat'
         open(IOUT,file=datadirectory(1:len_trim(datadirectory))//'FilterSeismo_datafiltered.dat')
         write(IOUT,*) "# filterSeismogram"
@@ -326,7 +326,7 @@
 
       do i = 1,dataLength
         ! butterworth bandpass filter
-        if ( BUTTERWORTHFILTER) then
+        if (BUTTERWORTHFILTER) then
           butterworth = 1.0d0 - 1.0d0/(1.0d0+(dble(i*bandwidth)/((dble(i))**2-(dble(centerIndex))**2))**(2*power))
         else
           ! bandpass filter
@@ -336,7 +336,7 @@
           ! first "half" (2:n/2) are positive frequencies in increasing occurrence , (n:n/2) second half negative frequencies in decreasing manner
           ! filtering by bandpass has to filter both positive and negative frequencies
           ! ( see also http://www.library.cornell.edu/nr/bookcpdf/c12-2.pdf )
-          if ( abs((centerIndex+1)-i) <= bandwidth/2 .or. abs(datalength-(centerIndex-1)-i) <= bandwidth/2) then
+          if (abs((centerIndex+1)-i) <= bandwidth/2 .or. abs(datalength-(centerIndex-1)-i) <= bandwidth/2) then
             butterworth = 1.0d0
           else
             butterworth = 0.0d0
@@ -352,7 +352,7 @@
         !                 butterworth*aimag(fftdata(i))/aimag(fftdata(i))*aimag(scale),kind=8)
 
         ! debug output
-        if ( TEST .and. fileOutput .and. MASTER ) then
+        if (TEST .and. fileOutput .and. MAIN_PROCESS) then
           write(IOUT,*) i,real(fftdata(i)),aimag(fftdata(i)),butterworth
         endif
 
@@ -361,7 +361,7 @@
       enddo
 
       ! debug output
-      if ( TEST .and. fileOutput .and. MASTER ) then
+      if (TEST .and. fileOutput .and. MAIN_PROCESS) then
         close(IOUT)
       endif
 
@@ -427,7 +427,7 @@
         seismo(2,ileft+i) = seismo(2,ileft+i)*hannfactor
         seismo(2,iright-i) = seismo(2,iright-i)*hannfactor
       enddo
-      if ( verboseOutput ) then
+      if (verboseOutput) then
         print *,'    hanning window applied:',ileft+1,iright-1,'window width:',hannwindow
       endif
       end
@@ -491,7 +491,7 @@
           time = seismoData(1,i)
           displace = seismoData(2,i)
 
-          if ( time - startingTime > 0.0) then ! starts with times from 'start time' on
+          if (time - startingTime > 0.0) then ! starts with times from 'start time' on
             index = index+1
             seismoWindow(1,index) = time
             seismoWindow(2,index) = displace

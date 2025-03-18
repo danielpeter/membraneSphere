@@ -43,7 +43,7 @@
           print *
           ! wait until all processes reached this point
           !call MPI_Barrier( MPI_COMM_WORLD, ierror )
-          !if ( ierror /= 0) call stopProgram('terminate MPI_Barrier failed    ')
+          !if (ierror /= 0) call stopProgram('terminate MPI_Barrier failed    ')
 
           ! stop program
           !call stopProgram("terminate     ")

@@ -62,10 +62,10 @@
       !read*,scale
 
       ! read phase map
-      if ( VERBOSE) then
+      if (VERBOSE) then
         print *,'  reading gsh model: '
         print *,'    file: ',trim(fileName)
-        if ( given_as_percent) then
+        if (given_as_percent) then
           print *,'    values given in percentage %'
         else
           print *,'    values given in absolute range'
@@ -74,7 +74,7 @@
 
       !open file
       open(IIN,file=trim(fileName),status='old',iostat=ioerror)
-      if ( ioerror /= 0) then
+      if (ioerror /= 0) then
         print *,'Error: could not open file ',trim(fileName)
         print *,'       Please check if file exists...'
         call stopProgram( 'abort - could not open GSHPhasemap    ')
@@ -83,16 +83,16 @@
 
       cmod(:) = 0.0
       lmaxuser = gsh_maximum_expansion
-      if ( lmaxuser > lmax ) call stopProgram('error lmax expansion')
+      if (lmaxuser > lmax) call stopProgram('error lmax expansion')
 
       ncoef = (lmaxuser+1)**2
       read(IIN,*) (cmod(i),i=1,ncoef)
       close(IIN)
 
-      if ( VERBOSE ) then
+      if (VERBOSE) then
         print *,"    maximum expansion     : l = ",lmax
         print *,"    interrupt expansion at: l = ",lmaxuser
-        if ( rotate_frame ) print *,"  rotate frame to equator"
+        if (rotate_frame) print *,"  rotate frame to equator"
       endif
 
       ! debug check values
@@ -128,7 +128,7 @@
       write(IOUT,*) '#lon #lat #phase-velocity-perturbation (in percent)'
 
       ! determine rotation matrix from (1,0,0)/... to source/receiver frame
-      if ( rotate_frame ) then
+      if (rotate_frame) then
         Vsource(:) = vertices(originSourceVertex,:)
         Vreceiver(:) = vertices(originReceiverVertex,:)
         call getRotationMatrix(Vsource,Vreceiver,rot)
@@ -142,7 +142,7 @@
         vtmp(:) = vertices(i,:)
 
         ! get rotated vector
-        if ( rotate_frame ) then
+        if (rotate_frame) then
           call rotateVector(rot,vtmp,vtmp)
         endif
 
@@ -168,7 +168,7 @@
 
         ! set corresponding phase velocity
         scale = cphaseRef
-        if ( given_as_percent ) then
+        if (given_as_percent) then
           vphase = z/100.0 * scale + cphaseRef
         else
           vphase = z * scale + cphaseRef
@@ -176,8 +176,8 @@
         phaseMap(i) = vphase
 
         ! statistics
-        if ( z < zmin ) zmin = z
-        if ( z > zmax ) zmax = z
+        if (z < zmin) zmin = z
+        if (z > zmax) zmax = z
 
         ! debug file output
         !write(20,*)xlon,xlat,vphase
@@ -185,7 +185,7 @@
 
         ! file output
         ! format: #lon #lat #phase-velocity-perturbation (in percent)
-        if ( given_as_percent ) then
+        if (given_as_percent) then
           write(IOUT,*) xlon,xlat,z
         else
           write(IOUT,*) xlon,xlat,z*100.0
@@ -197,7 +197,7 @@
       !close(22)
       !close(33)
 
-      if ( VERBOSE ) then
+      if (VERBOSE) then
         print *,'    total points readin   : ',igrid
         print *,'    values minimum/maximum: ',zmin,zmax
         print *,'    phase map stored as   : '//trim(datadirectory)//'PhaseMap.percent.dat'
@@ -235,7 +235,7 @@
 
       !open file
       open(IIN, file=trim(fileName),status='old',iostat=ioerror)
-      if ( ioerror /= 0) call stopProgram( 'abort - readPixelPhasemap()  ')
+      if (ioerror /= 0) call stopProgram( 'abort - readPixelPhasemap()  ')
 
       !get file length
       numBlocks = 0
@@ -249,7 +249,7 @@
 
       !resize phaseBlock array
       allocate(phaseBlock(numBlocks), stat=ioerror)
-      if ( ioerror /= 0) then
+      if (ioerror /= 0) then
         print *,'Error: allocating phaseBlock array'
         call stopProgram( 'abort - readPixelPhasemap    ')
       endif
@@ -258,7 +258,7 @@
       rewind(IIN)
       do i = 1, numBlocks
         read(IIN, *, iostat=ioerror) id, phaseBlock(i)
-        if ( ioerror /= 0) then
+        if (ioerror /= 0) then
           exit
         endif
         !print *,'block',id,phaseBlock(i)
@@ -420,7 +420,7 @@
       nprime = numto-icoar+ifine
 
       ! check number of pixels
-      if ( nprime /= numBlocks ) then
+      if (nprime /= numBlocks) then
         print *,'Error: pixel grid error'
         print *,'       file blocks',numBlocks
         print *,'       parameterization: total',nprime,' blocks'
@@ -901,8 +901,8 @@ end subroutine rotmx2
       !double precision, external:: generalizedLegendre
       double precision, external:: associatedLegendre
 
-      ! checks that only master is executing this
-      if (.not. MASTER ) return
+      ! checks that only main process is executing this
+      if (.not. MAIN_PROCESS) return
 
       ! file output
       write(chL,'(i2.2)') MAP_DEGREE_L
@@ -921,10 +921,10 @@ end subroutine rotmx2
         call getSphericalCoord(i,xcolat,xlon)
         colatitude = xcolat
         harmonical = associatedLegendre(l,m,dcos(colatitude))
-        if ( dabs(harmonical) > zmax ) zmax = dabs(harmonical)
+        if (dabs(harmonical) > zmax) zmax = dabs(harmonical)
       enddo
       Nfactor = 1.0d0/zmax
-      if ( MASTER .and. VERBOSE ) print *,'normalization: ',Nfactor
+      if (MAIN_PROCESS .and. VERBOSE) print *,'normalization: ',Nfactor
 
       ! creates phase map
       zmax = 0.0
@@ -950,7 +950,7 @@ end subroutine rotmx2
         !print *,'colat/lat',colatitude,longitude
         !print *,'  harmonical = ',harmonical
 
-        if ( m /= 0) then
+        if (m /= 0) then
           harmonical = harmonical*dsin( m*longitude)
         endif
         z = harmonical
@@ -966,8 +966,8 @@ end subroutine rotmx2
         phaseMap(i)=vphase
 
         ! statistics
-        if ( z < zmin ) zmin = z
-        if ( z > zmax ) zmax = z
+        if (z < zmin) zmin = z
+        if (z > zmax) zmax = z
 
         ! file output
         write(20,*)lon_degree,lat_degree,phaseMap(i)
@@ -978,7 +978,7 @@ end subroutine rotmx2
       ! close output-file
       close(20)
       close(40)
-      if ( MASTER .and. VERBOSE ) then
+      if (MAIN_PROCESS .and. VERBOSE) then
         print *,'  total points readin: ',igrid
         print *,'    percent values minimum/maximum: ',zmin,zmax
         print *,'    phase velocity min/max:',zmin/100.0*cphaseRef+cphaseRef, &
@@ -1005,7 +1005,7 @@ end subroutine rotmx2
 !      double precision rot(3,3),lat,lon
 !
 !      allocate(rotPhaseMap(numVertices),stat=ierror)
-!      if ( ierror > 0 ) then
+!      if (ierror > 0) then
 !        print *,'error in allocating rotPhaseMap array'
 !        stop 'abort - rotatePhaseMap'
 !      endif
@@ -1027,12 +1027,12 @@ end subroutine rotmx2
 !        !print *,'   index:',i,index
 !        !print *,'   phase value:',phaseMap(i)
 !        !print *,'   rotated value:',rotPhaseMap(index)
-!        if ( index < 0 .or. index > numVertices) then
+!        if (index < 0 .or. index > numVertices) then
 !          print *,'   rotated index violates boundaries:',index, i
 !          stop 'abort - rotatePhaseMap'
 !        endif
 !
-!        if ( rotPhaseMap(index) < 0.000000001) then
+!        if (rotPhaseMap(index) < 0.000000001) then
 !          rotPhaseMap(index)=phaseMap(i)
 !        else
 !          print *,'phase map rotation: ',i,' already mapped to', index, rotPhaseMap(index)

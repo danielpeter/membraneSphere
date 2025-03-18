@@ -33,7 +33,7 @@
 
       !open file
       open(IIN, file=trim(fileName),status='old',iostat=ioerror)
-      if ( ioerror /= 0) then
+      if (ioerror /= 0) then
         print *,'Error: opening file ',trim(fileName)
         call stopProgram( 'abort - readPhasemap   ')
       endif
@@ -41,7 +41,7 @@
       !fill in values
       do i = 1, numVertices
         read(IIN, *, iostat=ioerror) lat,lon,phaseMap(i)
-        if ( ioerror /= 0) then
+        if (ioerror /= 0) then
           exit
         endif
         !print *,'vertex',lat,lon,phaseMap(i)
@@ -50,7 +50,7 @@
       close(IIN)
 
       if (VERBOSE) print *,'number of phase velocities read in: ',i-1
-      if ( numVertices /= i-1 ) then
+      if (numVertices /= i-1) then
         print *,'Error: read entries do not match'
         call stopProgram( 'abort - readPhaseMap   ')
       endif

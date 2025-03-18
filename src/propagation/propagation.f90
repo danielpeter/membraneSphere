@@ -47,14 +47,14 @@
       call initialize()
 
       ! place all receiver stations
-      if ( manyReceivers ) then
+      if (manyReceivers) then
         ! useless for heterogeneous case
-        if ( HETEROGENEOUS ) then
+        if (HETEROGENEOUS) then
           print *,'multiple receiver stations and heterogeneous phase map not applicable!'
           stop
         endif
 
-        if ( numofReceivers <= 0 ) then
+        if (numofReceivers <= 0) then
           print *,'number of receiver stations invalid!',numofReceivers
           stop
         endif
@@ -62,7 +62,7 @@
         ! allocate seismograms for all receivers
         deallocate( seismogramReceiver )    ! only needed for single receiver setups
         allocate( receivers(numofReceivers), receiversSeismogram(numofReceivers+1,lasttimestep-firsttimestep+1),stat=ierror)
-        if ( ierror > 0 ) then
+        if (ierror > 0) then
           print *,'cannot allocate receivers array'
           stop
         endif
@@ -75,13 +75,13 @@
         enddo
       endif
 
-      if ( MASTER .and. VERBOSE ) print *,'starting time loop...'
+      if (MAIN_PROCESS .and. VERBOSE) print *,'starting time loop...'
 
       ! loop for each delta location
       looping = .true.
       do while( looping )
         ! benchmark
-        if ( MASTER ) benchstart = MPI_WTIME()
+        if (MAIN_PROCESS) benchstart = MPI_WTIME()
 
         ! forward simulation of membrane waves
         call forwardIteration()
@@ -90,8 +90,8 @@
         call printSeismogram()
 
         ! move delta location
-        if ( DELTA ) then
-          if ( PARALLELSEISMO ) then
+        if (DELTA) then
+          if (PARALLELSEISMO) then
             call parallelFindnextLocation(looping)
           else
             call findnextLocation(looping)
@@ -99,13 +99,13 @@
         endif
 
         ! stop looping
-        if (.not. MOVEDELTA .or. .not. DELTA ) looping = .false.
+        if (.not. MOVEDELTA .or. .not. DELTA) looping = .false.
 
         ! precalculate the phase velocities for all grid points (delta position may have changed)
         if (looping) call constructPhaseVelocitySquare()
 
         ! benchmark output
-        if ( MASTER .and. VERBOSE) then
+        if (MAIN_PROCESS .and. VERBOSE) then
           benchend = MPI_WTIME()
           print *
           print *,'benchmark seconds:',benchend-benchstart
@@ -115,10 +115,10 @@
 
       ! wait until all processes reached this point
       call MPI_Barrier( MPI_COMM_WORLD, ierror )
-      if ( ierror /= 0) call stopProgram('abort - final MPI_Barrier failed    ')
+      if (ierror /= 0) call stopProgram('abort - final MPI_Barrier failed    ')
 
       ! end parallelization
       call MPI_FINALIZE(ierror)
-      if ( ierror /= 0) call stopProgram('abort - finalize failed    ')
+      if (ierror /= 0) call stopProgram('abort - finalize failed    ')
 
       end program

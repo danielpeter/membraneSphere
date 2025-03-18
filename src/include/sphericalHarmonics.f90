@@ -41,7 +41,7 @@
       l = DEGREE_L
       m = DEGREE_M
       harmonical = generalizedLegendre(l,m,colatitude)
-      if ( m /= 0) then
+      if (m /= 0) then
         harmonical = harmonical*dsin( m*longitude)
       endif
 
@@ -77,7 +77,7 @@
       double precision,parameter:: PI = 3.1415926535897931d0
 
       ! range of m
-      if ( m < 0) then
+      if (m < 0) then
         m_positive = abs(m)
       else
         m_positive = m
@@ -206,7 +206,7 @@
       integer:: i
 
       !check
-      if ( N < 0) stop 'abort - factorial'
+      if (N < 0) stop 'abort - factorial'
 
       factorial = 1
       do i = 2,N
@@ -289,7 +289,7 @@
       else
         pmmp1=x*(m+m+1.0d0)*pmm
         !Compute P_m m+1 .
-        if ( abs(m+1.0d0-l) < 1.e-5 ) then
+        if (abs(m+1.0d0-l) < 1.e-5) then
           pLegendre = pmmp1
         else
           !Compute P_m l , l >m+1.

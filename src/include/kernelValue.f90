@@ -38,14 +38,14 @@
       vertexCellArea = cellAreas(deltaScatterer)/EARTHRADIUS_SQUARED
 
       ! get velocity correction
-      if ( heterogeneous ) then
+      if (heterogeneous) then
           phasevelocity = sqrt(phaseVelocitySquare(deltaScatterer))
       else
           phasevelocity = phaseVelocityRef
       endif
       !print *,'phase velocity:',phasevelocity, deltaScatterer
 
-      if ( phasevelocity < 0.001) then
+      if (phasevelocity < 0.001) then
         print *,'Error: phase velocity correction too small:',phasevelocity
         print *,'       vertex:',deltaScatterer
         call stopProgram( 'abort - getKernelValue   ')
@@ -103,7 +103,7 @@
         enddo
 
         ! check for minimum
-        if ( distanceMin > totaldistance ) then
+        if (distanceMin > totaldistance) then
           distanceMin = totaldistance
           triangleMin = i
           distances(:) = tmpdistances(:)
@@ -118,7 +118,7 @@
       triangleIndex = triangleMin
 
       ! check result
-      if ( triangleIndex < 1 .or. triangleIndex > numTriangleFaces ) then
+      if (triangleIndex < 1 .or. triangleIndex > numTriangleFaces) then
         print *,'Error: triangle not found',lat,lon,triangleIndex
         call stopProgram('no fitting triangle   ')
       endif
@@ -267,7 +267,7 @@
 !      enddo
 !      call contribution_ata_alt(rowa,dat(i),ncoef,nunk,ilata,ata,atd)
 !
-!      if ( VERBOSE .and. mod(i,1000) == 0)print *,i," gridpoints read"
+!      if (VERBOSE .and. mod(i,1000) == 0)print *,i," gridpoints read"
 !      !--go back to read the next datum
 !      i = i+1
 !      goto 1
@@ -313,12 +313,12 @@
 !      print *,'ATA',ncoef
 !      print *,ata(1:10)
 !      print *
-!      if ( VERBOSE ) print *,"cholesky factorization..."
+!      if (VERBOSE) print *,"cholesky factorization..."
 !      call choles(ata,gstore,atd,ytemp,x,ncoef,nono)
 !        !call choles(ataout,gstore,atdout,ytemp,xmasked,nonzero,nono)
 !
 !      if (nono /= 0) then
-!        if ( VERBOSE ) print *,"Error: cholesky factorization failed ",nono
+!        if (VERBOSE) print *,"Error: cholesky factorization failed ",nono
 !        !do j=0,nonzero-1
 !        !istart=j*(j+1)/2+1
 !        !j1=j+1
@@ -345,7 +345,7 @@
 !        !enddo
 !
 !      !--see how well the least squares solution fits the gridpoints
-!      if ( VERBOSE ) print *,"computing variance reduction..."
+!      if (VERBOSE) print *,"computing variance reduction..."
 !      truerms = 0.
 !      realchisq = 0.
 !      denom = 0.
@@ -363,7 +363,7 @@
 !      truerms=truerms/float(ndat)
 !      varred = realchisq/denom
 !      varred = 1.-varred
-!      if ( VERBOSE ) then
+!      if (VERBOSE) then
 !        print *,'NUMBER OF DATA:',ndat
 !        print *,'CHI-SQUARE:',realchisq
 !        print *,'RMS MISFIT OBTAINED:',truerms
@@ -371,7 +371,7 @@
 !      endif
 !
 !      ! check fit
-!      if ( varred < 0.5 ) then
+!      if (varred < 0.5) then
 !        call stopProgram('fitSphericalHarmonics() - variance reduction is not good enough!    ')
 !      endif
 !
@@ -384,7 +384,7 @@
 !      SH_lmx = lmx
 !      SH_ncoef = ncoef
 !      allocate(SH_coef(SH_ncoef),stat=ier)
-!      if ( ier /= 0 ) call stopProgram('fitSphericalHarmonics() - error allocating SH_coef    ')
+!      if (ier /= 0) call stopProgram('fitSphericalHarmonics() - error allocating SH_coef    ')
 !
 !      SH_coef(1:SH_ncoef) = x(1:SH_ncoef)
 !
@@ -599,7 +599,7 @@
 !      close(12)
 !
 !      ! console output
-!      if ( VERBOSE ) then
+!      if (VERBOSE) then
 !        print *,'  total points read in: ',igrid
 !        print *,'  regular grid stored as: '//nameout
 !      endif

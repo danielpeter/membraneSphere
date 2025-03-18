@@ -36,11 +36,11 @@
 
       ! read cellArea
       open(IIN,file='data/griddata/cellAreas.'//divString//trim(ending),status='old',iostat=ioerror)
-      if ( ioerror /= 0) call stopProgram( 'abort - readPrecalculated cellAreas    ')
+      if (ioerror /= 0) call stopProgram( 'abort - readPrecalculated cellAreas    ')
 
       do i = 1, numVertices
         read(IIN, *, iostat=ioerror) cellAreas(i)
-        if ( ioerror /= 0) then
+        if (ioerror /= 0) then
           print *,'error at: ',i
           exit
         endif
@@ -49,11 +49,11 @@
 
       ! read cellEdgesLength
       open(IIN,file='data/griddata/cellEdgesLength.'//divString//trim(ending),status='old',iostat=ioerror)
-      if ( ioerror /= 0) call stopProgram( 'abort - readPrecalculated cellEdgesLength   ')
+      if (ioerror /= 0) call stopProgram( 'abort - readPrecalculated cellEdgesLength   ')
 
       do i = 1, numVertices
         read(IIN, *, iostat=ioerror) cellEdgesLength(i,0:6)
-        if ( ioerror /= 0) then
+        if (ioerror /= 0) then
           print *,'error at: ',i
           exit
         endif
@@ -62,11 +62,11 @@
 
       ! read cellCenterDistances
       open(IIN,file='data/griddata/cellCenterDistances.'//divString//trim(ending),status='old',iostat=ioerror)
-      if ( ioerror /= 0) call stopProgram( 'abort - readPrecalculated cellEdgesLength   ')
+      if (ioerror /= 0) call stopProgram( 'abort - readPrecalculated cellEdgesLength   ')
 
       do i = 1, numVertices
         read(IIN, *, iostat=ioerror) cellCenterDistances(i,0:6)
-        if ( ioerror /= 0) then
+        if (ioerror /= 0) then
           print *,'error at: ',i
           exit
         endif
@@ -74,13 +74,13 @@
       close(IIN)
 
       ! get heikes&randall ratios for each hexagonal cell edge
-      if ( CORRECT_RATIO ) then
+      if (CORRECT_RATIO) then
         open(IIN,file='data/griddata/cellFractions.'//divString//trim(ending),status='old',iostat=ioerror)
-        if ( ioerror /= 0) call stopProgram( 'abort - readPrecalculated cellFractions   ')
+        if (ioerror /= 0) call stopProgram( 'abort - readPrecalculated cellFractions   ')
 
         do i = 1, numVertices
           read(IIN, *, iostat=ioerror) cellFractions(i,0:6)
-          if ( ioerror /= 0) then
+          if (ioerror /= 0) then
             print *,'error at: ',i
             exit
           endif

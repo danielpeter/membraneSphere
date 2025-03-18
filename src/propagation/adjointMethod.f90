@@ -52,22 +52,22 @@
 
       ! wait until all processes reached this point
       call MPI_Barrier( MPI_COMM_WORLD, ierror )
-      if ( ierror /= 0) call stopProgram('abort - MPI_Barrier kernels failed    ')
+      if (ierror /= 0) call stopProgram('abort - MPI_Barrier kernels failed    ')
 
       ! prepare for simulation
-      if ( MASTER .and. VERBOSE) then
+      if (MAIN_PROCESS .and. VERBOSE) then
         print *
         print *,'running reference simulation...'
         print *
       endif
 
       ! benchmark
-      if ( MASTER ) benchstart = MPI_WTIME()
+      if (MAIN_PROCESS) benchstart = MPI_WTIME()
 
       ! determine how many kernels
-      if ( kernelIteration ) then
+      if (kernelIteration) then
         ! only for homogeneous background earth
-        if ( HETEROGENEOUS ) then
+        if (HETEROGENEOUS) then
           print *,'Error: many kernels can only be calculated for a homogeneous background earth.'
           print *,'       the receivers are fixed on the equator.'
           call stopProgram( 'abort - adjointMethod')
@@ -75,11 +75,11 @@
 
         ! determine number of kernels
         numofKernels=int(kernelEndDistance-kernelStartDistance+1)
-        if ( numofKernels <= 0) then
+        if (numofKernels <= 0) then
           print *,'Error: kernels cannot be found correctly:',kernelStartDistance,kernelEndDistance
           call stopProgram( 'abort - adjointMethod')
         endif
-        if (MASTER .and. VERBOSE) then
+        if (MAIN_PROCESS .and. VERBOSE) then
           print *
           print *,'iteration for number of kernels:',numofKernels
           print *,'    start/end distance :',kernelStartDistance,kernelEndDistance
@@ -93,7 +93,7 @@
 
       ! propagates membrane waves
       do kernel = 1,numofKernels
-        if ( kernelIteration) then
+        if (kernelIteration) then
           ! resets time integration window
           WINDOW_START = window_start_org
           WINDOW_END = window_end_org
@@ -103,15 +103,15 @@
         endif
 
         ! do the time iteration
-        if ( MASTER .and. VERBOSE) print *,'    forward simulation...'
+        if (MAIN_PROCESS .and. VERBOSE) print *,'    forward simulation...'
 
         call forwardIteration()
 
         ! save seismogram at receiver
-        if (.not. kernelIteration ) call printSeismogram()
+        if (.not. kernelIteration) call printSeismogram()
 
         ! benchmark output
-        if ( MASTER .and. VERBOSE ) then
+        if (MAIN_PROCESS .and. VERBOSE) then
           benchend = MPI_WTIME()
           print *,'    benchmark seconds:',benchend-benchstart
           print *
@@ -121,7 +121,7 @@
         call getAdjointSource()
 
         ! prepare for simulation
-        if ( MASTER .and. VERBOSE ) then
+        if (MAIN_PROCESS .and. VERBOSE) then
           print *
           print *,'running adjoint simulation...'
           print *
@@ -132,20 +132,20 @@
 
         ! wait until all processes reached this point
         !call MPI_Barrier( MPI_COMM_WORLD, ierror )
-        !if ( ierror /= 0) call stopProgram('abort - MPI_Barrier iterations failed    ')
+        !if (ierror /= 0) call stopProgram('abort - MPI_Barrier iterations failed    ')
 
         ! compute kernel
-        if (.not. ADJOINT_ONTHEFLY ) call frechetKernel()
+        if (.not. ADJOINT_ONTHEFLY) call frechetKernel()
 
         ! wait until all processes reached this point
         !call MPI_Barrier( MPI_COMM_WORLD, ierror )
-        !if ( ierror /= 0) call stopProgram('abort - MPI_Barrier kernels failed    ')
+        !if (ierror /= 0) call stopProgram('abort - MPI_Barrier kernels failed    ')
 
         ! output to kernel file
         call storeAdjointKernel()
 
         ! benchmark
-        if ( MASTER .and. VERBOSE) then
+        if (MAIN_PROCESS .and. VERBOSE) then
           benchAllEnd = MPI_WTIME()
           print *
           print *,'running time: ',int((benchAllEnd-benchAllStart)/60.0),'min ', &
@@ -155,15 +155,15 @@
 
       enddo !kernel
 
-      if ( MASTER ) print *,'done.'
+      if (MAIN_PROCESS) print *,'done.'
 
       ! wait until all processes reached this point
       call MPI_Barrier( MPI_COMM_WORLD, ierror )
-      if ( ierror /= 0) call stopProgram('abort - final MPI_Barrier failed    ')
+      if (ierror /= 0) call stopProgram('abort - final MPI_Barrier failed    ')
 
       ! end parallelization
       call MPI_FINALIZE(ierror)
-      if ( ierror /= 0) call stopProgram('abort - finalize failed    ')
+      if (ierror /= 0) call stopProgram('abort - finalize failed    ')
 
       end program
 

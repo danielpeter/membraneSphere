@@ -56,7 +56,7 @@
 !      real(WP),external:: timeTerm2
 !
       ! approximative this term is too small to have an influence beyond this time
-      ! if ( time > 7000.0d0) then
+      ! if (time > 7000.0d0) then
       !   forceTerm2 = 0.0d0
       !   return
       ! endif
@@ -82,7 +82,7 @@
 !      ! local parameters
 !      double precision:: widthTerm
 !
-!      if ( abs(time) < 1.e-7) then
+!      if (abs(time) < 1.e-7) then
 !        initialShapeTerm = widthTerm(colatitude)
 !      else
 !        initialShapeTerm = 0.0
@@ -175,7 +175,7 @@
 
       ! approximative: this term is too small to have an influence beyond this time
       ! so for speeding up calculations return here
-      ! if ( time > 7000.0d0) then
+      ! if (time > 7000.0d0) then
       !   forceTerm2Source = 0.0d0
       !   return
       ! endif
@@ -214,7 +214,7 @@
       widthTermSource = exp(-col2/(muTwo))/muSquare
 
       ! single cell source
-      !if ( refVertex == sourceLocationVertex ) then
+      !if (refVertex == sourceLocationVertex) then
       !  widthTermSource=1.0d0
       !else
       !  widthTermSource=0.0d0
@@ -247,21 +247,21 @@
       logical,parameter:: onlyNeighbors  = .false.
 
       ! calculate adjoint source term: based upon a single cell displacement
-      if ( refVertex == adjointSourceVertex) then
+      if (refVertex == adjointSourceVertex) then
         forceAdjointSource = adjointSource(2,step)
       else
         forceAdjointSource = 0.0_WP
       endif
 
       ! extend adjoint source to multiple cells
-      if ( extendedSource ) then
+      if (extendedSource) then
         ! calculate adjoint source term: based upon a Gaussian cell displacement
-        if ( Gaussian .or. plateau ) then
+        if (Gaussian .or. plateau) then
           call greatCircleDistance(vertices(refVertex,:),vertices(adjointSourceVertex,:),distance)
           distance = distance*EARTHRADIUS
           dx = averageCellDistance
 
-          if ( Gaussian ) then
+          if (Gaussian) then
             ! factor determined empirically such that it's a nice curve to distances till 280 km (4*dx for grid level 6)
             factor = exp(-distance*distance/(300*dx))
           else
@@ -270,21 +270,21 @@
           endif
 
           ! extend to a multiple of the cell distances
-          if ( distance <= 4.0*dx ) then
+          if (distance <= 4.0*dx) then
             forceAdjointSource=factor*adjointSource(2,step)
           endif
         endif
 
         ! enlarge the source to its closest neighbor cells
-        if ( onlyNeighbors ) then
+        if (onlyNeighbors) then
           isNeighbor = .false.
           do i = 1,cellNeighbors(adjointSourceVertex,0)
-            if ( refVertex == cellNeighbors(adjointSourceVertex,i) ) then
+            if (refVertex == cellNeighbors(adjointSourceVertex,i)) then
               isNeighbor = .true.
               exit
             endif
           enddo
-          if ( isNeighbor ) then
+          if (isNeighbor) then
             forceAdjointSource=adjointSource(2,step)
           endif
         endif

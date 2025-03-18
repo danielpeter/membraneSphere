@@ -22,7 +22,7 @@
       integer,external:: getDomain
 
       ! domains only make sense for more then 1 processors
-      if ( nprocesses < 2 ) then
+      if (nprocesses < 2) then
         return
       endif
 
@@ -34,24 +34,24 @@
         numDomainVert(domain) = numDomainVert(domain)+1
       enddo
       range = numDomainVert(rank)
-      if ( range <= 0 ) then
+      if (range <= 0) then
         print *,'Error: rank ',rank,': range has no elements',range
         call stopProgram('abort - constructParallelDomains    ')
       endif
 
       ! allocate region information for this process
-      if ( MASTER .and. VERBOSE ) then
+      if (MAIN_PROCESS .and. VERBOSE) then
         print *,'  allocating parallel domain arrays:'
         print *,'    vertexDomain size   :  ',numVertices * 4/1024./1024.,'Mb' ! assume integer == 4 bytes
         print *,'    domainVertices size :  ',range * 4/1024./1024.,'Mb'
       endif
       allocate(vertexDomain(numVertices),stat=ierror)
-      if ( ierror > 0 ) call stopProgram('abort - constructParallelDomains:error vertexDomain array   ')
+      if (ierror > 0) call stopProgram('abort - constructParallelDomains:error vertexDomain array   ')
       vertexDomain(:) = -1
 
       !allocates array which holds all vertices in the boundary to another parallel domain
       allocate(domainVertices(range),stat=ierror)
-      if ( ierror > 0 ) call stopProgram('abort - constructParallelDomains: error domainVertices array   ')
+      if (ierror > 0) call stopProgram('abort - constructParallelDomains: error domainVertices array   ')
       domainVertices(:) = -1
 
       ! divide vertices into domains
@@ -61,9 +61,9 @@
         vertexDomain(n) = getDomain(n)
 
         ! fill specific domain array (contains only vertices for this domain/process)
-        if ( vertexDomain(n) == rank) then
+        if (vertexDomain(n) == rank) then
           index = index+1
-          if ( index > range) then
+          if (index > range) then
            print *,'Error: rank ',rank,': exceeding range limite in domain', range
            call stopProgram( 'abort - constructParallelDomains    ')
           endif
@@ -72,7 +72,7 @@
       enddo
 
       ! check
-      if ( index /= range ) then
+      if (index /= range) then
         print *,'Error: rank ',rank,': range in domain wrong',range,index
         call stopProgram('abort - constructParallelDomains    ')
       endif
@@ -113,7 +113,7 @@
         call getSphericalCoord(vertex,colat,long)
 
         ! domains simply divide into two half-spheres
-        if ( long >= 0.0 .and. long < PI ) then
+        if (long >= 0.0 .and. long < PI) then
           getDomain = 0
           return
         else
@@ -125,8 +125,8 @@
         call getSphericalCoord(vertex,colat,long)
 
         ! domains are a the half-sphere split
-        if ( long >= 0.0 .and. long < PI ) then
-          if ( colat < PI/2.0) then
+        if (long >= 0.0 .and. long < PI) then
+          if (colat < PI/2.0) then
             getDomain = 0
             return
           else
@@ -134,7 +134,7 @@
             return
           endif
         else
-          if ( colat < PI/2.0) then
+          if (colat < PI/2.0) then
             getDomain = 2
             return
           else
@@ -147,19 +147,19 @@
         call getSphericalCoord(vertex,colat,long)
 
         ! domains are split by colatitude PI/4,3PI/4 and longitude 0,PI/2,PI,3PI/2
-        if ( colat < (PI/4.0)) then
+        if (colat < (PI/4.0)) then
           getDomain = 0
           return
-        else if ( colat > (3.0*PI/4.0)) then
+        else if (colat > (3.0*PI/4.0)) then
           getDomain = 1
           return
-        else if ( long >= 0.0 .and. long < (PI/2.0)) then
+        else if (long >= 0.0 .and. long < (PI/2.0)) then
           getDomain = 2
           return
-        else if ( long >= (PI/2.0) .and. long < PI) then
+        else if (long >= (PI/2.0) .and. long < PI) then
           getDomain = 3
           return
-        else if ( long >= PI.and.long < (3.0*PI/2.0)) then
+        else if (long >= PI.and.long < (3.0*PI/2.0)) then
           getDomain = 4
           return
         else
@@ -172,24 +172,24 @@
 
         ! domains are the quarter-sphere split (equal to spherical octahedron)
         ! still, this is optimal distribution
-        if ( long >= 0.0 .and. long < PI/2.0 ) then
-          if ( colat < PI/2.0) then
+        if (long >= 0.0 .and. long < PI/2.0) then
+          if (colat < PI/2.0) then
             getDomain = 0
             return
           else
             getDomain = 1
             return
           endif
-        else if ( long >= PI/2.0 .and. long < PI) then
-          if ( colat < PI/2.0) then
+        else if (long >= PI/2.0 .and. long < PI) then
+          if (colat < PI/2.0) then
             getDomain = 2
             return
           else
             getDomain = 3
             return
           endif
-        else if ( long >= PI .and. long < (3.0*PI/2.0)) then
-          if ( colat < PI/2.0) then
+        else if (long >= PI .and. long < (3.0*PI/2.0)) then
+          if (colat < PI/2.0) then
             getDomain = 4
             return
           else
@@ -197,7 +197,7 @@
             return
           endif
         else
-          if ( colat < PI/2.0) then
+          if (colat < PI/2.0) then
             getDomain = 6
             return
           else
@@ -211,24 +211,24 @@
 
         ! domains are the quarter-sphere split and divide into 2 slices
         ! though, no more optimal
-        if ( long >= 0.0 .and. long < 0.25*PI ) then
-          if ( colat < 0.5*PI) then
+        if (long >= 0.0 .and. long < 0.25*PI) then
+          if (colat < 0.5*PI) then
             getDomain = 0
             return
           else
             getDomain = 1
             return
           endif
-        else if ( long >= 0.25*PI .and. long < 0.5*PI) then
-          if ( colat < 0.5*PI) then
+        else if (long >= 0.25*PI .and. long < 0.5*PI) then
+          if (colat < 0.5*PI) then
             getDomain = 2
             return
           else
             getDomain = 3
             return
           endif
-        else if ( long >= 0.5*PI .and. long < 0.75*PI) then
-          if ( colat < 0.5*PI) then
+        else if (long >= 0.5*PI .and. long < 0.75*PI) then
+          if (colat < 0.5*PI) then
             getDomain = 4
             return
           else
@@ -236,7 +236,7 @@
             return
           endif
         else if (long >= 0.75*PI .and. long < PI) then
-          if ( colat < 0.5*PI) then
+          if (colat < 0.5*PI) then
             getDomain = 6
             return
           else
@@ -244,7 +244,7 @@
             return
           endif
         else if (long >= PI .and. long < 1.25*PI) then
-          if ( colat < 0.5*PI) then
+          if (colat < 0.5*PI) then
             getDomain = 8
             return
           else
@@ -252,7 +252,7 @@
             return
           endif
         else if (long >= 1.25*PI .and. long < 1.5*PI) then
-          if ( colat < 0.5*PI) then
+          if (colat < 0.5*PI) then
             getDomain = 10
             return
           else
@@ -260,7 +260,7 @@
             return
           endif
         else if (long >= 1.5*PI .and. long < 1.75*PI) then
-          if ( colat < 0.5*PI) then
+          if (colat < 0.5*PI) then
             getDomain = 12
             return
           else
@@ -268,7 +268,7 @@
             return
           endif
         else
-          if ( colat < 0.5*PI) then
+          if (colat < 0.5*PI) then
             getDomain = 14
             return
           else
@@ -283,63 +283,63 @@
         ! splits sphere in eight first, then halves the latitudes and longitudes of each domain
         longitudeIncrement = PI/4.0
         latitudeIncrement = PI/4.0
-        if ( colat >= 0.0 .and. colat < latitudeIncrement ) then
+        if (colat >= 0.0 .and. colat < latitudeIncrement) then
           n = 1
           do m = 1,7
-            if ( long >= (m-1)*longitudeIncrement .and. long < m*longitudeIncrement ) then
-              ! starts with index 0 for master, then up to nprocesses - 1
+            if (long >= (m-1)*longitudeIncrement .and. long < m*longitudeIncrement) then
+              ! starts with index 0 for main, then up to nprocesses - 1
               getDomain = (n-1)*8 + m - 1
               return
             endif
           enddo
-          if ( long >= 7*longitudeIncrement ) then
+          if (long >= 7*longitudeIncrement) then
             m = 8
-            ! starts with index 0 for master, then up to nprocesses - 1
+            ! starts with index 0 for main, then up to nprocesses - 1
             getDomain = (n-1)*8 + m - 1
             return
           endif
-        else if ( colat >= latitudeIncrement .and. colat < 2*latitudeIncrement ) then
+        else if (colat >= latitudeIncrement .and. colat < 2*latitudeIncrement) then
           n = 2
           do m = 1,7
-            if ( long >= (m-1)*longitudeIncrement .and. long < m*longitudeIncrement ) then
-              ! starts with index 0 for master, then up to nprocesses - 1
+            if (long >= (m-1)*longitudeIncrement .and. long < m*longitudeIncrement) then
+              ! starts with index 0 for main, then up to nprocesses - 1
               getDomain = (n-1)*8 + m - 1
               return
             endif
           enddo
-          if ( long >= 7*longitudeIncrement ) then
+          if (long >= 7*longitudeIncrement) then
             m = 8
-            ! starts with index 0 for master, then up to nprocesses - 1
+            ! starts with index 0 for main, then up to nprocesses - 1
             getDomain = (n-1)*8 + m - 1
             return
           endif
-        else if ( colat >= 2*latitudeIncrement .and. colat < 3*latitudeIncrement ) then
+        else if (colat >= 2*latitudeIncrement .and. colat < 3*latitudeIncrement) then
           n = 3
           do m = 1,7
-            if ( long >= (m-1)*longitudeIncrement .and. long < m*longitudeIncrement ) then
-              ! starts with index 0 for master, then up to nprocesses - 1
+            if (long >= (m-1)*longitudeIncrement .and. long < m*longitudeIncrement) then
+              ! starts with index 0 for main, then up to nprocesses - 1
               getDomain = (n-1)*8 + m - 1
               return
             endif
           enddo
-          if ( long >= 7*longitudeIncrement ) then
+          if (long >= 7*longitudeIncrement) then
             m = 8
-            ! starts with index 0 for master, then up to nprocesses - 1
+            ! starts with index 0 for main, then up to nprocesses - 1
             getDomain = (n-1)*8 + m - 1
             return
           endif
-        else if ( colat >= 3*latitudeIncrement ) then
+        else if (colat >= 3*latitudeIncrement) then
           n = 4
           do m = 1,7
-            if ( long >= (m-1)*longitudeIncrement .and. long < m*longitudeIncrement ) then
-              ! starts with index 0 for master, then up to nprocesses - 1
+            if (long >= (m-1)*longitudeIncrement .and. long < m*longitudeIncrement) then
+              ! starts with index 0 for main, then up to nprocesses - 1
               getDomain = (n-1)*8 + m - 1
               return
             endif
           enddo
-          if ( long >= 7*longitudeIncrement ) then
+          if (long >= 7*longitudeIncrement) then
             m = 8
-            ! starts with index 0 for master, then up to nprocesses - 1
+            ! starts with index 0 for main, then up to nprocesses - 1
             getDomain = (n-1)*8 + m - 1
             return
           endif
@@ -350,20 +350,20 @@
 
         ! differs for even/odd number of processes
         ! even number of processes
-        if ( mod(nprocesses,2) == 0 ) then
+        if (mod(nprocesses,2) == 0) then
           ! even number of processes distrbuted on north- and south-hemnisphere
           ! grid split into upper/lower part and by longitudes
           longitudeIncrement=2.0*PI/(nprocesses/2)
-          if ( colat <= PI/2.0 ) then
+          if (colat <= PI/2.0) then
             do n = 0,(nprocesses/2)-1
-              if ( (long >= longitudeIncrement*n ) .and. ( long < longitudeIncrement*(n+1) )) then
+              if ( (long >= longitudeIncrement*n) .and. ( long < longitudeIncrement*(n+1))) then
                 getDomain = n
                 return
               endif
             enddo
           else
             do n=(nprocesses/2),nprocesses-1
-              if ( (long >= longitudeIncrement*(n-nprocesses/2) ) .and. ( long < longitudeIncrement*(n+1-nprocesses/2) )) then
+              if ( (long >= longitudeIncrement*(n-nprocesses/2)) .and. ( long < longitudeIncrement*(n+1-nprocesses/2))) then
                 getDomain = n
                 return
               endif
@@ -372,13 +372,13 @@
         endif
 
         ! uneven number of processes
-        if ( mod(nprocesses,2) /= 0 ) then
+        if (mod(nprocesses,2) /= 0) then
           ! uneven number of processes
           ! grid split only by longitudes
           getDomain = 0
           longitudeIncrement = 2.0*PI/nprocesses
           do n = 0,nprocesses-1
-            if ( (long >= longitudeIncrement*n ) .and. ( long < longitudeIncrement*(n+1) )) then
+            if ( (long >= longitudeIncrement*n) .and. ( long < longitudeIncrement*(n+1))) then
               getDomain = n
               return
             endif
@@ -414,12 +414,12 @@
       do n = 1,numVertices
         domain = getDomain(n)
         !check if on bounday
-        if ( isBoundary(n) ) then
+        if (isBoundary(n)) then
           !get neighbors
           call getVertexNeighbors(n,neighbors)
           !add corresponding counts
           do k = 1,size(neighbors(:))
-            if ( neighbors(k) /= (-1) ) then
+            if (neighbors(k) /= (-1)) then
               numDomainVert(domain,neighbors(k)) = numDomainVert(domain,neighbors(k))+1
             endif
           enddo
@@ -430,7 +430,7 @@
       maxRange = 0
       do n = 0,nprocesses-1
         do k = 0,nprocesses-1
-          if ( numDomainVert(n,k) > maxRange) then
+          if (numDomainVert(n,k) > maxRange) then
             maxRange=numDomainVert(n,k)
           endif
         enddo
@@ -438,7 +438,7 @@
       boundariesMaxRange = maxRange
 
       !debug
-      !if (VERBOSE .and. MASTER ) then
+      !if (VERBOSE .and. MAIN_PROCESS) then
       !do k=0,nprocesses-1
       !  print *,'boundary vertices in(',k,'/.):',numDomainVert(k,:)
       !enddo
@@ -446,13 +446,13 @@
       !endif
 
       !allocate array
-      if ( MASTER .and. VERBOSE ) then
+      if (MAIN_PROCESS .and. VERBOSE) then
         print *,'  allocating boundary array:'
         print *,'    size :  ',nprocesses*nprocesses*maxRange * 4/1024./1024.,'Mb'  ! assume integer == 4 bytes
       endif
       allocate(boundaries(0:nprocesses-1,0:nprocesses-1,maxRange), &
                 sendDisp(maxRange),receiveDisp(maxRange),stat=ierror)
-      if ( ierror > 0 ) call stopProgram( 'abort - findBoundaries     ')
+      if (ierror > 0) call stopProgram( 'abort - findBoundaries     ')
       boundaries(:,:,:) = 0
       sendDisp(:) = 0
       receiveDisp(:) = 0
@@ -462,16 +462,16 @@
       do n = 1,numVertices
         domain=getDomain(n)
         ! check if on bounday
-        if ( isBoundary(n) ) then
+        if (isBoundary(n)) then
           ! get neighbors
           call getVertexNeighbors(n,neighbors)
           ! add corresponding counts
           do k = 1,size(neighbors(:))
-            if ( neighbors(k) /= (-1) ) then
+            if (neighbors(k) /= (-1)) then
               numDomainVert(domain,neighbors(k)) = numDomainVert(domain,neighbors(k))+1
               index = numDomainVert(domain,neighbors(k))
               ! check index
-              if ( index > maxRange) then
+              if (index > maxRange) then
                 print *,'Error: rank ',rank,': exceeding range in boundaries',domain,maxRange
                 call stopProgram( 'abort - findBoundaries     ')
               endif
@@ -540,16 +540,16 @@
       index = 0
       do n = 1,cellNeighbors(vertex,0)
         domain = getDomain(cellNeighbors(vertex,n))
-        if ( domain /= domainRef) then
+        if (domain /= domainRef) then
           ! fill into neighbor if new
           isnew = .true.
           do k = 1,size(neighbors(:))
-            if ( neighbors(k) == domain) then
+            if (neighbors(k) == domain) then
               isnew = .false.
               exit
             endif
           enddo
-          if ( isnew ) then
+          if (isnew) then
             index = index+1
             neighbors(index)=domain
           endif
@@ -571,15 +571,15 @@
       integer:: domain,index,k,ierror
 
       !check
-      if ( nprocesses == 1) return
+      if (nprocesses == 1) return
 
       !init
-      if ( MASTER .and. VERBOSE ) then
+      if (MAIN_PROCESS .and. VERBOSE) then
         print *,'  allocating domainNeighbors array:'
         print *,'    size :  ',nprocesses*nprocesses * 4/1024./1024.,'Mb'   ! assume integer == 4 bytes
       endif
       allocate(domainNeighbors(0:nprocesses-1,nprocesses-1),stat=ierror)
-      if ( ierror > 0 ) call stopProgram( 'abort - findDomainNeighbors    ')
+      if (ierror > 0) call stopProgram( 'abort - findDomainNeighbors    ')
       domainNeighbors(:,:)=-1
 
       !find neighbor domains
@@ -587,7 +587,7 @@
         index = 0
         do k = 0,nprocesses-1
           !check if domain has entries of boundary vertices in this neighbor domain
-          if ( boundaries(domain,k,1) /= 0 ) then
+          if (boundaries(domain,k,1) /= 0) then
             ! first element in boundaries array is a valid vertex index, so add this neighbor
             index = index+1
             if (index > nprocesses-1) then

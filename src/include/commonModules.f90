@@ -381,7 +381,8 @@
       ! used for MPI parallelization
         use mpi
         implicit none
-        logical:: PARALLELSEISMO,MASTER
+        logical:: PARALLELSEISMO
+        logical:: MAIN_PROCESS = .false.
         integer:: nprocesses,rank,tag,MPI_CUSTOM
         integer:: status(MPI_STATUS_SIZE)
       end module

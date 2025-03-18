@@ -36,7 +36,7 @@
       call initializeSource()
 
       ! console output
-      if ( MASTER .and. VERBOSE) then
+      if (MAIN_PROCESS .and. VERBOSE) then
         print *,'initialization o.k.'
 
         ! benchmark
@@ -59,7 +59,7 @@
 
       ! parallelization
       call MPI_Init(ierror)
-      if ( ierror /= 0) then
+      if (ierror /= 0) then
         print *,'error starting MPI program.'
         ! note: MPI_ABORT does not return, it makes the program exit with an error code of 30
         call MPI_ABORT(MPI_COMM_WORLD,30,ierror)
@@ -67,28 +67,28 @@
 
       ! get number of processors
       call MPI_COMM_SIZE(MPI_COMM_WORLD,nprocesses,ierror)
-      if ( ierror /= 0) stop "MPI_COMM_SIZE failed"
+      if (ierror /= 0) stop "MPI_COMM_SIZE failed"
 
       ! determine idproc, the processor's id
       call MPI_COMM_RANK(MPI_COMM_WORLD,rank,ierror)
-      if ( ierror /= 0) stop "MPI_COMM_RANK failed"
+      if (ierror /= 0) stop "MPI_COMM_RANK failed"
 
-      ! determine master process
-      if ( rank == 0 ) then
-        MASTER = .true.
+      ! determine main process
+      if (rank == 0) then
+        MAIN_PROCESS = .true.
       else
-        MASTER = .false.
+        MAIN_PROCESS = .false.
       endif
 
       ! determine representation
-      if ( WP == 4 ) then
+      if (WP == 4) then
         MPI_CUSTOM = MPI_REAL
       else
         MPI_CUSTOM = MPI_DOUBLE_PRECISION
       endif
 
       ! benchmark
-      if ( MASTER) benchAllStart = MPI_WTIME()
+      if (MAIN_PROCESS) benchAllStart = MPI_WTIME()
 
       end
 
@@ -104,13 +104,13 @@
       subdivisions = -1
 
       ! console output
-      if ( MASTER .and. VERBOSE) then
-        if ( Adjoint_InversionProgram ) print *,'heterogeneousInversion - computes inversion matrices by'
-        if ( Adjoint_Program ) then
+      if (MAIN_PROCESS .and. VERBOSE) then
+        if (Adjoint_InversionProgram) print *,'heterogeneousInversion - computes inversion matrices by'
+        if (Adjoint_Program) then
           print *,'adjointMethod - computes kernel values'
-        else if ( Phaseshift_Program ) then
+        else if (Phaseshift_Program) then
           print *,'phaseshift - computes kernel values'
-        else if ( HetPhaseshift_Program ) then
+        else if (HetPhaseshift_Program) then
           print *,'phaseshift measurements - computed on the membrane'
         else
           print *,'propagation - membrane wave simulation'
@@ -119,44 +119,44 @@
       endif
 
       ! console output
-      if ( MASTER .and. VERBOSE) print *,'-----------------------------------------------------------------------'
+      if (MAIN_PROCESS .and. VERBOSE) print *,'-----------------------------------------------------------------------'
 
       ! reads model input file 'Parameter_Input' and synchronizes with all processes
       ! read in parameters from file
-      if ( MASTER ) then
+      if (MAIN_PROCESS) then
         call readParameters()
       endif
       ! synchronize with processes
       call syncParameters(rank,nprocesses)
 
       ! adjoint method initialization
-      if ( Adjoint_Program ) then
+      if (Adjoint_Program) then
         DELTA           = .false. ! no delta scatterers needed
         MOVEDELTA       = .false. ! no looping over delta locations
         SECONDDELTA     = .false. ! no second delta scatterers
         manyReceivers   = .false. ! no many receivers supported
         kernelIteration = .false. ! no many kernels
         rotate_frame    = .false. ! no rotation of heterogeneous phase maps
-        if ( manyKernels ) then
+        if (manyKernels) then
           manyKernels = .false.   ! iteration of kernels must be done differently, no manykernels routine supported
           kernelIteration = .true.
         endif
 
         ! console output
-        if ( MASTER .and. VERBOSE ) then
+        if (MAIN_PROCESS .and. VERBOSE) then
           print *
           print *,'adjoint calculation (done without delta scatterers)'
         endif
 
 !        ! fix original source location (to 1,0,0/...) for inversion (due to rotation of frame)
-!        if ( Adjoint_InversionProgram ) then
+!        if (Adjoint_InversionProgram) then
 !          sourceLat = 0.0_WP
 !          sourceLon = 0.0_WP
 !        endif
       endif
 
       ! parallel simulation needs processes
-      if ( nprocesses < 2 ) PARALLELSEISMO = .false.
+      if (nprocesses < 2) PARALLELSEISMO = .false.
 
       ! initialize for filtering
       call determineFilterParameters()
@@ -165,13 +165,13 @@
       call determineTimeStep()
 
       ! console output
-      if ( MASTER ) then
+      if (MAIN_PROCESS) then
         print *
         print *,'number of processes         : ',nprocesses
-        if (.not. FIXED_SOURCEPARAMETER ) print *,'wave parameters: theta_wid factor ',THETA_WID
+        if (.not. FIXED_SOURCEPARAMETER) print *,'wave parameters: theta_wid factor ',THETA_WID
         if (DELTA) print *,'delta phase velocity increment : ', deltaPerturbation
         print *,'number of subdivisions used : ', subdivisions
-        if ( HETEROGENEOUS ) then
+        if (HETEROGENEOUS) then
           print *,'heterogeneous phase map used'
         else
           print *,'homogeneous phase map      ', cphaseRef
@@ -181,13 +181,13 @@
       endif
 
       ! set additional filter verbosity
-      if ( MASTER .and. VERBOSE ) then
+      if (MAIN_PROCESS .and. VERBOSE) then
         beVerbose = .true.
       else
         beVerbose = .false.
       endif
 
-      if ( MASTER .and. VERBOSE) then
+      if (MAIN_PROCESS .and. VERBOSE) then
         print *,'parameters o.k'
       endif
       end subroutine
@@ -209,12 +209,13 @@
       call allocateMesh()
 
       ! read and share initial grid points
-      if ( MASTER ) call readData(VERBOSE)
+      if (MAIN_PROCESS) call readData(VERBOSE)
+
       call syncInitialData()
 
       ! wait until all processes reached this point
       call MPI_Barrier( MPI_COMM_WORLD, ierror )
-      if ( ierror /= 0) call stopProgram('initializeMesh() - MPI_Barrier failed    ')
+      if (ierror /= 0) call stopProgram('initializeMesh() - MPI_Barrier failed    ')
 
       ! find source & receiver vertex
       desiredSourceLat = sourceLat
@@ -225,7 +226,7 @@
       call findVertex(receiverLat,receiverLon,receiverVertex)
 
       ! find triangle where receiver lies
-      if ( Station_Correction ) then
+      if (Station_Correction) then
         call getClosestTriangle(desiredReceiverlat,desiredReceiverlon,interpolation_triangleIndex, &
                               interpolation_distances,interpolation_corners,interpolation_triangleLengths)
         ! triangle array no more needed
@@ -248,12 +249,12 @@
         call findVertex(deltaLat,deltaLon,deltaVertex)
 
         !second delta
-        if ( SECONDDELTA ) call placeSecondDelta(deltaLat,deltaLon,deltaSecondLat, &
+        if (SECONDDELTA) call placeSecondDelta(deltaLat,deltaLon,deltaSecondLat, &
                             deltaSecondLon,deltaSecondVertex,deltaSecondDistance)
       endif
 
       ! console output
-      if ( MASTER .and. VERBOSE) then
+      if (MAIN_PROCESS .and. VERBOSE) then
         print *
         print *,'source(lat/lon) desired   : ',desiredSourceLat,desiredSourceLon
         print *,'                got       : ',sourceLat,sourceLon
@@ -264,20 +265,20 @@
         call greatCircleDistance(vertices(sourceVertex,:),vertices(receiverVertex,:),distance)
         print *,'distance source-receiver  : ',distance*180.0/PI
         print *
-        if ( DELTA) then
+        if (DELTA) then
           print *,'delta phase map ', DELTA, (cphaseRef + deltaPerturbation)
           print *,'delta(lat/lon) desired:',deltaLat,deltaLon
           call getSphericalCoord_Lat(deltaVertex,lat,lon)
           print *,'                   got:',lat,lon
           print *,'                 index:',deltaVertex
-          if ( SECONDDELTA ) then
+          if (SECONDDELTA) then
             print *,'second delta(lat/lon):',deltaSecondLat,deltaSecondLon
             call getSphericalCoord_Lat(deltaSecondVertex,lat,lon)
             print *,'                  got:',lat,lon
             print *,'                index:',deltaSecondVertex
           endif
         endif
-        if ( Station_Correction ) then
+        if (Station_Correction) then
           print *,'interpolation receiver station:'
           print *,'  triangle:',interpolation_triangleIndex
           print *,'  corners :',(interpolation_corners(i),i=1,3)
@@ -289,38 +290,38 @@
       endif
 
       ! allocate arrays for displacement datas
-      if ( MASTER .and. VERBOSE) then
+      if (MAIN_PROCESS .and. VERBOSE) then
         print *,'initializing data arrays...'
       endif
       call allocateData()
 
       ! read and share precalculated arrays and sync them
-      if ( PRECALCULATED_CELLS ) call syncPrecalculated()
+      if (PRECALCULATED_CELLS) call syncPrecalculated()
 
       ! initialize geometry of phase map and parallel domains
-      if ( MASTER .and. VERBOSE) then
+      if (MAIN_PROCESS .and. VERBOSE) then
         print *,'initializing phase map...'
       endif
       call setupFrame()
 
       ! free arrays if possible
-      if ( PRECALCULATED_CELLS ) then
+      if (PRECALCULATED_CELLS) then
         deallocate(cellFace,cellCorners)
       else
         deallocate(cellAreas,cellEdgesLength,cellCenterDistances)
       endif
 
-!      if ( Adjoint_Program .and. ADJOINT_ONTHEFLY ) then
+!      if (Adjoint_Program .and. ADJOINT_ONTHEFLY) then
 !        ! allocate arrays for displacement datas
 !        allocate(backwardDisplacement(numVertices),backwardDisplacement_old(numVertices), &
 !                      backwardNewdisplacement(numVertices), stat=ierror )
-!        if ( ierror /= 0 ) call stopProgram('error in allocating displacement arrays   ')
+!        if (ierror /= 0) call stopProgram('error in allocating displacement arrays   ')
 !        ! initialize
 !        backwardDisplacement_old(:)=0.0_WP
 !        backwardDisplacement(:)=0.0_WP
 !        backwardNewdisplacement(:)=0.0_WP
 !      endif
-      if ( MASTER .and. VERBOSE) then
+      if (MAIN_PROCESS .and. VERBOSE) then
         print *,'  meshing o.k'
       endif
 
@@ -339,7 +340,7 @@
       integer:: iorbit
 
       ! console output
-      if ( MASTER .and. VERBOSE) then
+      if (MAIN_PROCESS .and. VERBOSE) then
         print *
         print *,'world parameters:'
       endif
@@ -348,7 +349,7 @@
       dt2 = dt*dt
 
       ! determines simulation time
-      if ( Adjoint_Program .and. Set_Antipode_Time) then
+      if (Adjoint_Program .and. Set_Antipode_Time) then
         call determineOrbitDistance(distance,iorbit)
         call setupNewSimulationtime(distance,iorbit)
       endif
@@ -357,7 +358,7 @@
       call determineSimulationsteps()
 
       ! check for sampling rate and wave period (nyquist frequency limitation )
-      if ( bw_waveperiod < dt*2 .or. bw_waveperiod*cphaseRef < averageCellDistance ) then
+      if (bw_waveperiod < dt*2 .or. bw_waveperiod*cphaseRef < averageCellDistance) then
         print *,'sampling rate is too low compared to wave period length!'
         print *,'    wave period     : ',bw_waveperiod
         print *,'    wave length     : ',bw_waveperiod*cphaseRef
@@ -367,7 +368,7 @@
       endif
 
       !console output
-      if ( MASTER .and. VERBOSE) then
+      if (MAIN_PROCESS .and. VERBOSE) then
         print *,'    time step dt         : ',dt
         print *,'    time range           : ',firsttimestep*dt,lasttimestep*dt
         print *,'    time iteration steps : ',numofTimeSteps
@@ -379,11 +380,11 @@
 
       ! adjoint method has one forward and one backward simulation,
       ! allocates and initializes those wavefields
-      if ( Adjoint_Program ) then
+      if (Adjoint_Program) then
         call initializeAdjointArrays()
       endif
 
-      if ( MASTER .and. VERBOSE) then
+      if (MAIN_PROCESS .and. VERBOSE) then
         print *,'  world o.k'
       endif
       end subroutine
@@ -408,7 +409,7 @@
       character(len=128),parameter:: temporaryDir   = '/scratch/dpeter/'
 
       ! console output
-      if ( MASTER .and. VERBOSE) then
+      if (MAIN_PROCESS .and. VERBOSE) then
         print *
         print *,'initializing source...'
       endif
@@ -417,19 +418,19 @@
       call determineSourceParameters()
 
       ! pre-calculates the force terms
-      if ( PRESCRIBEDSOURCE ) then
+      if (PRESCRIBEDSOURCE) then
         ! check if to reallocate force array
-        if ( allocated(forceTermPrescribed) ) then
-          if ( size(forceTermPrescribed(:,1)) /= numDomainVertices .or. &
+        if (allocated(forceTermPrescribed)) then
+          if (size(forceTermPrescribed(:,1)) /= numDomainVertices .or. &
              size(forceTermPrescribed(1,:)) /= numofTimeSteps) then
             deallocate(forceTermPrescribed)
           endif
         endif
         ! reallocates array
-        if (.not. allocated(forceTermPrescribed) ) then
+        if (.not. allocated(forceTermPrescribed)) then
           arraysize = numDomainVertices*numofTimeSteps*WP/1024./1024.
           ! console output
-          if ( MASTER .and. VERBOSE ) then
+          if (MAIN_PROCESS .and. VERBOSE) then
             print *,'  allocating prescribedForce array: '
             print *,'      vertices : ',numDomainVertices
             print *,'      steps   : ',numofTimeSteps
@@ -437,21 +438,21 @@
           endif
 
           ! allocate array
-          if ( arraysize > RAM_LIMIT .and. FILTERINITIALSOURCE ) then
-            if ( MASTER .and. VERBOSE) print *,'    using file to store source array.'
+          if (arraysize > RAM_LIMIT .and. FILTERINITIALSOURCE) then
+            if (MAIN_PROCESS .and. VERBOSE) print *,'    using file to store source array.'
             sourceOnFile = .true.
           else
             ! allocates memory
             allocate(forceTermPrescribed(numDomainVertices,numofTimeSteps),stat=ierror)
-            if ( ierror /= 0 ) then
+            if (ierror /= 0) then
               print *,'    cannot allocate prescribedForce array: ',rank
               ! change prescribed flag if necessary
-              if ( FILTERINITIALSOURCE ) then
-                if ( MASTER .and. VERBOSE) print *,'    using file to store source array.'
+              if (FILTERINITIALSOURCE) then
+                if (MAIN_PROCESS .and. VERBOSE) print *,'    using file to store source array.'
                 sourceOnFile = .true.
               else
                 PRESCRIBEDSOURCE = .false.
-                if ( MASTER .and. VERBOSE ) print *,'    using calculation of source on the fly...'
+                if (MAIN_PROCESS .and. VERBOSE) print *,'    using calculation of source on the fly...'
                 ! nothing else to do
                 return
               endif
@@ -460,8 +461,8 @@
           call syncFlag(rank,nprocesses,sourceOnFile)
 
           ! storage on file
-          if ( sourceOnFile ) then
-            if ( allocated(forceTermPrescribed) ) deallocate(forceTermPrescribed)
+          if (sourceOnFile) then
+            if (allocated(forceTermPrescribed)) deallocate(forceTermPrescribed)
 
             ! names file
             write(rankstr,'(i3.3)') rank
@@ -486,12 +487,12 @@
         endif
 
         ! prescribe the source
-        if ( MASTER .and. VERBOSE) print *,'  prescribing source...'
+        if (MAIN_PROCESS .and. VERBOSE) print *,'  prescribing source...'
 
         ! prescribe source for each vertex
         do n = 1,numDomainVertices
           ! get cell vertex
-          if ( PARALLELSEISMO ) then
+          if (PARALLELSEISMO) then
             vertex=domainVertices(n)
           else
             vertex = n
@@ -502,24 +503,24 @@
             ! model time
             time = timestep*dt
             index = index+1
-            if ( Station_Correction ) then
+            if (Station_Correction) then
               force = forceTermExact(vertex,time,desiredSourceLat,desiredSourceLon)
             else
               force = forceTerm2Source(vertex,time,sourceVertex)
             endif
             ! store values
-            if (.not. sourceOnFile ) then
+            if (.not. sourceOnFile) then
               forceTermPrescribed(n,index) = force
             else
               forcetrace(index) = force
             endif
 
             ! stops if source vanishes
-            if ( time > 500.0 .and. abs(force) < EPS ) exit
+            if (time > 500.0 .and. abs(force) < EPS) exit
           enddo
 
           ! store on file if needed
-          if ( sourceOnFile ) then
+          if (sourceOnFile) then
             do index = 1,numofTimeSteps
               jrec = (n-1)*numofTimeSteps + index
               write(sourceFileID,rec=jrec) forcetrace(index)
@@ -528,10 +529,10 @@
         enddo
 
         ! filter source
-        if ( FILTERINITIALSOURCE) call filterSource()
+        if (FILTERINITIALSOURCE) call filterSource()
       endif
 
-      if ( MASTER .and. VERBOSE) then
+      if (MAIN_PROCESS .and. VERBOSE) then
         print *,'  source o.k'
       endif
       end subroutine
@@ -552,14 +553,14 @@
       real(WP)::min,max,originalT,originalf
 
       ! filter around a specified (different) period
-      if ( new_period ) then
+      if (new_period) then
         originalf = bw_frequency
         originalT = bw_waveperiod
 
         bw_waveperiod = newperiod
 
         ! get (upper) half-bandwidth frequency for filtering
-        if ( BW_FIXFREQUENCY ) then
+        if (BW_FIXFREQUENCY) then
           bw_frequency = BW_HALFFREQUENCY
         else
           bw_frequency = BW_PERCENT/((BW_PERCENT+1.0)*bw_waveperiod)
@@ -567,7 +568,7 @@
       endif
 
       !console output
-      if ( MASTER .and. VERBOSE) then
+      if (MAIN_PROCESS .and. VERBOSE) then
         print *,'  filtering source...'
       endif
 
@@ -581,14 +582,14 @@
       ! filter initial source
       do n = 1,numDomainVertices
         ! get cell vertex
-        if ( PARALLELSEISMO ) then
+        if (PARALLELSEISMO) then
           vertex = domainVertices(n)
         else
           vertex = n
         endif
 
         ! get corresponding source
-        if (.not. sourceOnFile ) then
+        if (.not. sourceOnFile) then
           seismo(2,:) = forceTermPrescribed(n,:)
         else
           do i = 1,numofTimeSteps
@@ -598,13 +599,13 @@
         endif
 
         ! file output for sourceVertex
-        if ( vertex == sourceVertex .and. beVerbose .and. .not. sourceOnFile ) then
+        if (vertex == sourceVertex .and. beVerbose .and. .not. sourceOnFile) then
           write(vertexstr,'(i8.8)') vertex
           print *,'    writing to file: ',datadirectory(1:len_trim(datadirectory))// &
                         'source2Prescribed.'//vertexstr//'.dat'
           open(22,file=datadirectory(1:len_trim(datadirectory))// &
                         'source2Prescribed.'//vertexstr//'.dat',iostat=ierror)
-          if ( ierror /= 0 ) call stopProgram('error opening file: '// &
+          if (ierror /= 0) call stopProgram('error opening file: '// &
               datadirectory(1:len_trim(datadirectory))//'source2Prescribed.'//vertexstr//'.dat   ')
           do i = 1,numofTimeSteps
             write(22,*) seismo(1,i),forceTermPrescribed(n,i)
@@ -615,23 +616,23 @@
         ! filter only when there is some displacement in the trace
         min = minval(seismo(2,:))
         max = maxval(seismo(2,:))
-        if ( (abs(max)+abs(min)) > 1e-4 ) then
+        if ( (abs(max)+abs(min)) > 1e-4) then
           !print *,'    filter',rank,vertex,max,min
           call dofilterSeismogram(seismo,numofTimeSteps)
         endif
 
         ! start source at zero time for adjoint methods
-        if ( Adjoint_Program .and. ADJOINT_STARTATZERO ) then
-          if ( MASTER .and. VERBOSE .and. n == 1) print *,'starting source for adjoint method at time: zero'
+        if (Adjoint_Program .and. ADJOINT_STARTATZERO) then
+          if (MAIN_PROCESS .and. VERBOSE .and. n == 1) print *,'starting source for adjoint method at time: zero'
           do i = 1,numofTimeSteps
-            if ( seismo(1,i) < 0.0 ) then
+            if (seismo(1,i) < 0.0) then
               seismo(2,i) = 0.0_WP
             endif
           enddo
         endif
 
         ! retain as new source
-        if (.not. sourceOnFile ) then
+        if (.not. sourceOnFile) then
           forceTermPrescribed(n,:) = seismo(2,:)
         else
           do i = 1,numofTimeSteps
@@ -642,11 +643,11 @@
 
 
         ! file output
-        if ( vertex == sourceVertex .and. beVerbose .and. .not. sourceOnFile ) then
+        if (vertex == sourceVertex .and. beVerbose .and. .not. sourceOnFile) then
           write(vertexstr,'(i8.8)') vertex
           open(22,file=datadirectory(1:len_trim(datadirectory))// &
               'source2Prescribed.filtered.'//vertexstr//'.dat',iostat=ierror)
-          if ( ierror /= 0 ) call stopProgram('error opening file: '// &
+          if (ierror /= 0) call stopProgram('error opening file: '// &
             datadirectory(1:len_trim(datadirectory))//'source2Prescribed.filtered'//vertexstr//'.dat   ')
           do i = 1,numofTimeSteps
             write(22,*) seismo(1,i),forceTermPrescribed(n,i)
@@ -656,7 +657,7 @@
       enddo
 
       ! filter around a specified (different) period
-      if ( new_period ) then
+      if (new_period) then
         bw_waveperiod = originalT
         bw_frequency = originalf
       endif
@@ -675,35 +676,35 @@
       integer:: ierror
 
       ! reads in a heterogeneous phase velocity map
-      if ( HETEROGENEOUS ) then
-        if ( MASTER .and. VERBOSE) then
+      if (HETEROGENEOUS) then
+        if (MAIN_PROCESS .and. VERBOSE) then
           print *,'  initializing heterogeneous phase map...'
         endif
 
         !allocate phaseMap array
         allocate(phaseMap(numVertices), stat=ierror)
-        if ( ierror /= 0) then
+        if (ierror /= 0) then
           print *,'Error: allocating phaseMap array'
           call stopProgram( 'abort - setupFrame   ')
         endif
 
         ! read phase map (e.g. Love 150 s) (note: is rotated for non-adjoint simulations)
-        if ( MASTER ) then
+        if (MAIN_PROCESS) then
           call constructPhasedata()
         endif
 
-        ! synchronize between master and slave processes
+        ! synchronize between main and secondary processes
         !print *,rank,'synchronizing phase map...'
         call syncPhaseMap()
 
-        if ( rotate_frame ) then
+        if (rotate_frame) then
           ! rotated frame has the source sitting at equator (1,0,0)
           ! rotate source & receiver (only for 1 receiver station setup)
           call getRotatedIndex(sourceVertex)
           call getRotatedIndex(receiverVertex)
 
           ! output
-          if ( MASTER) then
+          if (MAIN_PROCESS) then
             call getSphericalCoord_Lat(sourceVertex,lat,lon)
             print *, '  rotated source vertex:',sourceVertex,lat,lon
             call getSphericalCoord_Lat(receiverVertex,lat,lon)
@@ -718,10 +719,10 @@
 
       ! parallelize grid or delta phase maps (when using different processors for a single simulation)
       ! or determine where the deltaVertex lies (parallel different simulations)
-      if ( MASTER .and. VERBOSE) then
+      if (MAIN_PROCESS .and. VERBOSE) then
         print *,'  initializing parallelized maps...'
       endif
-      if ( PARALLELSEISMO ) then
+      if (PARALLELSEISMO) then
         ! construct grid domains for parallelization of single simulation
         call constructParallelDomains()
 
@@ -729,24 +730,24 @@
         numDomainVertices = size(domainVertices(:)) ! take only vertices in this domain
       else
         ! set for each process a new delta location
-        if ( DELTA ) call parallelizeDeltaLocations()
+        if (DELTA) call parallelizeDeltaLocations()
 
         ! consider number of vertices for finite-difference iteration scheme
         numDomainVertices = numVertices   ! propagate through all vertices
       endif
 
       ! precalculate the phase velocities for all grid points
-      if ( MASTER .and. VERBOSE) then
+      if (MAIN_PROCESS .and. VERBOSE) then
         print *,'  initializing phase velocities...'
       endif
       call constructPhaseVelocitySquare()
 
       ! phase map no more needed
-      if ( HETEROGENEOUS ) deallocate(phaseMap)
+      if (HETEROGENEOUS) deallocate(phaseMap)
 
       ! console output
-      if ( MASTER .and. VERBOSE .and. PARALLELSEISMO) then
-        print *,'  master info: vertex from',1,'to',numDomainVertices
+      if (MAIN_PROCESS .and. VERBOSE .and. PARALLELSEISMO) then
+        print *,'  main process info: vertex from',1,'to',numDomainVertices
       endif
       end subroutine
 
@@ -760,7 +761,7 @@
       implicit none
 
       ! increment latitude corresponding for this process
-      if ( (deltaLat - (latitudeEnd - (nprocesses-1)*deltaMoveIncrement)) > deltaMoveIncrement/2 ) then
+      if ( (deltaLat - (latitudeEnd - (nprocesses-1)*deltaMoveIncrement)) > deltaMoveIncrement/2) then
         print *,'Error: delta location too close to end'
         call stopProgram( 'abort - parallelizeDeltaLocations    ')
       endif
@@ -772,7 +773,7 @@
       call findVertex(deltaLat,deltaLon,deltaVertex)
 
       ! for 2 delta scatterers
-      if ( SECONDDELTA) call placeSecondDelta(deltaLat,deltaLon,deltaSecondLat, &
+      if (SECONDDELTA) call placeSecondDelta(deltaLat,deltaLon,deltaSecondLat, &
                         deltaSecondLon,deltaSecondVertex,deltaSecondDistance)
       end subroutine
 
@@ -831,19 +832,19 @@
       endif
 
       ! checkerboard phase velocity map
-      if ( DO_CHECKERBOARD ) then
-        if ( MASTER .and. VERBOSE) print *,'checkerboard phase velocity map'
+      if (DO_CHECKERBOARD) then
+        if (MAIN_PROCESS .and. VERBOSE) print *,'checkerboard phase velocity map'
         call makeCheckerboard()
       else
         ! check if we read a gsh-file
         phaseBlockFile=trim(phaseBlockFile)
         print *,'  reading phase map file-type: '//&
               phaseBlockFile(len_trim(phaseBlockFile)-2:len_trim(phaseBlockFile))
-        if ( phaseBlockFile(len_trim(phaseBlockFile)-2:len_trim(phaseBlockFile)) == "gsh") then
+        if (phaseBlockFile(len_trim(phaseBlockFile)-2:len_trim(phaseBlockFile)) == "gsh") then
           ! read in phaseMap() array data
           ! notice: using a heterogeneous phase map always rotates the map for a non-adjoint simulation!
           !             such that source/receiver will lie on the equator
-          if ( phaseBlockFile(len_trim(phaseBlockFile)-6:len_trim(phaseBlockFile)) == "abs.gsh") then
+          if (phaseBlockFile(len_trim(phaseBlockFile)-6:len_trim(phaseBlockFile)) == "abs.gsh") then
             call readGSHPhasemap(phaseBlockFile,.false.)
           else
             call readGSHPhasemap(phaseBlockFile,.true.)
@@ -858,7 +859,7 @@
             phaseBlock(i) = phasevelocity
           enddo
 
-          if ( rotate_frame ) then
+          if (rotate_frame) then
             ! determine rotation matrix from (1,0,0)/... to source/receiver frame
             Vsource(:) = vertices(originSourceVertex,:)
             Vreceiver(:) = vertices(originReceiverVertex,:)
@@ -871,7 +872,7 @@
             vtmp(:) = vertices(i,:)
 
             ! get rotated vector
-            if ( rotate_frame ) then
+            if (rotate_frame) then
               call rotateVector(rot,vtmp,vtmp)
             endif
 
@@ -880,7 +881,7 @@
 
             ! get vertex block index
             call determineBlock(real(lat),real(lon),index)
-            if ( index < 0 .or. index > numBlocks) then
+            if (index < 0 .or. index > numBlocks) then
               print *,'Error: block error:',lat,lon
               print *,'       index violates boundaries:',index, i,numBlocks
               call stopProgram( 'abort - constructPhasedata   ')
@@ -906,11 +907,11 @@
       real(WP):: exact,distance
 
       ! place all receiver stations
-      if ( manyReceivers ) then
-        if ( manyKernels ) then
+      if (manyReceivers) then
+        if (manyKernels) then
           ! determine how many kernels
           numofKernels=int(kernelEndDistance-kernelStartDistance+1)
-          if ( numofKernels <= 0) then
+          if (numofKernels <= 0) then
             print *,'Error: kernels cannot be found correctly:',kernelStartDistance,kernelEndDistance
             call stopProgram( 'abort - initializeKernels()   ')
           endif
@@ -919,10 +920,10 @@
             kernelsReceiversSeismogram(numofKernels,numofReceivers+1,numofTimeSteps), &
             kernelsReceiversSeismogramRef(numofKernels,numofReceivers+1,numofTimeSteps), &
             stat=ierror)
-          if ( ierror /= 0 ) call stopProgram('cannot allocate receivers array   ')
+          if (ierror /= 0) call stopProgram('cannot allocate receivers array   ')
 
           ! console output
-          if ( VERBOSE .and. MASTER) then
+          if (VERBOSE .and. MAIN_PROCESS) then
             print *,'  arrays for receivers allocated successfully',size(receiversSeismogram), &
                               size(kernelsReceiversSeismogramRef)
             print *,'  epicentral distances between:',kernelStartDistance,kernelEndDistance
@@ -934,7 +935,7 @@
             currentKernel = m
             ! determine kernels station locations (with respect to a source at north pole)
             receiverLat=90.0 - (kernelStartDistance + m-1)
-            if ( receiverLat < -90.0) then
+            if (receiverLat < -90.0) then
               print *,'Error: kernels to far away from source (north pole):',receiverLat
               call stopProgram( 'abort - initializeKernels()   ')
             endif
@@ -942,7 +943,7 @@
             call setupReceivers()
           enddo
           ! console output
-          if ( VERBOSE .and. MASTER ) then
+          if (VERBOSE .and. MAIN_PROCESS) then
             print *,'  set up kernels for latitude: ',90-kernelStartDistance,90-kernelEndDistance
           endif
         else
@@ -951,7 +952,7 @@
       endif
 
       ! prepare kernel data files
-      if ( manyKernels) then
+      if (manyKernels) then
         do m = 1,numofKernels
           currentKernel = m
           call createKernelFiles()
@@ -961,18 +962,18 @@
       endif
 
       ! output epicentral distances
-      if ( MASTER ) then
+      if (MAIN_PROCESS) then
         open(10,file=datadirectory(1:len_trim(datadirectory))//'tmpEpiDistances.dat')
         write(10,*)'# epicentral distances'
         write(10,*)'# rounded  exactDistance (in degrees)'
-        if ( VERBOSE ) print *,'epicentral distances:'
-        if ( manyKernels ) then
+        if (VERBOSE) print *,'epicentral distances:'
+        if (manyKernels) then
           do m = 1,numofKernels
             rounded=int(kernelStartDistance+m-1)
             call greatCircleDistance(vertices(sourceVertex,:),vertices(kernelsReceivers(m,1),:),distance)
             exact = distance*180.0/PI
             write(10,*) rounded, exact
-            if ( VERBOSE ) print *,'    ',rounded,exact
+            if (VERBOSE) print *,'    ',rounded,exact
           enddo
         else
           call greatCircleDistance(vertices(sourceVertex,:),vertices(receiverVertex,:),distance)
@@ -980,14 +981,14 @@
           call greatCircleDistance(vertices(sourceVertex,:),vertices(receiverVertex,:),distance)
           exact = distance*180.0/PI
           write(10,*) rounded, exact
-          if ( VERBOSE ) print *,'    ',rounded,exact
+          if (VERBOSE) print *,'    ',rounded,exact
         endif
         close(10)
-        if ( VERBOSE ) print *
+        if (VERBOSE) print *
       endif
 
       ! output
-      if ( MASTER .and. VERBOSE ) then
+      if (MAIN_PROCESS .and. VERBOSE) then
         print *
         print *,'kernel initialization o.k.'
         print *
@@ -1010,32 +1011,32 @@
       character(len=3):: kernelstr
 
       ! useless for heterogeneous case
-      if ( HETEROGENEOUS ) &
+      if (HETEROGENEOUS) &
         call stopProgram('multiple receiver stations and heterogeneous phase map not applicable    ')
       ! check number of receivers
-      if ( numofReceivers <= 0 ) then
+      if (numofReceivers <= 0) then
         print *,'Error: number of receiver stations invalid!',numofReceivers
         call stopProgram('setupReceivers() - abort    ')
       endif
 
       ! store for all receivers the displacements and add one seismogram to store the corresponding time
-      if (.not. manyKernels ) then
+      if (.not. manyKernels) then
         ! allocate receiver arrays
         allocate( receivers(numofReceivers), &
                 receiversSeismogram(numofReceivers+1,numofTimeSteps), &
                 receiversSeismogramRef(numofReceivers+1,numofTimeSteps), &
                 stat=ierror)
-        if ( ierror /= 0 ) call stopProgram('cannot allocate receivers array   ')
+        if (ierror /= 0) call stopProgram('cannot allocate receivers array   ')
         !console output
-        if ( MASTER .and. VERBOSE ) &
+        if (MAIN_PROCESS .and. VERBOSE) &
           print *,'arrays for receivers allocated successfully',size(receiversSeismogram),size(receiversSeismogramRef)
       endif
 
       ! assumes the source to be on north pole, the receiver station placed along the same latitude
-      if ( importKernelsReceivers ) then
-        if ( manyReceivers ) then
+      if (importKernelsReceivers) then
+        if (manyReceivers) then
           ! read in values
-          if ( manyKernels ) then
+          if (manyKernels) then
             write(kernelstr,'(i3.3)')int(kernelStartDistance+currentKernel-1)
             datafile = datadirectory(1:len_trim(datadirectory))//'tmpReceiverStations'//kernelstr//'.dat'
             open(10,file=datafile)
@@ -1044,24 +1045,24 @@
             enddo
             close(10)
           else
-            if ( VERBOSE .and. MASTER) print *,'importing kernels only for manyKernels supported'
+            if (VERBOSE .and. MAIN_PROCESS) print *,'importing kernels only for manyKernels supported'
             importKernelsReceivers = .false.
           endif
 
           ! output
-          if ( VERBOSE .and. MASTER .and. currentKernel == 1) then
+          if (VERBOSE .and. MAIN_PROCESS .and. currentKernel == 1) then
             print *,'read in receiver stations from file:', datafile
           endif
         else
-          if ( VERBOSE .and. MASTER) print *,'importing kernels only for manyReceivers supported'
+          if (VERBOSE .and. MAIN_PROCESS) print *,'importing kernels only for manyReceivers supported'
           importKernelsReceivers = .false.
         endif
       endif
 
       ! determine receiver locations
-      if (.not. importKernelsReceivers ) then
+      if (.not. importKernelsReceivers) then
         ! check if needed
-        if (.not. manyReceivers ) return
+        if (.not. manyReceivers) return
 
         ! place stations
         do i = 1, numofReceivers
@@ -1072,7 +1073,7 @@
           !receiverLat=(i-1)*360.0_WP/numofReceivers
 
           ! get corresponding vertex for this receiver station on our grid
-          if ( manyKernels) then
+          if (manyKernels) then
             call findVertex(receiverLat,receiverLon,kernelsReceivers(currentKernel,i))
           else
             call findVertex(receiverLat,receiverLon,receivers(i))
@@ -1080,8 +1081,8 @@
         enddo
 
         ! debug file output
-        if ( MASTER) then
-          if ( manyKernels) then
+        if (MAIN_PROCESS) then
+          if (manyKernels) then
             write(kernelstr,'(i3.3)')int(kernelStartDistance+currentKernel-1)
             datafile = datadirectory(1:len_trim(datadirectory))//'tmpReceiverStations'//kernelstr//'.dat'
             open(10,file=datafile)
@@ -1117,11 +1118,11 @@
       character(len=3):: rankstr,kernelstr
       character(len=128):: datafile
 
-      ! only master process creates the files
+      ! only main process creates the files
       ! (but all processes must have access to these files)
-      if (.not. MASTER ) return
+      if (.not. MAIN_PROCESS) return
 
-      if ( VERBOSE .and. currentKernel <= 1) then
+      if (VERBOSE .and. currentKernel <= 1) then
         print *,'creating new output files:'
         print *,'   ',datadirectory(1:len_trim(datadirectory))//'ttkernel.rank***.dat'
         print *,'   ',datadirectory(1:len_trim(datadirectory))//'ttkernel.rot.rank***.dat'
@@ -1133,8 +1134,8 @@
         ! create new 'ttkernel.dat' and 'ttkernel.rot.dat' files
         do n = 1,2
           ! determine filename
-          if ( n == 1) then
-            if ( manyKernels) then
+          if (n == 1) then
+            if (manyKernels) then
               write(kernelstr,'(i3.3)') int(kernelStartDistance+currentKernel-1)
               datafile = datadirectory(1:len_trim(datadirectory))//'ttkernel'//&
                                           kernelstr//'.rank'//rankstr//'.dat'
@@ -1142,7 +1143,7 @@
               datafile = datadirectory(1:len_trim(datadirectory))//'ttkernel.rank'//rankstr//'.dat'
             endif
           else
-            if ( manyKernels) then
+            if (manyKernels) then
               write(kernelstr,'(i3.3)') int(kernelStartDistance+currentKernel-1)
               datafile = datadirectory(1:len_trim(datadirectory))//'ttkernel'//&
                                   kernelstr//'.rot.rank'//rankstr//'.dat'
@@ -1153,20 +1154,20 @@
           datafile=trim(datafile)
           ! delete if existing
           !open(10,file=datafile,iostat=ioerror)
-          !if ( ioerror == 0 ) close(10,status='DELETE')
+          !if (ioerror == 0) close(10,status='DELETE')
 
           ! put two comment lines at beginning
           open(IOUT,file=trim(datafile),iostat=ioerror)
-          if ( ioerror /= 0) then
+          if (ioerror /= 0) then
             ! check if really we can not create the file
             print *,'could not open file: '//trim(datafile)
             print *,'  try again...'
             open(IOUT,file=trim(datafile),status='unknown',iostat=ioerror)
-            if ( ioerror /= 0 ) call stopProgram('createKernelFiles() - still not possible. shutting down    ')
+            if (ioerror /= 0) call stopProgram('createKernelFiles() - still not possible. shutting down    ')
             print *,'  successed opening file'
           endif
           ! determine comment line text
-          if ( n == 1 ) then
+          if (n == 1) then
             write(IOUT,*) '# phase shift - sensitivity kernel'
           else
             write(IOUT,*) '# rotated phase shift - sensitivity kernel'
@@ -1234,7 +1235,7 @@
       call findVertex(lat,lon,sourceVertex)
       call getSphericalCoord_Lat(sourceVertex,sourceLat,sourceLon)
 
-      if ( MASTER .and. VERBOSE) then
+      if (MAIN_PROCESS .and. VERBOSE) then
         print *,'    source(lat/lon) desired:',lat,lon
         print *,'      got:',sourceLat,sourceLon
         print *,'      index:',sourceVertex
@@ -1265,17 +1266,17 @@
       call greatCircleDistance(vertices(sourceVertex,:),vertices(receiverVertex,:),distance)
 
       ! find triangle where receiver lies
-      if ( Station_Correction ) then
+      if (Station_Correction) then
         call getClosestTriangle(desiredReceiverlat,desiredReceiverlon,interpolation_triangleIndex, &
                               interpolation_distances,interpolation_corners,interpolation_triangleLengths)
       endif
 
-      if ( MASTER .and. VERBOSE) then
+      if (MAIN_PROCESS .and. VERBOSE) then
         print *,'    receiver(lat/lon) desired:',desiredReceiverLat,desiredReceiverLon
         print *,'      got:',receiverLat,receiverLon
         print *,'      index:',receiverVertex
         print *,'    distance source-receiver:',distance*180.0/PI
-        if ( Station_Correction ) then
+        if (Station_Correction) then
           print *,'    interpolation receiver station:'
           print *,'      triangle:',interpolation_triangleIndex
           print *,'      corners :',(interpolation_corners(i),i=1,3)
@@ -1301,18 +1302,18 @@
       call setupNewReceiver(lat,lon)
 
       ! writes epicentral distance to file
-      if ( MASTER ) then
-        if ( Adjoint_Program ) then
-          if ( kernelIteration ) then
+      if (MAIN_PROCESS) then
+        if (Adjoint_Program) then
+          if (kernelIteration) then
             ! determine epicentral distance
             call determineOrbitDistance(distance,iorbit)
 
             ! print epicentral distances into file
             open(10,file=datadirectory(1:len_trim(datadirectory))//&
                 distanceFile(1:len_trim(distanceFile)),status='old',position='append',iostat=ierror)
-            if ( ierror /= 0 ) then
+            if (ierror /= 0) then
               ! console output
-              if ( VERBOSE ) then
+              if (VERBOSE) then
                 print *,'  epicentral distances of kernels in file:'
                 print *,'    ',datadirectory(1:len_trim(datadirectory))//distanceFile(1:len_trim(distanceFile))
                 print *
@@ -1320,12 +1321,12 @@
               ! open as new file
               open(10,file=datadirectory(1:len_trim(datadirectory))//&
                   distanceFile(1:len_trim(distanceFile)),status='new',iostat=ierror)
-              if ( ierror == 0 ) then
+              if (ierror == 0) then
                 write(10,*) '# epicentral distances'
                 write(10,*) '# rounded exactDistance (in degrees)'
               endif
             endif
-            if ( ierror == 0 ) then
+            if (ierror == 0) then
               write(10,*) int(desiredReceiverLon),distance*180.0/PI
               close(10)
             endif
@@ -1358,11 +1359,11 @@
       antipodeTime = (PI + (iorbit-1)*PI)*EARTHRADIUS/cphaseRef
       arrivalTime = distance*EARTHRADIUS/cphaseRef
 
-      if ( USEOVERTIME ) then
+      if (USEOVERTIME) then
         LASTTIME = arrivalTime + SIMULATIONOVERTIMEPERCENT*arrivalTime
-        if ( LASTTIME > antipodeTime ) LASTTIME = antipodetime
-      else if (WINDOWEDINTEGRATION ) then
-        if ( MASTER .and. VERBOSE) then
+        if (LASTTIME > antipodeTime) LASTTIME = antipodetime
+      else if (WINDOWEDINTEGRATION) then
+        if (MAIN_PROCESS .and. VERBOSE) then
           print *,'    orbit: ',iorbit
         endif
         LASTTIME = antipodeTime
@@ -1371,7 +1372,7 @@
       endif
 
       ! console output
-      if ( MASTER .and. VERBOSE) then
+      if (MAIN_PROCESS .and. VERBOSE) then
         print *,'    new simulation time will end at:',LASTTIME
       endif
 
@@ -1384,7 +1385,7 @@
 ! determines the time steping for the simulation
       use propagationStartup, only: FIRSTTIME,LASTTIME,dt,firsttimestep,lasttimestep, &
                             numofTimeSteps,seismogramReceiver
-      use parallel, only: MASTER
+      use parallel, only: MAIN_PROCESS
       use verbosity, only: VERBOSE
       use filterType, only: WindowSIZE
       implicit none
@@ -1396,18 +1397,18 @@
       lasttimestep = int( LASTTIME/dt) !default: 22000
       isteps = lasttimestep-firsttimestep+1
 
-      if ( MASTER .and. VERBOSE) then
+      if (MAIN_PROCESS .and. VERBOSE) then
         print *,'    number of time steps  : ',isteps
       endif
 
-      if ( numofTimeSteps /= isteps ) then
+      if (numofTimeSteps /= isteps) then
         numofTimeSteps = isteps
         ! newly allocate seismogram for receiver
-        if ( allocated(seismogramReceiver) ) then
-         if ( size(seismogramReceiver(1,:)) /= numofTimeSteps) deallocate(seismogramReceiver)
+        if (allocated(seismogramReceiver)) then
+         if (size(seismogramReceiver(1,:)) /= numofTimeSteps) deallocate(seismogramReceiver)
         endif
         if (.not. allocated(seismogramReceiver)) allocate(seismogramReceiver(2,numofTimeSteps),stat=ierror)
-        if ( ierror > 0 ) call stopProgram('error in allocating seismogram array    ')
+        if (ierror > 0) call stopProgram('error in allocating seismogram array    ')
 
         ! fft size
         call determineFFTWindowsize(numofTimeSteps,WindowSIZE)
@@ -1444,7 +1445,7 @@
       arrivalTime = distance*EARTHRADIUS/cphaseRef
       do while( WINDOW_START > arrivalTime )
         iorbit = iorbit + 1
-        if ( mod(iorbit,2 ) == 0 ) then
+        if (mod(iorbit,2) == 0) then
           ! even orbits
           distance = ((iorbit)/2.0)*2.0*PI - minor_distance
           arrivalTime = distance*EARTHRADIUS/cphaseRef
@@ -1471,7 +1472,7 @@
       real(WP):: theta_radian,tmp
 
       ! calculates width parameter (see Carl Tape Thesis , eq. 3.21 )
-      if (.not. FIXED_SOURCEPARAMETER ) then
+      if (.not. FIXED_SOURCEPARAMETER) then
         !WidthParameterMu=FACTOR_WIDTH*averageCellDistance/(EARTHRADIUS*2.0*sqrt(-2.0*log(0.05)))
         theta_radian = THETA_WID*PI/180.0
         WidthParameterMu = theta_radian/(2.0*sqrt(-2.0*log(0.05)))
@@ -1480,24 +1481,24 @@
       muTwo    = muSquare + muSquare
 
       ! checks width parameter
-      if ( subdivisions <= 6 .and. WidthParameterMu < 0.008 ) then
+      if (subdivisions <= 6 .and. WidthParameterMu < 0.008) then
         print *,'  minimum period: ',20.+WidthParameterMu*7000.
         !call stopProgram("source not optimal ")
       endif
-      if ( subdivisions <= 7 .and. WidthParameterMu < 0.004 ) then
+      if (subdivisions <= 7 .and. WidthParameterMu < 0.004) then
         print *,'  minimum period: ',20.+WidthParameterMu*7000.
         !call stopProgram("source not optimal ")
       endif
 
       ! empirical formula to obtain a maximum at the reference period
-      if ( ADAPT_SOURCE ) then
-        if ( (20.+WidthParameterMu*7000.) > bw_waveperiod ) then
+      if (ADAPT_SOURCE) then
+        if ( (20.+WidthParameterMu*7000.) > bw_waveperiod) then
           print *,'Error: minimum period possible: ',20.+WidthParameterMu*7000.
           print *,'       width parameter mu:',WidthParameterMu
           call stopProgram("source not possible    ")
         endif
         tmp = 1.0-8.0/3.0*(20.+WidthParameterMu*7000.-bw_waveperiod)
-        if ( tmp < 0.0 ) then
+        if (tmp < 0.0) then
           call stopProgram("source parameter sigma not defined    ")
         endif
         TimeParameterSigma = 0.75 + 0.75*sqrt( tmp )
@@ -1505,7 +1506,7 @@
 
       tmp = 2./3.*TimeParameterSigma**2-TimeParameterSigma+20.+7000.*WidthParameterMu
       ! console output
-      if ( MASTER .and. VERBOSE) then
+      if (MAIN_PROCESS .and. VERBOSE) then
         print *,'  source parameters:'
         print *,'    time parameter sigma :',TimeParameterSigma
         print *,'    width parameter mu   :',WidthParameterMu
@@ -1527,7 +1528,7 @@
 
       ! console output
       endindex = index(textline,"  ")
-      if ( endindex < 1 ) endindex = 128
+      if (endindex < 1) endindex = 128
       print *,textline(1:endindex)
 
       ! on linux machines : i/o unit 6 is the stdout , on SGI 101
@@ -1535,7 +1536,7 @@
 
       ! stop MPI
       call MPI_Initialized(flag,ierror)
-      if ( flag .eqv. .true. .and. ierror == 0) then
+      if (flag .eqv. .true. .and. ierror == 0) then
         ! note: MPI_ABORT does not return, it makes the program exit with an error code of 30
         call MPI_Abort(MPI_COMM_WORLD, 30, ierror )
         call MPI_FINALIZE(ierror)

@@ -29,20 +29,20 @@
       inputName = trim(inputName)
       !if (VERBOSE) print *,inputName
       open(IIN, file=trim(inputName),status='old',iostat=ierror)
-      if ( ierror /= 0) then
+      if (ierror /= 0) then
         print *,'Error: opening file ',trim(inputName)
         call stopProgram( 'abort - readParameters() opening input    ')
       endif
 
       do while( ierror == 0)
         read(IIN,'(a150)', iostat=ierror) line
-        if ( ierror /= 0 ) exit
+        if (ierror /= 0) exit
 
         length = len_trim(line)
-        if ( length == 0 ) then
+        if (length == 0) then
           continue
         else
-          if (line(1:1) == " " .or. line(1:1) == "!" ) then
+          if (line(1:1) == " " .or. line(1:1) == "!") then
             continue
           else
             select case(line(1:5))
@@ -124,7 +124,7 @@
             case('BLKFI')
               read(line(35:len_trim(line)),*) line
               phaseBlockFile = trim(line)
-              if ( DO_CHECKERBOARD ) then
+              if (DO_CHECKERBOARD) then
                 if (VERBOSE .and. HETEROGENEOUS) &
                   print *,'   checkerboard - L',MAP_DEGREE_L,'M',MAP_DEGREE_M
               else
@@ -133,11 +133,11 @@
               endif
             case('BLK/I')
               read(line(35:len_trim(line)),*) heterogeneousPixelsize
-              if (.not. DO_CHECKERBOARD ) then
+              if (.not. DO_CHECKERBOARD) then
                 if (phaseBlockFile(len_trim(phaseBlockFile)-2:len_trim(phaseBlockFile)) == 'gsh') then
                   gsh_maximum_expansion = heterogeneousPixelsize
                   heterogeneousPixelsize = 0
-                  if ( VERBOSE .and. HETEROGENEOUS)print *,'    maximum degree expansion ',gsh_maximum_expansion
+                  if (VERBOSE .and. HETEROGENEOUS)print *,'    maximum degree expansion ',gsh_maximum_expansion
                 else
                   if (VERBOSE .and. HETEROGENEOUS)print *,'  Grid pixel size ',heterogeneousPixelsize
                 endif
@@ -160,7 +160,7 @@
             case('INV_V')
               read(line(35:len_trim(line)),*) tmpInteger
               if (phaseBlockFile(len_trim(phaseBlockFile)-2:len_trim(phaseBlockFile)) /= 'gsh') then
-                if ( tmpInteger /= floor(heterogeneousPixelsize+0.1) ) then
+                if (tmpInteger /= floor(heterogeneousPixelsize+0.1)) then
                   print *,'Error: inversion grid size and block phase velocity map are different', &
                           tmpInteger,floor(heterogeneousPixelsize+0.1)
                   call stopProgram('abort - readParameters ')
@@ -272,7 +272,7 @@
         call stopProgram('phase speed not recognized    ')
       end select
 
-      if ( cphase < 0.0 ) then
+      if (cphase < 0.0) then
         print *,'Error: phase speed not recognized:',trim(ctype)
         call stopProgram('abort - readParameters')
       endif

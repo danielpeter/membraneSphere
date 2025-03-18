@@ -46,14 +46,14 @@
         ! propagate only corresponding vertices
         do n = 1, numDomainVertices
           ! choose vertex
-          if ( PARALLELSEISMO ) then
+          if (PARALLELSEISMO) then
             vertex = domainVertices(n)
           else
             vertex = n
           endif
 
           ! spherical Laplacian
-          if ( PRECALCULATED_CELLS ) then
+          if (PRECALCULATED_CELLS) then
             D2 = precalc_discreteLaplacian(vertex) !uses displacement(..) field
           else
             D2 = discreteLaplacian(vertex)
@@ -63,17 +63,17 @@
           u_tminus1  = displacement_old(vertex)
 
           ! determines force
-          if ( PRESCRIBEDSOURCE ) then
+          if (PRESCRIBEDSOURCE) then
             ! get the value out of the prescribed force array
             ! prescribed array goes on till numDomainVertices, see indexing at initialization
-            if (.not. sourceOnFile ) then
+            if (.not. sourceOnFile) then
               forcing = forceTermPrescribed(n,index)
             else
               jrec = (n-1)*numofTimeSteps + index
               read(sourceFileID,rec=jrec) forcing
             endif
           else
-            if ( Station_Correction ) then
+            if (Station_Correction) then
               forcing = forceTermExact(vertex,time,desiredSourceLat,desiredSourceLon)
             else
               forcing = forceTerm2Source(vertex,time,sourceVertex)
@@ -91,20 +91,20 @@
         enddo
 
         ! synchronize new displacement arrays
-        if ( PARALLELSEISMO ) then
+        if (PARALLELSEISMO) then
           call syncNewdisplacement()
         endif
 
         ! fill displacement at receiver station into seismogram record of that receiver station
         ! note: newdisplacement is at time step t+dt
-        if ( manyReceivers ) then
+        if (manyReceivers) then
           call recordManySeismograms(index,time+dt,referenceRun)
         else
           ! set time in seismogram
           seismogramReceiver(1,index) = time+dt
 
           ! set displacement
-          if ( Station_Correction ) then
+          if (Station_Correction) then
             !interpolate new displacement for original receiver location
             call interpolateLinear(interpolation_distances,interpolation_triangleLengths, &
                                   interpolation_corners,newdisp)
@@ -115,7 +115,7 @@
         endif
 
         ! save displacements at each time step for future adjoint calculation
-        if ( Adjoint_Program ) then
+        if (Adjoint_Program) then
           call storeForwardDisplacements(timestep,index)
         endif
 
@@ -139,8 +139,8 @@
       integer:: m,i
 
       ! record seismograms
-      if ( manyKernels ) then
-        if ( refRun ) then
+      if (manyKernels) then
+        if (refRun) then
           do m = 1,numofKernels
             ! fill in the time seismogram first
             kernelsReceiversSeismogramRef(m,numofReceivers+1,index) = time
@@ -160,7 +160,7 @@
           enddo
         endif
       else
-        if ( refRun ) then
+        if (refRun) then
           ! fill in the time seismogram first
           receiversSeismogramRef(numofReceivers+1,index) = time
           ! fill in the displacement seismograms for each receiver
@@ -196,11 +196,11 @@
       logical,intent(inout):: move
 
       ! increment latitude
-      if ( abs(deltaLat-latitudeEnd) > deltaMoveIncrement/2 ) then
+      if (abs(deltaLat-latitudeEnd) > deltaMoveIncrement/2) then
         deltaLat = deltaLat+deltaMoveIncrement
       else
         ! increment longitude
-        ! if ( int(latDelta) > 50) then
+        ! if (int(latDelta) > 50) then
         deltaLat = latitudeStart
         deltaLon = deltaLon + deltaMoveIncrement
       endif
@@ -209,11 +209,11 @@
       call findVertex(deltaLat,deltaLon,deltaVertex)
 
       ! for 2 delta scatterers
-      if ( SECONDDELTA) call placeSecondDelta(deltaLat,deltaLon,deltaSecondLat, &
+      if (SECONDDELTA) call placeSecondDelta(deltaLat,deltaLon,deltaSecondLat, &
                                               deltaSecondLon,deltaSecondVertex,deltaSecondDistance)
 
       ! stop iteration for high longitude
-      if ( deltaLon > (longitudeEnd + deltaMoveIncrement/2) ) move = .false.
+      if (deltaLon > (longitudeEnd + deltaMoveIncrement/2)) move = .false.
 
       end subroutine
 
@@ -236,12 +236,12 @@
       logical:: bestfound
 
       ! increment latitude
-      if ( (deltaLat - (latitudeEnd-nprocesses*deltaMoveIncrement) ) < deltaMoveIncrement/2 ) then
+      if ( (deltaLat - (latitudeEnd-nprocesses*deltaMoveIncrement)) < deltaMoveIncrement/2) then
         ! not yet reached the end, so increment
         deltaLat = deltaLat+nprocesses*deltaMoveIncrement
       else
         ! deltaLat is at the latitudeEnd or has already passed it
-        if ( manyReceivers ) then
+        if (manyReceivers) then
           ! moves only down the latitude at one chosen longitude, when end reached, it stops
           move = .false.
         else
@@ -251,7 +251,7 @@
           deltaLon = deltaLon+deltaMoveIncrement
 
           !stop iteration for high longitude
-          if ( (deltaLon - longitudeEnd) > deltaMoveIncrement/2 ) move = .false.
+          if ( (deltaLon - longitudeEnd) > deltaMoveIncrement/2) move = .false.
         endif
       endif
 
@@ -259,21 +259,21 @@
       call findVertex(deltaLat,deltaLon,deltaVertex)
 
       ! avoid too big steps
-      if ( manyReceivers ) then
+      if (manyReceivers) then
         call getSphericalCoord_Lat(deltaVertex,lat,lon)
         newlon = deltaLon
         bestfound = .false.
-        if ( abs(lat-deltaLat) <= abs(deltaMoveIncrement/2)) bestfound = .true.
+        if (abs(lat-deltaLat) <= abs(deltaMoveIncrement/2)) bestfound = .true.
 
         do while( (.not. bestfound ) .and. (newlon < (deltaLon+360.0))  )
           ! search on the east for a better vertex
           newlon = newlon+deltaMoveIncrement*0.5
           call findVertex(deltaLat,newlon,deltaVertex)
           call getSphericalCoord_Lat(deltaVertex,lat,lon)
-          if ( abs(lat-deltaLat) <= abs(deltaMoveIncrement/2) ) bestfound = .true.
+          if (abs(lat-deltaLat) <= abs(deltaMoveIncrement/2)) bestfound = .true.
         enddo
         ! ...we found the best vertex (best matching latitude)
-        if (.not. bestfound ) then
+        if (.not. bestfound) then
           ! take initial one
           call findVertex(deltaLat,deltaLon,deltaVertex)
           call getSphericalCoord_Lat(deltaVertex,lat,lon)
@@ -285,11 +285,11 @@
         endif
 
         ! for 2 delta scatterers
-        if ( SECONDDELTA) call placeSecondDelta(deltaLat,newlon,deltaSecondLat, &
+        if (SECONDDELTA) call placeSecondDelta(deltaLat,newlon,deltaSecondLat, &
                                                 deltaSecondLon,deltaSecondVertex,deltaSecondDistance)
       else
         ! for 2 delta scatterers
-        if ( SECONDDELTA) call placeSecondDelta(deltaLat,deltaLon,deltaSecondLat, &
+        if (SECONDDELTA) call placeSecondDelta(deltaLat,deltaLon,deltaSecondLat, &
                                                 deltaSecondLon,deltaSecondVertex,deltaSecondDistance)
       endif
 
@@ -310,8 +310,8 @@
       real(WP):: getPhaseSquare,lat,lon
 
       ! store to file
-      if ( MASTER ) then
-        if ( VERBOSE ) then
+      if (MAIN_PROCESS) then
+        if (VERBOSE) then
           print *,'  writing to file: ',trim(datadirectory)//'PhaseMap.dat'
         endif
         open(IOUT,file=trim(datadirectory)//'PhaseMap.dat')
@@ -329,7 +329,7 @@
         phaseVelocitySquare(i) = getPhaseSquare(i)
 
         ! file output
-        if ( MASTER ) then
+        if (MAIN_PROCESS) then
           call getSphericalCoord_Lat(i,lat,lon)
 
           ! format: #lon #lat #phase-velocity #vertexID
@@ -338,7 +338,7 @@
       enddo
 
       ! close files
-      if ( MASTER ) then
+      if (MAIN_PROCESS) then
         close(IOUT)
       endif
 
@@ -372,7 +372,7 @@
       csquare = cphaseRef*cphaseRef
 
       !heterogeneous phase velocities
-      if ( HETEROGENEOUS ) then
+      if (HETEROGENEOUS) then
         cphase = phaseMap(n)
         csquare = cphase*cphase
 
@@ -381,7 +381,7 @@
       endif
 
       !delta phase map
-      if ( DELTA ) then
+      if (DELTA) then
         ! first and second scatterer vectors
         vectorV(:) = vertices(n,:)
         vectorS(:) = vertices(deltaVertex,:)
@@ -394,7 +394,7 @@
         endif
 
         ! determine which phase velocity to apply for first scatterer
-        if ( distance > DELTARADIUS) then
+        if (distance > DELTARADIUS) then
           cphase = referencePhaseVelocity
         else
           if (DELTAfunction == "plateau") then
@@ -407,7 +407,7 @@
             endif
           endif
           ! console output
-          if ( MASTER .and. VERBOSE) then
+          if (MAIN_PROCESS .and. VERBOSE) then
                 print *,'distance scatterer:',n,distance
                 call getSphericalCoord_Lat(n,lat,lon)
                 print *,'     delta location (lat/lon):',lat,lon
@@ -417,8 +417,8 @@
         endif !distance
 
         ! determine which phase velocity to apply for second scatterer
-        if ( SECONDDELTA ) then
-          if ( distanceSnd <= DELTARADIUS) then
+        if (SECONDDELTA) then
+          if (distanceSnd <= DELTARADIUS) then
             if (DELTAfunction == "plateau") then
               cphase = referencePhaseVelocity + deltaPerturbation
             else
@@ -428,7 +428,7 @@
                   + exp(-distanceSnd*distanceSnd/62500.0)*(referencePhaseVelocity + deltaPerturbation)
               endif
             endif
-            if ( MASTER .and. VERBOSE) then
+            if (MAIN_PROCESS .and. VERBOSE) then
                   print *,'distance second scatterer:',n,distanceSnd
                   call getSphericalCoord_Lat(n,lat,lon)
                   print *,'     delta location (lat/lon):',lat,lon
@@ -480,7 +480,7 @@
       endif
 
       ! output
-      if ( MASTER .and. VERBOSE) print *,'seismogram output:'
+      if (MAIN_PROCESS .and. VERBOSE) print *,'seismogram output:'
 
       ! just to remove unneccessary spaces
       filename = trim(filename)
@@ -488,13 +488,13 @@
       if (PARALLELSEISMO) then
         ! each process prints its own output to the current directory
         ! displacement at receiver
-        if ( manyReceivers ) then
+        if (manyReceivers) then
           print *,'    printing to receiver files: '//filename(1:len_trim(filename)-4)
 
           do i = 1,size(receivers)
             ! get right seismogram
             domain = getDomain(receivers(i))
-            if ( rank == domain ) then
+            if (rank == domain) then
               write(recstr,'(i3.2)') int(i)
               ! get actual vertex position
               call getSphericalCoord_Lat(receivers(i),reclat,reclon)
@@ -512,7 +512,7 @@
 
               ! write to file
               open(200+i,file=filename,iostat=ierror)
-              if ( ierror /= 0) call stopProgram('could not open '//filename//'   ')
+              if (ierror /= 0) call stopProgram('could not open '//filename//'   ')
               write(200+i,*) 'receiver:',i,real(reclat),real(reclon),receivers(i)
               do n = 1,size( receiversSeismogram(size(receivers)+1,:) )
                 write(200+i,*) receiversSeismogram(size(receivers)+1,n),receiversSeismogram(i,n)
@@ -525,7 +525,7 @@
           call syncReceiverSeismogram()
 
           ! output
-          if ( MASTER ) then
+          if (MAIN_PROCESS) then
             ! displacement at receiver
             print *,'    printing to file: '//filename
             open(200,file=filename)
@@ -538,7 +538,7 @@
       else
         ! each process prints its own output to the current directory
         ! displacement at receiver
-        if ( manyReceivers ) then
+        if (manyReceivers) then
           print *,'    printing to receiver files: '//filename(1:len_trim(filename)-4)
 
           do i = 1,size(receivers)
@@ -559,7 +559,7 @@
 
             ! write to file
             open(200+i,file=filename,iostat=ierror)
-            if ( ierror /= 0) call stopProgram('could not open '//filename//'   ')
+            if (ierror /= 0) call stopProgram('could not open '//filename//'   ')
             write(200+i,*) 'receiver:',i,real(reclat),real(reclon),receivers(i)
             do n = 1,size( receiversSeismogram(size(receivers)+1,:) )
               write(200+i,*) receiversSeismogram(size(receivers)+1,n),receiversSeismogram(i,n)
@@ -585,7 +585,7 @@
 ! returns: wavefiled in file #output-dir#/simulation.#time#.dat
       use precisions
       use cells, only: vertices,numVertices,numTriangleFaces,cellTriangleFace
-      use parallel, only: MASTER
+      use parallel, only: MAIN_PROCESS
       use displacements, only: newdisplacement
       use propagationStartup, only: datadirectory
       implicit none
@@ -598,12 +598,12 @@
       logical,parameter:: FORMAT_VTK         = .true.  ! outputs as vtk file
       real,parameter:: SIMULATION_STARTTIME = -50.0
 
-      ! only master process writes to files
-      if ( mod(timestep,SIMULATION_TIMESTEPPING) == 0 &
-            .and. time >= SIMULATION_STARTTIME .and. MASTER ) then
+      ! only main process writes to files
+      if (mod(timestep,SIMULATION_TIMESTEPPING) == 0 &
+            .and. time >= SIMULATION_STARTTIME .and. MAIN_PROCESS) then
         write(timestr,'(i5.5)') index
 
-        if (.not. FORMAT_VTK ) then
+        if (.not. FORMAT_VTK) then
           open(10,file=datadirectory(1:len_trim(datadirectory))//'simulation.'//timestr//'.dat')
           do n = 1, numVertices
             ! #format: x, y, z, displacement  ( in Cartesian coordinates )

@@ -81,7 +81,7 @@
   !-----------------------------------------------------------------------
   subroutine openDatafile(dataUnit,newdataUnit,datacount)
   !-----------------------------------------------------------------------
-  ! opens file with given real data (only master process)
+  ! opens file with given real data (only main process)
   ! (e.g., ETL97, phase anomaly measurements, wei_sum.1.L150.txt )
     use parallel; use phaseBlockData; use propagationStartup
     use filtertype, only: bw_waveperiod
@@ -101,14 +101,14 @@
     integer:: epiminIndex,epimaxIndex
     character(len=256):: nameout
 
-    ! checks that only master is going to do it
-    if (.not. MASTER ) return
+    ! checks that only main process is going to do it
+    if (.not. MAIN_PROCESS) return
 
     ! open data file
     print *,'  open datafile: '
     print *,'      ',trim(heterogeneousDataFile)
     open(dataUnit,file=trim(heterogeneousDataFile),status="old",iostat=ier)
-    if ( ier /= 0 ) then
+    if (ier /= 0) then
       print *,'Error: process ',rank,' could not open data file: ',trim(heterogeneousDataFile)
       call stopProgram( "data file not found     ")
     endif
@@ -148,19 +148,19 @@
     do while( ier == 0 )
       !read(2,1002,iostat=ierror) epla,eplo,stla,stlo,datum,error
       read(dataUnit,*,iostat=ier) epla,eplo,stla,stlo,datum,error
-      if ( ier == 0 ) then
+      if (ier == 0) then
         datacount = datacount + 1
 
         ! receivers: file is (normally) ordered by receiver location
         stationfound = .false.
         do i = 1,stationscount
-          if ( abs(stla -stations(i,1)) < 1.e-4 .and. &
-             abs(stlo - stations(i,2)) < 1.e-4 ) then
+          if (abs(stla -stations(i,1)) < 1.e-4 .and. &
+             abs(stlo - stations(i,2)) < 1.e-4) then
             stationfound = .true.
             exit
           endif
         enddo
-        if (.not. stationfound ) then
+        if (.not. stationfound) then
           stationscount = stationscount+1
           stations(stationscount,1)=stla
           stations(stationscount,2)=stlo
@@ -170,21 +170,21 @@
         !             the stations can have different number of events
         eventfound = .false.
         do i = 1,eventscount
-          if ( abs(epla-events(i,1)) < 1.e-4 .and. &
+          if (abs(epla-events(i,1)) < 1.e-4 .and. &
              abs(eplo-events(i,2)) < 1.e-4) then
             eventfound = .true.
             exit
           endif
         enddo
-        if (.not. eventfound ) then
+        if (.not. eventfound) then
           eventscount = eventscount+1
           events(eventscount,1)=epla
           events(eventscount,2)=eplo
         endif
 
         ! some statistics
-        if ( datum > datummax ) datummax = datum
-        if ( datum < datummin ) datummin = datum
+        if (datum > datummax) datummax = datum
+        if (datum < datummin) datummin = datum
 
         ! find epicentral distances between source and station
         call epicentralDistance(epla,eplo,stla,stlo,epidelta)
@@ -221,13 +221,13 @@
     ! open new output data file
     slashindex = 1
     do i = 1,len_trim(heterogeneousDataFile)
-      if ( heterogeneousDataFile(i:i) == '/') slashindex = i
+      if (heterogeneousDataFile(i:i) == '/') slashindex = i
     enddo
     nameout = datadirectory(1:len_trim(datadirectory))// &
         heterogeneousDataFile(slashindex+1:len_trim(heterogeneousDataFile))&
         //'.new'
     open(newdataUnit,file=trim(nameout),iostat=ier)
-    if ( ier /= 0 ) call stopProgram("Error opening new data file .new for output   ")
+    if (ier /= 0) call stopProgram("Error opening new data file .new for output   ")
 
     print *,'    new datum file will be:'
     print *,'      ',trim(nameout)
@@ -258,26 +258,26 @@
     real:: eplo,epla,stla,stlo,datum,error
 
     ! info
-    if ( MASTER ) then
+    if (MAIN_PROCESS) then
       print *,'  data count:',datacount
     endif
 
     ! wait until all processes reached this point
     call MPI_Barrier( MPI_COMM_WORLD, ierror )
-    if ( ierror /= 0) call stopProgram('abort syncDataArray - MPI_Barrier failed    ')
+    if (ierror /= 0) call stopProgram('abort syncDataArray - MPI_Barrier failed    ')
 
     ! synchronize datacount with processes
-    if ( MASTER ) then
+    if (MAIN_PROCESS) then
       do i = 1,nprocesses-1
         call MPI_Send(datacount,1,MPI_INTEGER,i,i,MPI_COMM_WORLD,ierror)
-        if ( ierror /= 0 ) then
+        if (ierror /= 0) then
           print *,'Error: datacount',rank,ierror
           call stopProgram("syncDataArray()")
         endif
       enddo
     else
       call MPI_Recv(datacount,1,MPI_INTEGER,0,rank,MPI_COMM_WORLD,status,ierror)
-      if ( ierror /= 0 ) then
+      if (ierror /= 0) then
         print *,'Error: datacount',rank,ierror
         call stopProgram("syncDataArray()")
       endif
@@ -285,10 +285,10 @@
 
     ! allocate array
     allocate(dataStore(6,datacount),stat=ierror)
-    if ( ierror /= 0 ) call stopProgram('error allocating data - syncDataArray()')
+    if (ierror /= 0) call stopProgram('error allocating data - syncDataArray()')
 
     ! process data file
-    if ( MASTER ) then
+    if (MAIN_PROCESS) then
       ! reset to first data entry
       rewind(dataUnit)
       read(dataUnit,*) wave_type,period,v0
@@ -299,7 +299,7 @@
       print *,'    number of data entries:',datacount
       do i = 1,datacount
         read(dataUnit,*,iostat=ierror) epla,eplo,stla,stlo,datum,error
-        if ( ierror /= 0 ) call stopProgram('error reading data - syncDataArray()')
+        if (ierror /= 0) call stopProgram('error reading data - syncDataArray()')
 
         ! store in data array
         dataStore(1,i) = epla
@@ -316,33 +316,33 @@
 
     ! synchronize datacount with processes
     length = 6*datacount
-    if ( MASTER ) then
+    if (MAIN_PROCESS) then
       print *,'    synchronize data ',8*length/1024./1024.,' MB'
       call myflush(6)
       do i = 1,nprocesses-1
         call MPI_Send(dataStore(:,:),length,MPI_REAL,i,i,MPI_COMM_WORLD,ierror)
-        if ( ierror /= 0 ) then
+        if (ierror /= 0) then
           print *,'Error: datastore',rank,ierror
           call stopProgram("syncDataArray()")
         endif
       enddo
     else
       call MPI_Recv(dataStore(:,:),length,MPI_REAL,0,rank,MPI_COMM_WORLD,status,ierror)
-      if ( ierror /= 0 ) then
+      if (ierror /= 0) then
         print *,'Error: datastore',rank,ierror
         call stopProgram("syncDataArray()")
       endif
     endif
 
     ! TEST console output
-    if ( MASTER) then
+    if (MAIN_PROCESS) then
       print *,'    first datum extract:',(dataStore(i,1),i=1,6)
       call myflush(6)
     endif
 
     ! wait until all processes reached this point
     call MPI_Barrier( MPI_COMM_WORLD, ierror )
-    if ( ierror /= 0) call stopProgram('abort syncDataArray - MPI_Barrier failed    ')
+    if (ierror /= 0) call stopProgram('abort syncDataArray - MPI_Barrier failed    ')
 
   end subroutine
 
@@ -367,7 +367,7 @@
     call constructPhaseVelocities()
 
     ! loop over data
-    if ( MASTER) then
+    if (MAIN_PROCESS) then
       print *,'begin loop over data:',datacount
       call myflush(6)
     endif
@@ -377,7 +377,7 @@
     dataLoopIndex = 0
     do j = 1,datacount
       ! console output
-      if ( MASTER .and. ( mod(j,500) == 0 .or. j == 1 )  ) then
+      if (MAIN_PROCESS .and. ( mod(j,500) == 0 .or. j == 1)) then
         VERBOSE = .true.
         print *
         print *,j," data read"
@@ -387,7 +387,7 @@
       endif
 
       ! check if this process has to do something
-      if ( doCalc(j) ) then
+      if (doCalc(j)) then
         ! take data from array
         epla = dataStore(1,j)
         eplo = dataStore(2,j)
@@ -397,7 +397,7 @@
         error = dataStore(6,j)
 
         ! benchmark
-        if ( MASTER .and. mod(j,500) < nprocesses ) then
+        if (MAIN_PROCESS .and. mod(j,500) < nprocesses) then
           benchmarkLoopStart = MPI_WTIME()
         endif
 
@@ -407,12 +407,12 @@
         ! do the time iteration and phase shift calculation
         call doTimeIteration(j,time_shift)
 
-        ! slave processes transfers data to MASTER which prints them to file
+        ! secondary processes transfers data to main process which prints them to file
         call outputDataLine(j,datacount,epla,eplo,stla,stlo,time_shift, &
                             error,newdataUnit)
 
         ! output to file
-        if ( MASTER .and. mod(j,500) < nprocesses ) then
+        if (MAIN_PROCESS .and. mod(j,500) < nprocesses) then
           ! find epicentral distances between source and station
           call epicentralDistance(epla,eplo,stla,stlo,epidelta)
 
@@ -432,21 +432,21 @@
         endif
 
         ! for possible exits in a job queue
-        if ( j > dataLoopIndex) dataLoopIndex = j
+        if (j > dataLoopIndex) dataLoopIndex = j
       endif
     enddo
 
     ! wait until all processes reached this point
     call MPI_Barrier( MPI_COMM_WORLD, ierror )
-    if ( ierror /= 0) call stopProgram('abort - final MPI_Barrier failed    ')
+    if (ierror /= 0) call stopProgram('abort - final MPI_Barrier failed    ')
 
     ! close new data file
-    if ( MASTER ) then
+    if (MAIN_PROCESS) then
       close(newdataUnit)
     endif
 
     ! console output
-    if ( MASTER ) then
+    if (MAIN_PROCESS) then
       VERBOSE = .true.
       print *,'data written:',datacount
       call myflush(6)
@@ -467,32 +467,32 @@
     ! allocate memory
     allocate(phaseVelocitySquarePREM(numVertices), &
             phaseVelocitySquareHET(numVertices),stat=ierror)
-    if ( ierror /= 0 ) stop "allocate phasevelocities error"
+    if (ierror /= 0) stop "allocate phasevelocities error"
 
     ! PREM
-    if ( MASTER .and. VERBOSE ) print *,' constructing reference phase map...'
+    if (MAIN_PROCESS .and. VERBOSE) print *,' constructing reference phase map...'
     HETEROGENEOUS = .false. ! homogeneous
     DELTA         = .false. ! no delta scatterer
     call constructPhaseVelocitySquare()
     phaseVelocitySquarePREM(:) = phaseVelocitySquare(:)
 
     ! heterogeneous phase speed map
-    if ( MASTER .and. VERBOSE ) print *,' constructing heterogeneous phase map...'
+    if (MAIN_PROCESS .and. VERBOSE) print *,' constructing heterogeneous phase map...'
     HETEROGENEOUS = .true.
     rotate_frame  = .false.  ! no rotation of phase map
     DELTA         = .false.  ! no delta scatterer
 
     !allocate phaseMap array
-    if ( allocated(phaseMap) ) deallocate(phaseMap)
+    if (allocated(phaseMap)) deallocate(phaseMap)
     allocate(phaseMap(numVertices), stat=ierror)
-    if ( ierror /= 0) stop 'abort - phase map allocation'
+    if (ierror /= 0) stop 'abort - phase map allocation'
 
     ! read phase map (e.g. Love 150 s) (note: is rotated for non-adjoint simulations)
-    if ( MASTER ) then
+    if (MAIN_PROCESS) then
       call constructPhasedata()
     endif
 
-    ! synchronize between master and slave processes
+    ! synchronize between main and secondary processes
     call syncPhaseMap()
 
     ! get phase velocities
@@ -500,9 +500,9 @@
     phaseVelocitySquareHET(:) = phaseVelocitySquare(:)
 
     ! phase map no more needed
-    if ( HETEROGENEOUS ) deallocate(phaseMap)
+    if (HETEROGENEOUS) deallocate(phaseMap)
 
-    if ( MASTER .and. VERBOSE) print *
+    if (MAIN_PROCESS .and. VERBOSE) print *
 
   end subroutine
 
@@ -519,12 +519,12 @@
     doCalc = .true.
 
     ! parallel processes
-    if ( nprocesses < 2 ) return
+    if (nprocesses < 2) return
 
     ! distribute following calculation over all processes
-    if (.not. PARALLELSEISMO ) then
-      ! master: j=1,9,17,...; rank 1: j=2,10,...; rank 2: j=3,11,...
-      if ( mod((index-rank+2*nprocesses-1),nprocesses) == 0 ) then
+    if (.not. PARALLELSEISMO) then
+      ! main process: j=1,9,17,...; rank 1: j=2,10,...; rank 2: j=3,11,...
+      if (mod((index-rank+2*nprocesses-1),nprocesses) == 0) then
         doCalc = .true.
       else
         doCalc = .false.
@@ -560,7 +560,7 @@
     call forwardIteration()
     seismogramPREM(:,:) = seismogramReceiver(:,:)
     ! file output
-    if ( MASTER .and. mod(jrecord,500) < nprocesses ) then
+    if (MAIN_PROCESS .and. mod(jrecord,500) < nprocesses) then
       write(jstr,'(i6.6)')jrecord
       open(IOUT,file=trim(datadirectory)//'seismoPREM.'//jstr//'.txt',iostat=ier)
       if (ier /= 0) call stopProgram('Error opening seismoPREM output file    ')
@@ -575,7 +575,7 @@
     call forwardIteration()
     seismogramHET(:,:) = seismogramReceiver(:,:)
     ! file output
-    if ( MASTER .and. mod(jrecord,500) < nprocesses ) then
+    if (MAIN_PROCESS .and. mod(jrecord,500) < nprocesses) then
       open(IOUT,file=trim(datadirectory)//'seismoHET.'//jstr//'.txt',iostat=ier)
       if (ier /= 0) call stopProgram('Error opening seismoHET output file    ')
       do i = 1,numofTimeSteps
@@ -595,7 +595,7 @@
     arrivalTime = distance*EARTHRADIUS/cphaseRef
 
     ! console output
-    if ( MASTER .and. VERBOSE ) then
+    if (MAIN_PROCESS .and. VERBOSE) then
       print *,'    arrival time:',arrivalTime
       print *,'    start time for fourier transformation:',startTime
     endif
@@ -613,7 +613,7 @@
     !dphi_phi=datum/t0
     !print *,'    relative traveltime = ',dphi_phi,datum,t0
     !      dphi_phi=datum            !to invert for absolute delta_p
-    if ( MASTER .and. VERBOSE ) then
+    if (MAIN_PROCESS .and. VERBOSE) then
       print *,'    cross-correlation lag:',t_lag
     endif
 
@@ -624,7 +624,7 @@
     time_shift = t_lag
 
     ! console output
-    if ( MASTER .and. VERBOSE ) then
+    if (MAIN_PROCESS .and. VERBOSE) then
       print *,'    time shift:',time_shift
       call myflush(6)
     endif
@@ -634,7 +634,7 @@
   subroutine outputDataLine(jrecord,datacount,epla,eplo,stla,stlo,shift, &
                             error,newdataUnit)
   !-----------------------------------------------------------------------
-  ! sync with master process and print to file
+  ! sync with main process and print to file
     use parallel
     implicit none
     integer,intent(in):: jrecord,datacount,newdataUnit
@@ -644,56 +644,56 @@
     real:: epla_proc,eplo_proc,stla_proc,stlo_proc,shift_proc,error_proc
 
     ! single processor/single simulation job
-    if ( nprocesses < 2 .or. PARALLELSEISMO) then
+    if (nprocesses < 2 .or. PARALLELSEISMO) then
       call printDataLine(newdataUnit,epla,eplo,stla,stlo,shift,error)
       return
     endif
 
     ! more processes: get phaseshift data and print to file
-    if ( MASTER ) then
-      ! print master info first
+    if (MAIN_PROCESS) then
+      ! print main info first
       call printDataLine(newdataUnit,epla,eplo,stla,stlo,shift,error)
 
       ! how many process are there to collect
       restprocesses = datacount - jrecord
-      if ( restprocesses >= nprocesses ) then
+      if (restprocesses >= nprocesses) then
         restprocesses = nprocesses - 1
       endif
 
       ! check if something to receive
-      if ( restprocesses == 0 ) return
+      if (restprocesses == 0) return
 
-      ! MASTER receives
+      ! main receives
       do i = 1,restprocesses
         ! get data
         !print *,'getting from',i
         call MPI_Recv(shift_proc,1,MPI_REAL,i,i,MPI_COMM_WORLD,status,ierror)
-        if ( ierror /= 0 ) then
+        if (ierror /= 0) then
           print *,'Error: shift',rank,ierror
           call stopProgram("outputDataline    ")
         endif
         call MPI_Recv(epla_proc,1,MPI_REAL,i,i,MPI_COMM_WORLD,status,ierror)
-        if ( ierror /= 0 ) then
+        if (ierror /= 0) then
           print *,'Error: shift',rank,ierror
           call stopProgram("outputDataline    ")
         endif
         call MPI_Recv(eplo_proc,1,MPI_REAL,i,i,MPI_COMM_WORLD,status,ierror)
-        if ( ierror /= 0 ) then
+        if (ierror /= 0) then
           print *,'Error: shift',rank,ierror
           call stopProgram("outputDataline    ")
         endif
         call MPI_Recv(stla_proc,1,MPI_REAL,i,i,MPI_COMM_WORLD,status,ierror)
-        if ( ierror /= 0 ) then
+        if (ierror /= 0) then
           print *,'Error: shift',rank,ierror
           call stopProgram("outputDataline    ")
         endif
         call MPI_Recv(stlo_proc,1,MPI_REAL,i,i,MPI_COMM_WORLD,status,ierror)
-        if ( ierror /= 0 ) then
+        if (ierror /= 0) then
           print *,'Error: shift',rank,ierror
           call stopProgram("outputDataline    ")
         endif
         call MPI_Recv(error_proc,1,MPI_REAL,i,i,MPI_COMM_WORLD,status,ierror)
-        if ( ierror /= 0 ) then
+        if (ierror /= 0) then
           print *,'Error: shift',rank,ierror
           call stopProgram("outputDataline    ")
         endif
@@ -703,34 +703,34 @@
                           shift_proc,error_proc)
       enddo
     else
-      ! slave process sends information
+      ! secondary process sends information
       call MPI_Send(shift,1,MPI_REAL,0,rank,MPI_COMM_WORLD,ierror)
-      if ( ierror /= 0 ) then
+      if (ierror /= 0) then
         print *,'Error: shift',rank,ierror
         call stopProgram("outputDataline    ")
       endif
       call MPI_Send(epla,1,MPI_REAL,0,rank,MPI_COMM_WORLD,ierror)
-      if ( ierror /= 0 ) then
+      if (ierror /= 0) then
         print *,'Error: shift',rank,ierror
         call stopProgram("outputDataline    ")
       endif
       call MPI_Send(eplo,1,MPI_REAL,0,rank,MPI_COMM_WORLD,ierror)
-      if ( ierror /= 0 ) then
+      if (ierror /= 0) then
         print *,'Error: shift',rank,ierror
         call stopProgram("outputDataline    ")
       endif
       call MPI_Send(stla,1,MPI_REAL,0,rank,MPI_COMM_WORLD,ierror)
-      if ( ierror /= 0 ) then
+      if (ierror /= 0) then
         print *,'Error: shift',rank,ierror
         call stopProgram("outputDataline    ")
       endif
       call MPI_Send(stlo,1,MPI_REAL,0,rank,MPI_COMM_WORLD,ierror)
-      if ( ierror /= 0 ) then
+      if (ierror /= 0) then
         print *,'Error: shift',rank,ierror
         call stopProgram("outputDataline    ")
       endif
       call MPI_Send(error,1,MPI_REAL,0,rank,MPI_COMM_WORLD,ierror)
-      if ( ierror /= 0 ) then
+      if (ierror /= 0) then
         print *,'Error: shift',rank,ierror
         call stopProgram("outputDataline    ")
       endif
@@ -754,8 +754,8 @@
     call myflush(newdataUnit)
 
     ! statistics
-    if ( shift < shift_min ) shift_min = shift
-    if ( shift > shift_max ) shift_max = shift
+    if (shift < shift_min) shift_min = shift
+    if (shift > shift_max) shift_max = shift
 
   end subroutine
 
@@ -767,7 +767,7 @@
     integer, intent(in) :: i
 
     ! flush to console output (i/o unit nr. 6 or on SGI system nr. 101)
-    ! if ( i == 6 ) i = 101
+    ! if (i == 6) i = 101
 
     !  #ifdef _IBM_
       !call flush_(i)
@@ -786,7 +786,7 @@
     integer:: ierror
 
     ! benchmark
-    if ( MASTER ) then
+    if (MAIN_PROCESS) then
       benchAllEnd = MPI_WTIME()
       print *,'statistics:'
       print *,'  datum min/max:',shift_min,shift_max
@@ -799,10 +799,10 @@
 
     ! wait until all processes reached this point
     call MPI_Barrier( MPI_COMM_WORLD, ierror )
-    if ( ierror /= 0) call stopProgram('abort - final MPI_Barrier failed    ')
+    if (ierror /= 0) call stopProgram('abort - final MPI_Barrier failed    ')
 
     ! end parallelization
     call MPI_FINALIZE(ierror)
-    if ( ierror /= 0) call stopProgram('abort - finalize failed    ')
+    if (ierror /= 0) call stopProgram('abort - finalize failed    ')
 
   end subroutine

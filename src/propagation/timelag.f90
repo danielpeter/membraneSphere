@@ -57,7 +57,7 @@
       print *,'  numerical timelag          :',t_lag
       !print *,'  numerical phase anomaly (s):',t_lag/(2*PI/bw_waveperiod)
       ! compare with analytical formula
-      if ( ANALYTICAL_CORRELATION ) then
+      if (ANALYTICAL_CORRELATION) then
         fileOutput = output_files
         print *
         if (VERBOSE) print *,'calculating analytical time lag...'
@@ -104,7 +104,7 @@
       i = 0
       inputName = 'Timelag_Input'
       open(10,file=trim(inputName),status='old',iostat=ier)
-      if ( ier /= 0) then
+      if (ier /= 0) then
         print *,'Error: opening file ',trim(inputName)
         stop 'abort - opening input'
       endif
@@ -112,13 +112,13 @@
       ! parse file for parameters
       do while( ier == 0)
         read(10,'(A128)',iostat=ier) line
-        if ( ier /= 0 ) exit
+        if (ier /= 0) exit
 
         length = len_trim(line)
-        if ( length == 0 ) then
+        if (length == 0) then
           continue
         else
-          if ( line(1:1) == "%" .or. line(1:1) == " " .or. line(1:1) == "!" ) then
+          if (line(1:1) == "%" .or. line(1:1) == " " .or. line(1:1) == "!") then
             continue
           else
             select case(line(1:5))
@@ -160,7 +160,7 @@
 
             ! wave type e.g. L150
             case('CPHAS')
-              if ( FILTERSEISMOGRAMS ) then
+              if (FILTERSEISMOGRAMS) then
                 read(line(35:len_trim(line)),*) cphasetype
                 cphasetype = trim(cphasetype)
                 call determinePhaseRef(cphasetype,8,cphaseRef)
@@ -173,7 +173,7 @@
       close(10)
 
       ! check number of files
-      if ( i /= 2) then
+      if (i /= 2) then
         print *,'Error: reading input parameters'
         stop
       endif
@@ -230,15 +230,15 @@
         line=trim(line)
 
         ! check for additional data in file
-        if ( line(1:3) == 'dis') offset=3
-        if ( line(1:3) == 'rec') offset=2
+        if (line(1:3) == 'dis') offset=3
+        if (line(1:3) == 'rec') offset=2
 
         ! check for line with time 0.0
-        if ( line(1:3) == '0.0') ZEROLINE= index
+        if (line(1:3) == '0.0') ZEROLINE= index
 
       enddo
       FILELINES = index-1
-      if ( start < 0.0) ZEROLINE= offset
+      if (start < 0.0) ZEROLINE= offset
       rewind(10)
 
       ! parse file for displacement values
@@ -246,14 +246,14 @@
       index = 0
       ier = 0
       do i = 1, FILELINES
-        if (i >= ZEROLINE ) then
+        if (i >= ZEROLINE) then
           read(10, *, iostat=ier) time,displace !,sourceterm
-          if ( ier /= 0) then
+          if (ier /= 0) then
             print *,'Error: reading input. last line ',i,ZEROLINE,index
             stop 'abort - determineFileLength taped'
           endif
 
-          if ( time-start >= 0.0 .and. ending-time >= 0.0) then ! starts with times from 'start time' on
+          if (time-start >= 0.0 .and. ending-time >= 0.0) then ! starts with times from 'start time' on
             index = index+1
             endtime = time
           endif
@@ -265,7 +265,7 @@
       enddo
       close(10)
 
-      if ( beVerbose ) then
+      if (beVerbose) then
         print *,'    entry read:',index
         print *,'    last time readin:',endtime
       endif
@@ -290,7 +290,7 @@
 
       ! console output
       endindex = index(textline,"  ")
-      if ( endindex < 1 ) endindex = 128
+      if (endindex < 1) endindex = 128
       print *,textline(1:endindex)
 
       ! on linux machines : i/o unit 6 is the stdout , on SGI 101
@@ -298,7 +298,7 @@
 
       ! stop MPI
       call MPI_Initialized(flag,ier)
-      if ( flag .eqv. .true. .and. ier == 0) then
+      if (flag .eqv. .true. .and. ier == 0) then
         ! note: MPI_ABORT does not return, it makes the program exit with an error code of 30
         call MPI_Abort(MPI_COMM_WORLD, 30, ier )
         call MPI_FINALIZE(ier)

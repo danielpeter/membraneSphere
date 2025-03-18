@@ -57,10 +57,10 @@
 
         !check
         count = count +1
-        if ( count > 6 ) call stopProgram( 'abort-discreteLaplacian neighbors   ')
+        if (count > 6) call stopProgram( 'abort-discreteLaplacian neighbors   ')
 
         !debug
-        !if ( vertex == receiverVertex ) then
+        !if (vertex == receiverVertex) then
         !  print *,'vertex ',vertex,' neighbor:',i, sumFactor, sumNeighbors
         !  print *,'edge ',edgesLength(i),' centers ',centerDistances(i)
         !  print *,'displacement ',cellNeighbors(vertex,i),displacement(cellNeighbors(vertex,i))
@@ -108,17 +108,17 @@
               cellCenterDistances(vertex,i)*displacement(cellNeighbors(vertex,i))
 
         ! get term with heikes&randall ratio of distance between midpoints to length of edge
-        if ( CORRECT_RATIO ) then
+        if (CORRECT_RATIO) then
 
 !          ! use the interpolated values at hexagonal grid corners  d/dn ( d/dx alpha)
 !          index = i
-!          if ( index > 1 .and. index < cellNeighbors(vertex,0) ) then
+!          if (index > 1 .and. index < cellNeighbors(vertex,0)) then
 !            alpha_minus1 = displacement( cellNeighbors(vertex,index-1) )
 !            alpha_plus1 = displacement( cellNeighbors( vertex,index+1) )
-!          else if ( index == 1) then
+!          else if (index == 1) then
 !            alpha_minus1 = displacement( cellNeighbors(vertex,cellNeighbors(vertex,0)) )
 !            alpha_plus1 = displacement( cellNeighbors( vertex,index+1) )
-!          else if ( index == cellNeighbors(vertex,0) ) then
+!          else if (index == cellNeighbors(vertex,0)) then
 !            alpha_minus1 = displacement( cellNeighbors(vertex,index-1) )
 !            alpha_plus1 = displacement( cellNeighbors( vertex,1) )
 !          endif
@@ -144,7 +144,7 @@
 
       !debug
       ! check if NaN
-      !if ( precalc_discreteLaplacian /= precalc_discreteLaplacian) then
+      !if (precalc_discreteLaplacian /= precalc_discreteLaplacian) then
       !  print *,'precalculated laplacian error:',precalc_discreteLaplacian,vertex, &
       !      sumFactor,sumNeighbors,area,areareci,count
       !  call stopProgram('precalc_discreteLaplacian error     ')
@@ -193,7 +193,7 @@
 
       !debug
       ! check if Nan
-      !if ( precalc_backdiscreteLaplacian /= precalc_backdiscreteLaplacian ) then
+      !if (precalc_backdiscreteLaplacian /= precalc_backdiscreteLaplacian) then
       !  print *,'precalculated backwardlaplacian error:',precalc_backdiscreteLaplacian, &
       !            vertex,sumFactor,sumNeighbors,area,areareci,count
       !  call stopProgram('precalc_backdiscreteLaplacian error     ')

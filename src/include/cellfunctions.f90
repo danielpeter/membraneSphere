@@ -41,7 +41,7 @@
       real(WP):: a,b,c,s,excess,tanexcess4,haversine
 
       !check index
-      if ( cellFace(vertex,0) > 6 .or. cellFace(vertex,0) < 5) then
+      if (cellFace(vertex,0) > 6 .or. cellFace(vertex,0) < 5) then
         print *,'Error: vertex',vertex,'faces',cellFace(vertex,0)
         call stopProgram( 'abort-cellArea cellFace    ')
       endif
@@ -72,7 +72,7 @@
         area = area+EARTHRADIUS_SQUARED*excess
       enddo
 
-      if ( area < 1.0) then
+      if (area < 1.0) then
         print *,'cellArea calculation has invalid area'
         print *,'  vertex:',vertex
         print *,'  infos:',n,a,b,c,s,excess,tanexcess4
@@ -111,7 +111,7 @@
       vectorA(:) = vertices(vertex, : )
 
       ! check index
-      if ( cellNeighbors(vertex,0) > 6 .or. cellNeighbors(vertex,0) < 5) then
+      if (cellNeighbors(vertex,0) > 6 .or. cellNeighbors(vertex,0) < 5) then
         print *,'Error: vertex',vertex
         call stopProgram( 'abort-cellDistances cellNeighbors    ')
       endif
@@ -158,7 +158,7 @@
       real(WP):: vectorA(3),vectorB(3),distance
 
       ! check index
-      if ( cellFace(vertex,0) > 6 .or. cellFace(vertex,0) < 5) then
+      if (cellFace(vertex,0) > 6 .or. cellFace(vertex,0) < 5) then
         print *,'Error: vertex',vertex,'faces',cellFace(vertex,0)
         call stopProgram( 'abort-cellEdgesLength cellFace   ')
       endif
@@ -226,7 +226,7 @@
       real(WP):: vectorA(3),vectorB(3),vectorC(3),angleA,angleB,angleC
 
       !check index
-      if ( cellFace(vertex,0) > 6 .or. cellFace(vertex,0) < 5) then
+      if (cellFace(vertex,0) > 6 .or. cellFace(vertex,0) < 5) then
         print *,'Error: vertex',vertex,'faces',cellFace(vertex,0)
         call stopProgram( 'abort-cellArea cellFace    ')
       endif
@@ -271,8 +271,8 @@
       character(len=24):: charstep
 
       ! writes precalculated values to files
-      if ( statfile_output) then
-        if ( timestep < 0 ) then
+      if (statfile_output) then
+        if (timestep < 0) then
           charstep=""
         else
           write(charstep,*) timestep
@@ -289,7 +289,7 @@
       !calculations
       call dataVariation(statfile_output,.false.)
 
-      if ( statfile_output ) then
+      if (statfile_output) then
         !end print out
         close(11)
         close(12)
@@ -358,14 +358,14 @@
         call getCellArea(n,area)
 
         ! output to cellAreas
-        if ( statfile_output ) write(11,'(f18.12)') area
+        if (statfile_output) write(11,'(f18.12)') area
 
         !print *,'area',area
-        if ( area > areaMax) then
+        if (area > areaMax) then
            areaMax = area
            areaMaxIndex = n
         endif
-        if ( area < areaMin ) then
+        if (area < areaMin) then
           areaMin = area
           areaMinIndex = n
         endif
@@ -377,16 +377,16 @@
         call getcellCenterDistances(n,centerDistances)
 
         ! output to cellCenterDistances
-        if ( statfile_output ) write(14,'(7f18.12)') (centerDistances(k),k=0,6)
+        if (statfile_output) write(14,'(7f18.12)') (centerDistances(k),k=0,6)
 
         do k = 1, int(centerDistances(0))
           !debug
           !print *,'distance one',centerDistances(k)
-          if ( centerDistances(k) > distMax) then
+          if (centerDistances(k) > distMax) then
             distMax = centerDistances(k)
             distMaxIndex = n
           endif
-          if ( centerDistances(k) < distMin) then
+          if (centerDistances(k) < distMin) then
              distMin = centerDistances(k)
              distMinIndex = n
           endif
@@ -399,14 +399,14 @@
         call getCellEdgesLength(n,edgesLength)
 
         ! output to cellEdgesLength
-        if ( statfile_output ) write(13,'(7f18.12)') (edgesLength(k),k=0,6)
+        if (statfile_output) write(13,'(7f18.12)') (edgesLength(k),k=0,6)
 
         do k = 1, int(edgesLength(0))
-          if ( edgesLength(k) > edgeMax) then
+          if (edgesLength(k) > edgeMax) then
             edgeMax = edgesLength(k)
             edgeMaxIndex = n
           endif
-          if ( edgesLength(k) < edgeMin ) then
+          if (edgesLength(k) < edgeMin) then
             edgeMin =edgesLength(k)
             edgeMinIndex = n
           endif
@@ -419,20 +419,20 @@
         call cellDerivativeFractions(n,fractions,fractionavg,plotfile_output)
 
         ! output to cellFractionAverage.dat
-        if ( statfile_output ) write(12,*) fractionavg
+        if (statfile_output) write(12,*) fractionavg
         ! output to cellFractions.dat
-        if ( statfile_output ) write(15,'(f18.12,6e18.8)') (fractions(k),k=0,6)
+        if (statfile_output) write(15,'(f18.12,6e18.8)') (fractions(k),k=0,6)
 
         do k = 1, int(fractions(0))
           ! global function (see Miura, 2005: eq (7), p. 2822)
           fractionR = fractionR + fractions(k)**4
 
           ! min / max
-          if ( fractions(k) > fractionMax) then
+          if (fractions(k) > fractionMax) then
             fractionMax =fractions(k)
             fractionMaxIndex = n
           endif
-          if ( fractions(k) < fractionMin) then
+          if (fractions(k) < fractionMin) then
             fractionMin =fractions(k)
             fractionMinIndex = n
           endif
@@ -503,11 +503,11 @@
       real(WP):: edgeLength
 
       !check index
-      if ( cellFace(vertex,0) > 6.or.cellFace(vertex,0) < 5) then
+      if (cellFace(vertex,0) > 6.or.cellFace(vertex,0) < 5) then
         print *,'vertex',vertex
         stop 'abort-cellDerivativeFraction cellFace'
       endif
-      if ( cellNeighbors(vertex,0) > 6.or.cellNeighbors(vertex,0) < 5) then
+      if (cellNeighbors(vertex,0) > 6.or.cellNeighbors(vertex,0) < 5) then
         print *,'vertex',vertex
         stop 'abort-cellDerivativeFraction cellNeighbors'
       endif
@@ -563,7 +563,7 @@
         !print *,'distance:',distance
         !print *,'edge ',n,' Length:',edgeLength
 
-        if ( plotfile_output .eqv. .true. ) then
+        if (plotfile_output .eqv. .true.) then
           ! output to cellCenterLineMidpoints.dat
           write(21,'(3f12.8)')(midpointCenterLine(k),k=1,3)
           ! output to cellEdgeMidpoints.dat

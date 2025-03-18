@@ -282,7 +282,7 @@
        enddo
 
       ! determine the distant pentagon side edges
-       if ( ordered == 1) then
+       if (ordered == 1) then
           farNeighbors(1) = 3
           farNeighbors(2) = 4
        else
@@ -298,11 +298,11 @@
             side = distance(vRef,vTmpA)
 
             !determine min and max of lengths
-            if ( side > maxside) then
+            if (side > maxside) then
                     maxside = side
             endif
 
-            if ( side < minside) then
+            if (side < minside) then
                     minside = side
             endif
           enddo
@@ -313,13 +313,13 @@
               vTmpA(k) = vectors(i,k)
             enddo
 
-            if ( abs(distance(vRef,vTmpA) - maxside ) < 1.0e-4) then
+            if (abs(distance(vRef,vTmpA) - maxside) < 1.0e-4) then
               count = count+1
               farNeighbors(mod(count,2)+1) = i
             endif
           enddo
           ! check if we have the two points
-          if ( count < 1) then
+          if (count < 1) then
             print *,'abort condition met pentagonCentral neighbors!'
             stop 'abort - pentagonCentral'
           endif
@@ -368,7 +368,7 @@
       real(WP):: vTmpA(3),vTmpB(3),vTmpC(3),factor1,factor2, A,B,C,det
 
       ! be sure vector is not already on sphere
-      if ( abs(vectorlength( vector) - 1.0) < 1.0e-5) then
+      if (abs(vectorlength( vector) - 1.0) < 1.0e-5) then
         print *,'already projected'
         return
       endif
@@ -398,7 +398,7 @@
       C = C - 1
       det = B**2 - 4*A*C
       !check
-      if ( det < 0.0) then
+      if (det < 0.0) then
         print *,'complex calculation found, abort...'
         stop 'abort - projectToSphere'
       endif
@@ -408,7 +408,7 @@
       factor2 = (-B-det)/(2*A)
 
       ! project on closer side of the sphere
-      if ( abs(factor1) < abs(factor2) ) then
+      if (abs(factor1) < abs(factor2)) then
         call vectorscale( vNormale, factor1,vNormale)
       else
         call vectorscale( vNormale, factor2,vNormale)
@@ -447,7 +447,7 @@
 
         ! get minimal distance between two points
         tmpDist = distance(vTmp, vDestination)
-        if ( tmpDist < minimum) then
+        if (tmpDist < minimum) then
           minimum = tmpDist
           vertex = n
         endif
@@ -482,7 +482,7 @@
       enddo
 
       !check if point is on sphere
-      if ( abs(vectorlength(vector) - 1.0) > 1.0e-4 ) then
+      if (abs(vectorlength(vector) - 1.0) > 1.0e-4) then
          print *,vertex,'vector not normalized ', vectorlength(vector)
          stop 'abort-getSphericalCoord length'
       endif
@@ -494,7 +494,7 @@
       if (longitude < 0.0) longitude = longitude+2*PI
 
       !check
-      if ( longitude < 0.0) stop 'abort-getSphericalCoord longitude'
+      if (longitude < 0.0) stop 'abort-getSphericalCoord longitude'
 
       !debug
       !print *,vertex,' vector: ',vector(1),vector(2),vector(3)
@@ -528,7 +528,7 @@
       vector(:) = vertices(vertex,:)
 
       !check if point is on sphere
-      !if ( abs(vectorlength(vector) - 1.0) > 1.0e-4 ) then
+      !if (abs(vectorlength(vector) - 1.0) > 1.0e-4) then
       !   print *,vertex,'vector not normalized ', vectorlength(vector)
       !   stop 'abort-getSphericalCoord_Lat length'
       !endif
@@ -570,7 +570,7 @@
       latitude  = RAD2DEGREE*latitude
 
       ! return only positive longitudes
-      if ( longitude < 0.0) then
+      if (longitude < 0.0) then
         longitude = longitude + 360.0_WP
       endif
       end subroutine
@@ -705,13 +705,13 @@
       do n = 1,numVertices
         vectorV(:) = vertices(n,:)
         call greatCircleDistance(vectorS,vectorV,distance)
-        if ( distance < distanceMin) then
+        if (distance < distanceMin) then
           distanceMin = distance
           vertexMin = n
         endif
 
         ! for a distance very close to the vertex we quit
-        if ( distance < distanceQuit ) then
+        if (distance < distanceQuit) then
           vertex = n
           return
         endif
@@ -1044,11 +1044,11 @@
       ! determine maximum value in array
       maximum = 0.0_WP
       do i = 1,arraylength
-        if ( abs(array(i)) > maximum) maximum = abs(array(i))
+        if (abs(array(i)) > maximum) maximum = abs(array(i))
       enddo
 
       ! divide by maximum
-      if ( maximum < 1.0e-9) then
+      if (maximum < 1.0e-9) then
         print *,'array maximum too small, could not normalize!',maximum
       else
         array(:) = array(:)/maximum
@@ -1093,7 +1093,7 @@
       a = sin(lathalf)*sin(lathalf)+cos(radlat1)*cos(radlat2)*sin(lonhalf)*sin(lonhalf)
 
       !rare case that a becomes too big (numerical possible)
-      if ( a > 1.0 ) then
+      if (a > 1.0) then
         print *,'greatCircleDistance: a=',a,lon1,lat1,lon2,lat2
         a = 1.0
       endif
@@ -1103,7 +1103,7 @@
       distance = RAD2DEGREE*distance
 
       ! check if Nan
-      if ( distance /= distance) then
+      if (distance /= distance) then
         print *,'greatCircleDistance:',distance
         print *,'greatCircleDistance:',lon,lat,a
       endif
@@ -1146,13 +1146,13 @@
       a = sin(lathalf)*sin(lathalf)+cos(lat1)*cos(lat2)*sin(lonhalf)*sin(lonhalf)
 
       !rare case that a becomes too big (numerical possible)
-      if ( a > 1.0 ) then
+      if (a > 1.0) then
         !if (VERBOSE)print *,'greatCircleDistance: a=',a,dlon,dlat
         a = 1.0_WP
       endif
 
       distance = 2.0_WP*atan2(sqrt(a), sqrt(1.0_WP-a))
-      if ( distance /= distance) then
+      if (distance /= distance) then
         print *,'greatCircleDistance:',distance
         print *,'greatCircleDistance:',lon,lat,a
       endif
@@ -1176,10 +1176,10 @@
       real(WP):: scalar, vectorlength
       integer:: k
 
-      if ( abs(vector1(1)*vector1(1)+vector1(2)*vector1(2)+              &
+      if (abs(vector1(1)*vector1(1)+vector1(2)*vector1(2)+              &
                vector1(3)*vector1(3) - 1.0d0) > 0.00001d0              &
           .or. abs(vector2(1)*vector2(1)+vector2(2)*vector2(2)+               &
-                   vector2(3)*vector2(3) - 1.0d0) > 0.00001d0 ) then
+                   vector2(3)*vector2(3) - 1.0d0) > 0.00001d0) then
         print *,'vector1',(vector1(k),k=1,3),vectorlength(vector1)
         print *,'vector2',(vector2(k),k=1,3),vectorlength(vector2)
         stop 'abort-greatCircleDistance vectorlength'
@@ -1211,8 +1211,8 @@
       ! get angle for the midpoint between the two vectors
       ! (the radian of this angle for the unit sphere is equal to half
       !   of its great circle distance)
-      if ( abs(vectorlength(vector1) - 1.0_WP) > 0.00001 &
-           .or. abs(vectorlength(vector2) - 1.0_WP) > 0.00001 ) then
+      if (abs(vectorlength(vector1) - 1.0_WP) > 0.00001 &
+           .or. abs(vectorlength(vector2) - 1.0_WP) > 0.00001) then
         print *,'vector1',(vector1(k),k=1,3),vectorlength(vector1)
         print *,'vector2',(vector2(k),k=1,3),vectorlength(vector2)
         stop 'abort-greatCircleMidpoint vectorlength'
@@ -1317,7 +1317,7 @@
       distanceQuit = averageCellDistance*0.5/EARTHRADIUS
 
       ! calculate mean cphase velocity for delta phase map
-      !if (DELTA ) then
+      !if (DELTA) then
       !  !reset cphase
       !  cphase = 0.0_WP
       !  !delta location source
@@ -1333,7 +1333,7 @@
       !  do n=1,numVertices
       !    vectorV(:) =  vertices(n,:)
       !    distance=EARTHRADIUS*greatCircleDistance(vectorS,vectorV)
-      !    if ( distance > DELTARADIUS) then ! changed since DELTARADIUS was defined only after this check
+      !    if (distance > DELTARADIUS) then ! changed since DELTARADIUS was defined only after this check
       !      cphase = cphase+cphaseRef
       !    else
       !      cphase = cphase+ (cphaseRef + deltaPerturbation)
@@ -1346,7 +1346,7 @@
       ! time step - trial'n error formula (5.8)
       dt = averageCellDistance/(cphaseRef*sqrt2)
 
-      !if ( cphaseref > 4.78 ) dt = dt/2.0
+      !if (cphaseref > 4.78) dt = dt/2.0
 
       end subroutine
 

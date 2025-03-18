@@ -146,7 +146,7 @@
     stationscount = 0
     eventscount = 0
     do while( ier == 0 )
-      !read(2,1002,iostat=ierror) epla,eplo,stla,stlo,datum,error
+      !read(2,1002,iostat=ier) epla,eplo,stla,stlo,datum,error
       read(dataUnit,*,iostat=ier) epla,eplo,stla,stlo,datum,error
       if (ier == 0) then
         datacount = datacount + 1
@@ -250,7 +250,7 @@
     implicit none
     integer,intent(in):: dataUnit,datacount
     ! local parameters
-    integer:: i,ierror,length
+    integer:: i,ier,length
     character:: commentline*47,wave_type*1
     real:: period,v0
     real:: eplo,epla,stla,stlo,datum,error
@@ -261,29 +261,29 @@
     endif
 
     ! wait until all processes reached this point
-    call MPI_Barrier( MPI_COMM_WORLD, ierror )
-    if (ierror /= 0) call stopProgram('abort syncDataArray - MPI_Barrier failed    ')
+    call MPI_Barrier( MPI_COMM_WORLD, ier )
+    if (ier /= 0) call stopProgram('abort syncDataArray - MPI_Barrier failed    ')
 
     ! synchronize datacount with processes
     if (MAIN_PROCESS) then
       do i = 1,nprocesses-1
-        call MPI_Send(datacount,1,MPI_INTEGER,i,i,MPI_COMM_WORLD,ierror)
-        if (ierror /= 0) then
-          print *,'Error: datacount',rank,ierror
+        call MPI_Send(datacount,1,MPI_INTEGER,i,i,MPI_COMM_WORLD,ier)
+        if (ier /= 0) then
+          print *,'Error: datacount',rank,ier
           call stopProgram("syncDataArray()")
         endif
       enddo
     else
-      call MPI_Recv(datacount,1,MPI_INTEGER,0,rank,MPI_COMM_WORLD,status,ierror)
-      if (ierror /= 0) then
-        print *,'Error: datacount',rank,ierror
+      call MPI_Recv(datacount,1,MPI_INTEGER,0,rank,MPI_COMM_WORLD,status,ier)
+      if (ier /= 0) then
+        print *,'Error: datacount',rank,ier
         call stopProgram("syncDataArray()")
       endif
     endif
 
     ! allocate array
-    allocate(dataStore(6,datacount),stat=ierror)
-    if (ierror /= 0) call stopProgram('error allocating data - syncDataArray()')
+    allocate(dataStore(6,datacount),stat=ier)
+    if (ier /= 0) call stopProgram('error allocating data - syncDataArray()')
 
     ! process data file
     if (MAIN_PROCESS) then
@@ -296,8 +296,8 @@
       print *,'reading in data array...'
       print *,'    number of data entries:',datacount
       do i = 1,datacount
-        read(dataUnit,*,iostat=ierror) epla,eplo,stla,stlo,datum,error
-        if (ierror /= 0) call stopProgram('error reading data - syncDataArray()')
+        read(dataUnit,*,iostat=ier) epla,eplo,stla,stlo,datum,error
+        if (ier /= 0) call stopProgram('error reading data - syncDataArray()')
 
         ! store in data array
         dataStore(1,i) = epla
@@ -318,16 +318,16 @@
       print *,'    synchronize data ',8*length/1024./1024.,' MB'
       call myflush(6)
       do i = 1,nprocesses-1
-        call MPI_Send(dataStore(:,:),length,MPI_REAL,i,i,MPI_COMM_WORLD,ierror)
-        if (ierror /= 0) then
-          print *,'Error: datastore',rank,ierror
+        call MPI_Send(dataStore(:,:),length,MPI_REAL,i,i,MPI_COMM_WORLD,ier)
+        if (ier /= 0) then
+          print *,'Error: datastore',rank,ier
           call stopProgram("syncDataArray()")
         endif
       enddo
     else
-      call MPI_Recv(dataStore(:,:),length,MPI_REAL,0,rank,MPI_COMM_WORLD,status,ierror)
-      if (ierror /= 0) then
-        print *,'Error: datastore',rank,ierror
+      call MPI_Recv(dataStore(:,:),length,MPI_REAL,0,rank,MPI_COMM_WORLD,status,ier)
+      if (ier /= 0) then
+        print *,'Error: datastore',rank,ier
         call stopProgram("syncDataArray()")
       endif
     endif
@@ -339,8 +339,8 @@
     endif
 
     ! wait until all processes reached this point
-    call MPI_Barrier( MPI_COMM_WORLD, ierror )
-    if (ierror /= 0) call stopProgram('abort syncDataArray - MPI_Barrier failed    ')
+    call MPI_Barrier( MPI_COMM_WORLD, ier )
+    if (ier /= 0) call stopProgram('abort syncDataArray - MPI_Barrier failed    ')
 
   end subroutine
 
@@ -356,7 +356,7 @@
     integer:: j,dataLoopIndex
     logical:: doCalc
     real:: benchmarkLoopStart,benchmarkLoopEnd,epidelta
-    integer:: isqre,ierror
+    integer:: isqre,ier
     real:: eplo,epla,stla,stlo,datum,error
     real:: time_shift
     external:: isqre,doCalc
@@ -435,8 +435,8 @@
     enddo
 
     ! wait until all processes reached this point
-    call MPI_Barrier( MPI_COMM_WORLD, ierror )
-    if (ierror /= 0) call stopProgram('abort - final MPI_Barrier failed    ')
+    call MPI_Barrier( MPI_COMM_WORLD, ier )
+    if (ier /= 0) call stopProgram('abort - final MPI_Barrier failed    ')
 
     ! close new data file
     if (MAIN_PROCESS) then
@@ -460,12 +460,12 @@
     use heterogeneousArrays; use cells
     implicit none
     ! local parameters
-    integer:: ierror
+    integer:: ier
 
     ! allocate memory
     allocate(phaseVelocitySquarePREM(numVertices), &
-            phaseVelocitySquareHET(numVertices),stat=ierror)
-    if (ierror /= 0) stop "allocate phasevelocities error"
+            phaseVelocitySquareHET(numVertices),stat=ier)
+    if (ier /= 0) stop "allocate phasevelocities error"
 
     ! PREM
     if (MAIN_PROCESS .and. VERBOSE) print *,' constructing reference phase map...'
@@ -482,8 +482,8 @@
 
     !allocate phaseMap array
     if (allocated(phaseMap)) deallocate(phaseMap)
-    allocate(phaseMap(numVertices), stat=ierror)
-    if (ierror /= 0) stop 'abort - phase map allocation'
+    allocate(phaseMap(numVertices), stat=ier)
+    if (ier /= 0) stop 'Abort - phase map allocation'
 
     ! read phase map (e.g. Love 150 s) (note: is rotated for non-adjoint simulations)
     if (MAIN_PROCESS) then
@@ -638,7 +638,7 @@
     integer,intent(in):: jrecord,datacount,newdataUnit
     real,intent(in):: shift,epla,eplo,stla,stlo,error
     ! local parameters
-    integer:: restprocesses,i,ierror
+    integer:: restprocesses,i,ier
     real:: epla_proc,eplo_proc,stla_proc,stlo_proc,shift_proc,error_proc
 
     ! single processor/single simulation job
@@ -665,34 +665,34 @@
       do i = 1,restprocesses
         ! get data
         !print *,'getting from',i
-        call MPI_Recv(shift_proc,1,MPI_REAL,i,i,MPI_COMM_WORLD,status,ierror)
-        if (ierror /= 0) then
-          print *,'Error: shift',rank,ierror
+        call MPI_Recv(shift_proc,1,MPI_REAL,i,i,MPI_COMM_WORLD,status,ier)
+        if (ier /= 0) then
+          print *,'Error: shift',rank,ier
           call stopProgram("outputDataline    ")
         endif
-        call MPI_Recv(epla_proc,1,MPI_REAL,i,i,MPI_COMM_WORLD,status,ierror)
-        if (ierror /= 0) then
-          print *,'Error: shift',rank,ierror
+        call MPI_Recv(epla_proc,1,MPI_REAL,i,i,MPI_COMM_WORLD,status,ier)
+        if (ier /= 0) then
+          print *,'Error: shift',rank,ier
           call stopProgram("outputDataline    ")
         endif
-        call MPI_Recv(eplo_proc,1,MPI_REAL,i,i,MPI_COMM_WORLD,status,ierror)
-        if (ierror /= 0) then
-          print *,'Error: shift',rank,ierror
+        call MPI_Recv(eplo_proc,1,MPI_REAL,i,i,MPI_COMM_WORLD,status,ier)
+        if (ier /= 0) then
+          print *,'Error: shift',rank,ier
           call stopProgram("outputDataline    ")
         endif
-        call MPI_Recv(stla_proc,1,MPI_REAL,i,i,MPI_COMM_WORLD,status,ierror)
-        if (ierror /= 0) then
-          print *,'Error: shift',rank,ierror
+        call MPI_Recv(stla_proc,1,MPI_REAL,i,i,MPI_COMM_WORLD,status,ier)
+        if (ier /= 0) then
+          print *,'Error: shift',rank,ier
           call stopProgram("outputDataline    ")
         endif
-        call MPI_Recv(stlo_proc,1,MPI_REAL,i,i,MPI_COMM_WORLD,status,ierror)
-        if (ierror /= 0) then
-          print *,'Error: shift',rank,ierror
+        call MPI_Recv(stlo_proc,1,MPI_REAL,i,i,MPI_COMM_WORLD,status,ier)
+        if (ier /= 0) then
+          print *,'Error: shift',rank,ier
           call stopProgram("outputDataline    ")
         endif
-        call MPI_Recv(error_proc,1,MPI_REAL,i,i,MPI_COMM_WORLD,status,ierror)
-        if (ierror /= 0) then
-          print *,'Error: shift',rank,ierror
+        call MPI_Recv(error_proc,1,MPI_REAL,i,i,MPI_COMM_WORLD,status,ier)
+        if (ier /= 0) then
+          print *,'Error: shift',rank,ier
           call stopProgram("outputDataline    ")
         endif
 
@@ -702,34 +702,34 @@
       enddo
     else
       ! secondary process sends information
-      call MPI_Send(shift,1,MPI_REAL,0,rank,MPI_COMM_WORLD,ierror)
-      if (ierror /= 0) then
-        print *,'Error: shift',rank,ierror
+      call MPI_Send(shift,1,MPI_REAL,0,rank,MPI_COMM_WORLD,ier)
+      if (ier /= 0) then
+        print *,'Error: shift',rank,ier
         call stopProgram("outputDataline    ")
       endif
-      call MPI_Send(epla,1,MPI_REAL,0,rank,MPI_COMM_WORLD,ierror)
-      if (ierror /= 0) then
-        print *,'Error: shift',rank,ierror
+      call MPI_Send(epla,1,MPI_REAL,0,rank,MPI_COMM_WORLD,ier)
+      if (ier /= 0) then
+        print *,'Error: shift',rank,ier
         call stopProgram("outputDataline    ")
       endif
-      call MPI_Send(eplo,1,MPI_REAL,0,rank,MPI_COMM_WORLD,ierror)
-      if (ierror /= 0) then
-        print *,'Error: shift',rank,ierror
+      call MPI_Send(eplo,1,MPI_REAL,0,rank,MPI_COMM_WORLD,ier)
+      if (ier /= 0) then
+        print *,'Error: shift',rank,ier
         call stopProgram("outputDataline    ")
       endif
-      call MPI_Send(stla,1,MPI_REAL,0,rank,MPI_COMM_WORLD,ierror)
-      if (ierror /= 0) then
-        print *,'Error: shift',rank,ierror
+      call MPI_Send(stla,1,MPI_REAL,0,rank,MPI_COMM_WORLD,ier)
+      if (ier /= 0) then
+        print *,'Error: shift',rank,ier
         call stopProgram("outputDataline    ")
       endif
-      call MPI_Send(stlo,1,MPI_REAL,0,rank,MPI_COMM_WORLD,ierror)
-      if (ierror /= 0) then
-        print *,'Error: shift',rank,ierror
+      call MPI_Send(stlo,1,MPI_REAL,0,rank,MPI_COMM_WORLD,ier)
+      if (ier /= 0) then
+        print *,'Error: shift',rank,ier
         call stopProgram("outputDataline    ")
       endif
-      call MPI_Send(error,1,MPI_REAL,0,rank,MPI_COMM_WORLD,ierror)
-      if (ierror /= 0) then
-        print *,'Error: shift',rank,ierror
+      call MPI_Send(error,1,MPI_REAL,0,rank,MPI_COMM_WORLD,ier)
+      if (ier /= 0) then
+        print *,'Error: shift',rank,ier
         call stopProgram("outputDataline    ")
       endif
     endif
@@ -781,7 +781,7 @@
     use parallel; use propagationStartup; use heterogeneousArrays
     implicit none
     ! local parameters
-    integer:: ierror
+    integer:: ier
 
     ! benchmark
     if (MAIN_PROCESS) then
@@ -796,11 +796,11 @@
     endif
 
     ! wait until all processes reached this point
-    call MPI_Barrier( MPI_COMM_WORLD, ierror )
-    if (ierror /= 0) call stopProgram('abort - final MPI_Barrier failed    ')
+    call MPI_Barrier( MPI_COMM_WORLD, ier )
+    if (ier /= 0) call stopProgram('abort - final MPI_Barrier failed    ')
 
     ! end parallelization
-    call MPI_FINALIZE(ierror)
-    if (ierror /= 0) call stopProgram('abort - finalize failed    ')
+    call MPI_FINALIZE(ier)
+    if (ier /= 0) call stopProgram('abort - finalize failed    ')
 
   end subroutine

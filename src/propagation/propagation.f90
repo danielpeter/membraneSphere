@@ -29,7 +29,7 @@
       use verbosity
       implicit none
       ! local parameters
-      integer:: i,ierror
+      integer:: i,ier
       logical:: looping
       real(WP), external:: discreteLaplacian,precalc_discreteLaplacian
 
@@ -51,26 +51,26 @@
         ! useless for heterogeneous case
         if (HETEROGENEOUS) then
           print *,'multiple receiver stations and heterogeneous phase map not applicable!'
-          stop
+          stop 'Invalid multiple receivers for heterogeneous phase map'
         endif
 
         if (numofReceivers <= 0) then
           print *,'number of receiver stations invalid!',numofReceivers
-          stop
+          stop 'Invalid number of receiver stations'
         endif
 
         ! allocate seismograms for all receivers
         deallocate( seismogramReceiver )    ! only needed for single receiver setups
-        allocate( receivers(numofReceivers), receiversSeismogram(numofReceivers+1,lasttimestep-firsttimestep+1),stat=ierror)
-        if (ierror > 0) then
+        allocate( receivers(numofReceivers), receiversSeismogram(numofReceivers+1,lasttimestep-firsttimestep+1),stat=ier)
+        if (ier /= 0) then
           print *,'cannot allocate receivers array'
-          stop
+          stop 'Error allocating receivers array'
         endif
 
         ! assumes the source to be on north pole, the receiver station places along the same latitude
         do i = 1, numofReceivers
           ! vary longitude
-          receiverLon=(i-1)*360.0/numofReceivers
+          receiverLon = (i-1)*360.0/numofReceivers
           call findVertex(receiverLat,receiverLon,receivers(i))
         enddo
       endif
@@ -114,11 +114,11 @@
       enddo !delta location
 
       ! wait until all processes reached this point
-      call MPI_Barrier( MPI_COMM_WORLD, ierror )
-      if (ierror /= 0) call stopProgram('abort - final MPI_Barrier failed    ')
+      call MPI_Barrier( MPI_COMM_WORLD, ier )
+      if (ier /= 0) call stopProgram('abort - final MPI_Barrier failed    ')
 
       ! end parallelization
-      call MPI_FINALIZE(ierror)
-      if (ierror /= 0) call stopProgram('abort - finalize failed    ')
+      call MPI_FINALIZE(ier)
+      if (ier /= 0) call stopProgram('abort - finalize failed    ')
 
       end program

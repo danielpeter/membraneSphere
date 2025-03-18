@@ -33,7 +33,7 @@
       character(len=128),intent(in):: fileName
       logical,intent(in):: given_as_percent
       ! local parameters
-      integer:: i,ioerror
+      integer:: i,ier
       integer:: lmax,lmaxuser,ialpha,ncoef
       real(WP):: scale,vphase,lat,lon
       real(WP):: Vsource(3),Vreceiver(3),vtmp(3),rot(3,3)
@@ -73,8 +73,8 @@
       endif
 
       !open file
-      open(IIN,file=trim(fileName),status='old',iostat=ioerror)
-      if (ioerror /= 0) then
+      open(IIN,file=trim(fileName),status='old',iostat=ier)
+      if (ier /= 0) then
         print *,'Error: could not open file ',trim(fileName)
         print *,'       Please check if file exists...'
         call stopProgram( 'abort - could not open GSHPhasemap    ')
@@ -226,30 +226,29 @@
       implicit none
       character(len=128),intent(in):: fileName
       ! local parameters
-      integer:: i,ioerror,id
+      integer:: i,ier,id
       real(WP):: blockdata
 
       ! read phase map
       print *,'  reading pixel phase map:'
       print *,'  file: ',trim(fileName)
 
-      !open file
-      open(IIN, file=trim(fileName),status='old',iostat=ioerror)
-      if (ioerror /= 0) call stopProgram( 'abort - readPixelPhasemap()  ')
+      ! open file
+      open(IIN, file=trim(fileName),status='old',iostat=ier)
+      if (ier /= 0) call stopProgram( 'abort - readPixelPhasemap()  ')
 
-      !get file length
+      ! get file length
       numBlocks = 0
-      ioerror = 0
-      do while (ioerror == 0 )
-        read(IIN,*,iostat=ioerror) id, blockdata
+      do while (ier == 0 )
+        read(IIN,*,iostat=ier) id, blockdata
         numBlocks = numBlocks + 1
       enddo
       numBlocks = numBlocks - 1
       !print *,'file length', numBlocks
 
       !resize phaseBlock array
-      allocate(phaseBlock(numBlocks), stat=ioerror)
-      if (ioerror /= 0) then
+      allocate(phaseBlock(numBlocks), stat=ier)
+      if (ier /= 0) then
         print *,'Error: allocating phaseBlock array'
         call stopProgram( 'abort - readPixelPhasemap    ')
       endif
@@ -257,8 +256,8 @@
       !fill in values
       rewind(IIN)
       do i = 1, numBlocks
-        read(IIN, *, iostat=ioerror) id, phaseBlock(i)
-        if (ioerror /= 0) then
+        read(IIN, *, iostat=ier) id, phaseBlock(i)
+        if (ier /= 0) then
           exit
         endif
         !print *,'block',id,phaseBlock(i)
@@ -999,14 +998,14 @@ end subroutine rotmx2
 !      implicit none
 !      ! local parameters
 !      double precision,allocatable,dimension(:):: rotPhaseMap
-!      integer i,index,ierror
+!      integer i,index,ier
 !      double precision Vsource(3),Vreceiver(3),vtmp(3)
 !      double precision rot(3,3),lat,lon
 !
-!      allocate(rotPhaseMap(numVertices),stat=ierror)
-!      if (ierror > 0) then
+!      allocate(rotPhaseMap(numVertices),stat=ier)
+!      if (ier /= 0) then
 !        print *,'error in allocating rotPhaseMap array'
-!        stop 'abort - rotatePhaseMap'
+!        stop 'Abort - rotatePhaseMap'
 !      endif
 !
 !      ! determine rotation matrix from source/receiver to (1,0,0)/... frame
@@ -1028,7 +1027,7 @@ end subroutine rotmx2
 !        !print *,'   rotated value:',rotPhaseMap(index)
 !        if (index < 0 .or. index > numVertices) then
 !          print *,'   rotated index violates boundaries:',index, i
-!          stop 'abort - rotatePhaseMap'
+!          stop 'Abort - rotatePhaseMap'
 !        endif
 !
 !        if (rotPhaseMap(index) < 0.000000001) then

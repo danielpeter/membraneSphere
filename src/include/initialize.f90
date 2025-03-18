@@ -55,23 +55,23 @@
       use propagationStartup;use parallel
       implicit none
       ! local parameters
-      integer:: ierror
+      integer:: ier
 
       ! parallelization
-      call MPI_Init(ierror)
-      if (ierror /= 0) then
+      call MPI_Init(ier)
+      if (ier /= 0) then
         print *,'error starting MPI program.'
         ! note: MPI_ABORT does not return, it makes the program exit with an error code of 30
-        call MPI_ABORT(MPI_COMM_WORLD,30,ierror)
+        call MPI_ABORT(MPI_COMM_WORLD,30,ier)
       endif
 
       ! get number of processors
-      call MPI_COMM_SIZE(MPI_COMM_WORLD,nprocesses,ierror)
-      if (ierror /= 0) stop "MPI_COMM_SIZE failed"
+      call MPI_COMM_SIZE(MPI_COMM_WORLD,nprocesses,ier)
+      if (ier /= 0) stop "MPI_COMM_SIZE failed"
 
       ! determine idproc, the processor's id
-      call MPI_COMM_RANK(MPI_COMM_WORLD,rank,ierror)
-      if (ierror /= 0) stop "MPI_COMM_RANK failed"
+      call MPI_COMM_RANK(MPI_COMM_WORLD,rank,ier)
+      if (ier /= 0) stop "MPI_COMM_RANK failed"
 
       ! determine main process
       if (rank == 0) then
@@ -203,7 +203,7 @@
       implicit none
       ! local parameters
       real(WP):: lat,lon,distance
-      integer:: ierror,i
+      integer:: ier,i
 
       ! allocate grid arrays
       call allocateMesh()
@@ -214,8 +214,8 @@
       call syncInitialData()
 
       ! wait until all processes reached this point
-      call MPI_Barrier( MPI_COMM_WORLD, ierror )
-      if (ierror /= 0) call stopProgram('initializeMesh() - MPI_Barrier failed    ')
+      call MPI_Barrier( MPI_COMM_WORLD, ier )
+      if (ier /= 0) call stopProgram('initializeMesh() - MPI_Barrier failed    ')
 
       ! find source & receiver vertex
       desiredSourceLat = sourceLat
@@ -314,8 +314,8 @@
 !      if (Adjoint_Program .and. ADJOINT_ONTHEFLY) then
 !        ! allocate arrays for displacement datas
 !        allocate(backwardDisplacement(numVertices),backwardDisplacement_old(numVertices), &
-!                      backwardNewdisplacement(numVertices), stat=ierror )
-!        if (ierror /= 0) call stopProgram('error in allocating displacement arrays   ')
+!                      backwardNewdisplacement(numVertices), stat=ier )
+!        if (ier /= 0) call stopProgram('error in allocating displacement arrays   ')
 !        ! initialize
 !        backwardDisplacement_old(:)=0.0_WP
 !        backwardDisplacement(:)=0.0_WP
@@ -399,7 +399,7 @@
       use verbosity
       implicit none
       ! local parameters
-      integer:: n,vertex,timestep,index,ierror,jrec
+      integer:: n,vertex,timestep,index,ier,jrec
       real(WP),external:: forceTerm2Source,forceTermExact
       real(WP):: time,force,arraysize
       real(WP),parameter:: EPS = 1.0e-5
@@ -443,8 +443,8 @@
             sourceOnFile = .true.
           else
             ! allocates memory
-            allocate(forceTermPrescribed(numDomainVertices,numofTimeSteps),stat=ierror)
-            if (ierror /= 0) then
+            allocate(forceTermPrescribed(numDomainVertices,numofTimeSteps),stat=ier)
+            if (ier /= 0) then
               print *,'    cannot allocate prescribedForce array: ',rank
               ! change prescribed flag if necessary
               if (FILTERINITIALSOURCE) then
@@ -546,7 +546,7 @@
       use filterType;use verbosity; use adjointVariables
       implicit none
       ! local parameters
-      integer:: vertex,timestep,index,i,n,ierror,jrec
+      integer:: vertex,timestep,index,i,n,ier,jrec
       character(len=8)::vertexstr
       real(WP)::seismo(2,numofTimeSteps)
       real(WP)::min,max,originalT,originalf
@@ -601,8 +601,8 @@
         if (vertex == sourceVertex .and. beVerbose .and. .not. sourceOnFile) then
           write(vertexstr,'(i8.8)') vertex
           print *,'    writing to file: ',trim(datadirectory)//'source2Prescribed.'//vertexstr//'.dat'
-          open(22,file=trim(datadirectory)//'source2Prescribed.'//vertexstr//'.dat',iostat=ierror)
-          if (ierror /= 0) &
+          open(22,file=trim(datadirectory)//'source2Prescribed.'//vertexstr//'.dat',iostat=ier)
+          if (ier /= 0) &
             call stopProgram('error opening file: '//trim(datadirectory)//'source2Prescribed.'//vertexstr//'.dat   ')
           do i = 1,numofTimeSteps
             write(22,*) seismo(1,i),forceTermPrescribed(n,i)
@@ -642,8 +642,8 @@
         ! file output
         if (vertex == sourceVertex .and. beVerbose .and. .not. sourceOnFile) then
           write(vertexstr,'(i8.8)') vertex
-          open(22,file=trim(datadirectory)//'source2Prescribed.filtered.'//vertexstr//'.dat',iostat=ierror)
-          if (ierror /= 0) &
+          open(22,file=trim(datadirectory)//'source2Prescribed.filtered.'//vertexstr//'.dat',iostat=ier)
+          if (ier /= 0) &
             call stopProgram('error opening file: '//trim(datadirectory)//'source2Prescribed.filtered'//vertexstr//'.dat   ')
           do i = 1,numofTimeSteps
             write(22,*) seismo(1,i),forceTermPrescribed(n,i)
@@ -669,7 +669,7 @@
       implicit none
       ! local parameters
       real(WP):: distance,lat,lon
-      integer:: ierror
+      integer:: ier
 
       ! reads in a heterogeneous phase velocity map
       if (HETEROGENEOUS) then
@@ -678,8 +678,8 @@
         endif
 
         !allocate phaseMap array
-        allocate(phaseMap(numVertices), stat=ierror)
-        if (ierror /= 0) then
+        allocate(phaseMap(numVertices), stat=ier)
+        if (ier /= 0) then
           print *,'Error: allocating phaseMap array'
           call stopProgram( 'abort - setupFrame   ')
         endif
@@ -899,7 +899,7 @@
       use loop;use deltaSecondLocation;use filterType;use verbosity
       implicit none
       ! local parameters
-      integer:: m,rounded,ierror
+      integer:: m,rounded,ier
       real(WP):: exact,distance
 
       ! place all receiver stations
@@ -915,8 +915,8 @@
           allocate( kernelsReceivers(numofKernels,numofReceivers), &
             kernelsReceiversSeismogram(numofKernels,numofReceivers+1,numofTimeSteps), &
             kernelsReceiversSeismogramRef(numofKernels,numofReceivers+1,numofTimeSteps), &
-            stat=ierror)
-          if (ierror /= 0) call stopProgram('cannot allocate receivers array   ')
+            stat=ier)
+          if (ier /= 0) call stopProgram('cannot allocate receivers array   ')
 
           ! console output
           if (VERBOSE .and. MAIN_PROCESS) then
@@ -1001,7 +1001,7 @@
       use propagationStartup; use parallel; use verbosity
       implicit none
       ! local parameters
-      integer:: i,ierror
+      integer:: i,ier
       real(WP):: lat,lon
       character(len=128):: datafile
       character(len=3):: kernelstr
@@ -1021,8 +1021,8 @@
         allocate( receivers(numofReceivers), &
                 receiversSeismogram(numofReceivers+1,numofTimeSteps), &
                 receiversSeismogramRef(numofReceivers+1,numofTimeSteps), &
-                stat=ierror)
-        if (ierror /= 0) call stopProgram('cannot allocate receivers array   ')
+                stat=ier)
+        if (ier /= 0) call stopProgram('cannot allocate receivers array   ')
         !console output
         if (MAIN_PROCESS .and. VERBOSE) &
           print *,'arrays for receivers allocated successfully',size(receiversSeismogram),size(receiversSeismogramRef)
@@ -1110,7 +1110,7 @@
       use propagationStartup; use parallel; use verbosity
       implicit none
       ! local parameters
-      integer:: i,n,ioerror
+      integer:: i,n,ier
       character(len=3):: rankstr,kernelstr
       character(len=128):: datafile
 
@@ -1147,17 +1147,17 @@
           endif
           datafile=trim(datafile)
           ! delete if existing
-          !open(10,file=datafile,iostat=ioerror)
-          !if (ioerror == 0) close(10,status='DELETE')
+          !open(10,file=datafile,iostat=ier)
+          !if (ier == 0) close(10,status='DELETE')
 
           ! put two comment lines at beginning
-          open(IOUT,file=trim(datafile),iostat=ioerror)
-          if (ioerror /= 0) then
+          open(IOUT,file=trim(datafile),iostat=ier)
+          if (ier /= 0) then
             ! check if really we can not create the file
             print *,'could not open file: '//trim(datafile)
             print *,'  try again...'
-            open(IOUT,file=trim(datafile),status='unknown',iostat=ioerror)
-            if (ioerror /= 0) call stopProgram('createKernelFiles() - still not possible. shutting down    ')
+            open(IOUT,file=trim(datafile),status='unknown',iostat=ier)
+            if (ier /= 0) call stopProgram('createKernelFiles() - still not possible. shutting down    ')
             print *,'  successed opening file'
           endif
           ! determine comment line text
@@ -1290,7 +1290,7 @@
       ! local parameters
       real(WP):: distance
       character(len=64),parameter::distanceFile     = 'Kernel_EpiDistances.dat'
-      integer:: ierror,iorbit
+      integer:: ier,iorbit
 
       ! place new receiver
       call setupNewReceiver(lat,lon)
@@ -1304,8 +1304,8 @@
 
             ! print epicentral distances into file
             open(10,file=trim(datadirectory)//trim(distanceFile), &
-                 status='old',position='append',iostat=ierror)
-            if (ierror /= 0) then
+                 status='old',position='append',iostat=ier)
+            if (ier /= 0) then
               ! console output
               if (VERBOSE) then
                 print *,'  epicentral distances of kernels in file:'
@@ -1314,13 +1314,13 @@
               endif
               ! open as new file
               open(10,file=trim(datadirectory)//trim(distanceFile), &
-                   status='new',iostat=ierror)
-              if (ierror == 0) then
+                   status='new',iostat=ier)
+              if (ier == 0) then
                 write(10,*) '# epicentral distances'
                 write(10,*) '# rounded exactDistance (in degrees)'
               endif
             endif
-            if (ierror == 0) then
+            if (ier == 0) then
               write(10,*) int(desiredReceiverLon),distance*180.0/PI
               close(10)
             endif
@@ -1384,7 +1384,7 @@
       use filterType, only: WindowSIZE
       implicit none
       ! local parameters
-      integer:: ierror,isteps
+      integer:: ier,isteps
 
       ! stepings
       firsttimestep = int( FIRSTTIME/dt) !default: -6500/ almost same results for -800
@@ -1401,8 +1401,8 @@
         if (allocated(seismogramReceiver)) then
          if (size(seismogramReceiver(1,:)) /= numofTimeSteps) deallocate(seismogramReceiver)
         endif
-        if (.not. allocated(seismogramReceiver)) allocate(seismogramReceiver(2,numofTimeSteps),stat=ierror)
-        if (ierror > 0) call stopProgram('error in allocating seismogram array    ')
+        if (.not. allocated(seismogramReceiver)) allocate(seismogramReceiver(2,numofTimeSteps),stat=ier)
+        if (ier /= 0) call stopProgram('error in allocating seismogram array    ')
 
         ! fft size
         call determineFFTWindowsize(numofTimeSteps,WindowSIZE)
@@ -1517,7 +1517,7 @@
       implicit none
       character(len=*),intent(in):: textline
       ! local parameters
-      integer:: endindex,ierror
+      integer:: endindex,ier
       logical:: flag
 
       ! console output
@@ -1529,14 +1529,14 @@
       flush(6)
 
       ! stop MPI
-      call MPI_Initialized(flag,ierror)
-      if (flag .eqv. .true. .and. ierror == 0) then
+      call MPI_Initialized(flag,ier)
+      if (flag .eqv. .true. .and. ier == 0) then
         ! note: MPI_ABORT does not return, it makes the program exit with an error code of 30
-        call MPI_Abort(MPI_COMM_WORLD, 30, ierror )
-        call MPI_FINALIZE(ierror)
+        call MPI_Abort(MPI_COMM_WORLD, 30, ier )
+        call MPI_FINALIZE(ier)
       endif
 
       ! stop process
-      stop 'abort - program '
+      stop 'Abort - program '
       end
 

@@ -30,7 +30,7 @@
       use loop; use phaseBlockData; use griddomain; use adjointVariables;use verbosity
       implicit none
       ! local parameters
-      integer:: kernel,ierror
+      integer:: kernel,ier
       real(WP):: window_start_org,window_end_org
 
       !-----------------------------------------------------------------------
@@ -51,8 +51,8 @@
       call initialize()
 
       ! wait until all processes reached this point
-      call MPI_Barrier( MPI_COMM_WORLD, ierror )
-      if (ierror /= 0) call stopProgram('abort - MPI_Barrier kernels failed    ')
+      call MPI_Barrier( MPI_COMM_WORLD, ier )
+      if (ier /= 0) call stopProgram('abort - MPI_Barrier kernels failed    ')
 
       ! prepare for simulation
       if (MAIN_PROCESS .and. VERBOSE) then
@@ -131,15 +131,15 @@
         call backwardIteration()
 
         ! wait until all processes reached this point
-        !call MPI_Barrier( MPI_COMM_WORLD, ierror )
-        !if (ierror /= 0) call stopProgram('abort - MPI_Barrier iterations failed    ')
+        !call MPI_Barrier( MPI_COMM_WORLD, ier )
+        !if (ier /= 0) call stopProgram('abort - MPI_Barrier iterations failed    ')
 
         ! compute kernel
         if (.not. ADJOINT_ONTHEFLY) call frechetKernel()
 
         ! wait until all processes reached this point
-        !call MPI_Barrier( MPI_COMM_WORLD, ierror )
-        !if (ierror /= 0) call stopProgram('abort - MPI_Barrier kernels failed    ')
+        !call MPI_Barrier( MPI_COMM_WORLD, ier )
+        !if (ier /= 0) call stopProgram('abort - MPI_Barrier kernels failed    ')
 
         ! output to kernel file
         call storeAdjointKernel()
@@ -158,12 +158,12 @@
       if (MAIN_PROCESS) print *,'done.'
 
       ! wait until all processes reached this point
-      call MPI_Barrier( MPI_COMM_WORLD, ierror )
-      if (ierror /= 0) call stopProgram('abort - final MPI_Barrier failed    ')
+      call MPI_Barrier( MPI_COMM_WORLD, ier )
+      if (ier /= 0) call stopProgram('abort - final MPI_Barrier failed    ')
 
       ! end parallelization
-      call MPI_FINALIZE(ierror)
-      if (ierror /= 0) call stopProgram('abort - finalize failed    ')
+      call MPI_FINALIZE(ier)
+      if (ier /= 0) call stopProgram('abort - finalize failed    ')
 
       end program
 

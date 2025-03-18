@@ -20,7 +20,7 @@
       implicit none
       integer,intent(in):: rankid,nproc
       ! local parameters
-      integer:: n,ierror
+      integer:: n,ier
 
       ! check
       if (nproc < 2) return
@@ -29,83 +29,83 @@
       if (rankid == 0) then
         ! send to secondary processes
         do n = 1, nproc-1
-          call MPI_Send(VERBOSE,1,MPI_LOGICAL,n,n,MPI_COMM_WORLD,ierror)
-          call MPI_Send(subdivisions,1,MPI_INTEGER,n,n,MPI_COMM_WORLD,ierror)
-          call MPI_Send(FIRSTTIME,1,MPI_CUSTOM,n,n,MPI_COMM_WORLD,ierror)
-          call MPI_Send(LASTTIME,1,MPI_CUSTOM,n,n,MPI_COMM_WORLD,ierror)
-          call MPI_Send(cphaseRef,1,MPI_CUSTOM,n,n,MPI_COMM_WORLD,ierror)
-          call MPI_Send(HETEROGENEOUS,1,MPI_LOGICAL,n,n,MPI_COMM_WORLD,ierror)
-          call MPI_Send(DELTA,1,MPI_LOGICAL,n,n,MPI_COMM_WORLD,ierror)
-          call MPI_Send(DELTARADIUS,1,MPI_CUSTOM,n,n,MPI_COMM_WORLD,ierror)
-          call MPI_Send(deltaLat,1,MPI_CUSTOM,n,n,MPI_COMM_WORLD,ierror)
-          call MPI_Send(deltaLon,1,MPI_CUSTOM,n,n,MPI_COMM_WORLD,ierror)
-          call MPI_Send(DELTAfunction,8,MPI_CHARACTER,n,n,MPI_COMM_WORLD,ierror)
-          call MPI_Send(sourceLat,1,MPI_CUSTOM,n,n,MPI_COMM_WORLD,ierror)
-          call MPI_Send(sourceLon,1,MPI_CUSTOM,n,n,MPI_COMM_WORLD,ierror)
-          call MPI_Send(receiverLat,1,MPI_CUSTOM,n,n,MPI_COMM_WORLD,ierror)
-          call MPI_Send(receiverLon,1,MPI_CUSTOM,n,n,MPI_COMM_WORLD,ierror)
-          call MPI_Send(deltaMoveIncrement,1,MPI_CUSTOM,n,n,MPI_COMM_WORLD,ierror)
-          call MPI_Send(manyReceivers,1,MPI_LOGICAL,n,n,MPI_COMM_WORLD,ierror)
-          call MPI_Send(numofReceivers,1,MPI_INTEGER,n,n,MPI_COMM_WORLD,ierror)
-          call MPI_Send(manyKernels,1,MPI_LOGICAL,n,n,MPI_COMM_WORLD,ierror)
-          call MPI_Send(kernelStartDistance,1,MPI_CUSTOM,n,n,MPI_COMM_WORLD,ierror)
-          call MPI_Send(kernelEndDistance,1,MPI_CUSTOM,n,n,MPI_COMM_WORLD,ierror)
-          call MPI_Send(importKernelsReceivers,1,MPI_LOGICAL,n,n,MPI_COMM_WORLD,ierror)
-          call MPI_Send(SIMULATIONOUTPUT,1,MPI_LOGICAL,n,n,MPI_COMM_WORLD,ierror)
-          call MPI_Send(cphasetype,8,MPI_CHARACTER,n,n,MPI_COMM_WORLD,ierror)
-          call MPI_Send(MOVEDELTA,1,MPI_LOGICAL,n,n,MPI_COMM_WORLD,ierror)
-          call MPI_Send(SECONDDELTA,1,MPI_LOGICAL,n,n,MPI_COMM_WORLD,ierror)
-          call MPI_Send(latitudeStart,1,MPI_INTEGER,n,n,MPI_COMM_WORLD,ierror)
-          call MPI_Send(latitudeEnd,1,MPI_INTEGER,n,n,MPI_COMM_WORLD,ierror)
-          call MPI_Send(longitudeEnd,1,MPI_INTEGER,n,n,MPI_COMM_WORLD,ierror)
-          call MPI_Send(deltaPerturbation,1,MPI_CUSTOM,n,n,MPI_COMM_WORLD,ierror)
-          call MPI_Send(datadirectory,len(datadirectory),MPI_CHARACTER,n,n,MPI_COMM_WORLD,ierror)
-          call MPI_Send(PARALLELSEISMO,1,MPI_LOGICAL,n,n,MPI_COMM_WORLD,ierror)
-          call MPI_Send(phaseBlockFile,len(phaseBlockFile),MPI_CHARACTER,n,n,MPI_COMM_WORLD,ierror)
-          call MPI_Send(phaseBlockVelocityReference,1,MPI_CUSTOM,n,n,MPI_COMM_WORLD,ierror)
-          call MPI_Send(heterogeneousDataFile,len(heterogeneousDataFile),MPI_CHARACTER,n,n,MPI_COMM_WORLD,ierror)
-          call MPI_Send(heterogeneousPixelsize,1,MPI_REAL,n,n,MPI_COMM_WORLD,ierror)
-          call MPI_Send(gsh_maximum_expansion,1,MPI_INTEGER,n,n,MPI_COMM_WORLD,ierror)
+          call MPI_Send(VERBOSE,1,MPI_LOGICAL,n,n,MPI_COMM_WORLD,ier)
+          call MPI_Send(subdivisions,1,MPI_INTEGER,n,n,MPI_COMM_WORLD,ier)
+          call MPI_Send(FIRSTTIME,1,MPI_CUSTOM,n,n,MPI_COMM_WORLD,ier)
+          call MPI_Send(LASTTIME,1,MPI_CUSTOM,n,n,MPI_COMM_WORLD,ier)
+          call MPI_Send(cphaseRef,1,MPI_CUSTOM,n,n,MPI_COMM_WORLD,ier)
+          call MPI_Send(HETEROGENEOUS,1,MPI_LOGICAL,n,n,MPI_COMM_WORLD,ier)
+          call MPI_Send(DELTA,1,MPI_LOGICAL,n,n,MPI_COMM_WORLD,ier)
+          call MPI_Send(DELTARADIUS,1,MPI_CUSTOM,n,n,MPI_COMM_WORLD,ier)
+          call MPI_Send(deltaLat,1,MPI_CUSTOM,n,n,MPI_COMM_WORLD,ier)
+          call MPI_Send(deltaLon,1,MPI_CUSTOM,n,n,MPI_COMM_WORLD,ier)
+          call MPI_Send(DELTAfunction,8,MPI_CHARACTER,n,n,MPI_COMM_WORLD,ier)
+          call MPI_Send(sourceLat,1,MPI_CUSTOM,n,n,MPI_COMM_WORLD,ier)
+          call MPI_Send(sourceLon,1,MPI_CUSTOM,n,n,MPI_COMM_WORLD,ier)
+          call MPI_Send(receiverLat,1,MPI_CUSTOM,n,n,MPI_COMM_WORLD,ier)
+          call MPI_Send(receiverLon,1,MPI_CUSTOM,n,n,MPI_COMM_WORLD,ier)
+          call MPI_Send(deltaMoveIncrement,1,MPI_CUSTOM,n,n,MPI_COMM_WORLD,ier)
+          call MPI_Send(manyReceivers,1,MPI_LOGICAL,n,n,MPI_COMM_WORLD,ier)
+          call MPI_Send(numofReceivers,1,MPI_INTEGER,n,n,MPI_COMM_WORLD,ier)
+          call MPI_Send(manyKernels,1,MPI_LOGICAL,n,n,MPI_COMM_WORLD,ier)
+          call MPI_Send(kernelStartDistance,1,MPI_CUSTOM,n,n,MPI_COMM_WORLD,ier)
+          call MPI_Send(kernelEndDistance,1,MPI_CUSTOM,n,n,MPI_COMM_WORLD,ier)
+          call MPI_Send(importKernelsReceivers,1,MPI_LOGICAL,n,n,MPI_COMM_WORLD,ier)
+          call MPI_Send(SIMULATIONOUTPUT,1,MPI_LOGICAL,n,n,MPI_COMM_WORLD,ier)
+          call MPI_Send(cphasetype,8,MPI_CHARACTER,n,n,MPI_COMM_WORLD,ier)
+          call MPI_Send(MOVEDELTA,1,MPI_LOGICAL,n,n,MPI_COMM_WORLD,ier)
+          call MPI_Send(SECONDDELTA,1,MPI_LOGICAL,n,n,MPI_COMM_WORLD,ier)
+          call MPI_Send(latitudeStart,1,MPI_INTEGER,n,n,MPI_COMM_WORLD,ier)
+          call MPI_Send(latitudeEnd,1,MPI_INTEGER,n,n,MPI_COMM_WORLD,ier)
+          call MPI_Send(longitudeEnd,1,MPI_INTEGER,n,n,MPI_COMM_WORLD,ier)
+          call MPI_Send(deltaPerturbation,1,MPI_CUSTOM,n,n,MPI_COMM_WORLD,ier)
+          call MPI_Send(datadirectory,len(datadirectory),MPI_CHARACTER,n,n,MPI_COMM_WORLD,ier)
+          call MPI_Send(PARALLELSEISMO,1,MPI_LOGICAL,n,n,MPI_COMM_WORLD,ier)
+          call MPI_Send(phaseBlockFile,len(phaseBlockFile),MPI_CHARACTER,n,n,MPI_COMM_WORLD,ier)
+          call MPI_Send(phaseBlockVelocityReference,1,MPI_CUSTOM,n,n,MPI_COMM_WORLD,ier)
+          call MPI_Send(heterogeneousDataFile,len(heterogeneousDataFile),MPI_CHARACTER,n,n,MPI_COMM_WORLD,ier)
+          call MPI_Send(heterogeneousPixelsize,1,MPI_REAL,n,n,MPI_COMM_WORLD,ier)
+          call MPI_Send(gsh_maximum_expansion,1,MPI_INTEGER,n,n,MPI_COMM_WORLD,ier)
         enddo
       else
           ! get parameters from main process
-          call MPI_Recv(VERBOSE,1,MPI_LOGICAL,0,rankid,MPI_COMM_WORLD,status,ierror)
-          call MPI_Recv(subdivisions,1,MPI_INTEGER,0,rankid,MPI_COMM_WORLD,status,ierror)
-          call MPI_Recv(FIRSTTIME,1,MPI_CUSTOM,0,rankid,MPI_COMM_WORLD,status,ierror)
-          call MPI_Recv(LASTTIME,1,MPI_CUSTOM,0,rankid,MPI_COMM_WORLD,status,ierror)
-          call MPI_Recv(cphaseRef,1,MPI_CUSTOM,0,rankid,MPI_COMM_WORLD,status,ierror)
-          call MPI_Recv(HETEROGENEOUS,1,MPI_LOGICAL,0,rankid,MPI_COMM_WORLD,status,ierror)
-          call MPI_Recv(DELTA,1,MPI_LOGICAL,0,rank,MPI_COMM_WORLD,status,ierror)
-          call MPI_Recv(DELTARADIUS,1,MPI_CUSTOM,0,rankid,MPI_COMM_WORLD,status,ierror)
-          call MPI_Recv(deltaLat,1,MPI_CUSTOM,0,rankid,MPI_COMM_WORLD,status,ierror)
-          call MPI_Recv(deltaLon,1,MPI_CUSTOM,0,rankid,MPI_COMM_WORLD,status,ierror)
-          call MPI_Recv(DELTAfunction,8,MPI_CHARACTER,0,rankid,MPI_COMM_WORLD,status,ierror)
-          call MPI_Recv(sourceLat,1,MPI_CUSTOM,0,rankid,MPI_COMM_WORLD,status,ierror)
-          call MPI_Recv(sourceLon,1,MPI_CUSTOM,0,rankid,MPI_COMM_WORLD,status,ierror)
-          call MPI_Recv(receiverLat,1,MPI_CUSTOM,0,rankid,MPI_COMM_WORLD,status,ierror)
-          call MPI_Recv(receiverLon,1,MPI_CUSTOM,0,rankid,MPI_COMM_WORLD,status,ierror)
-          call MPI_Recv(deltaMoveIncrement,1,MPI_CUSTOM,0,rankid,MPI_COMM_WORLD,status,ierror)
-          call MPI_Recv(manyReceivers,1,MPI_LOGICAL,0,rankid,MPI_COMM_WORLD,status,ierror)
-          call MPI_Recv(numofReceivers,1,MPI_INTEGER,0,rankid,MPI_COMM_WORLD,status,ierror)
-          call MPI_Recv(manyKernels,1,MPI_LOGICAL,0,rankid,MPI_COMM_WORLD,status,ierror)
-          call MPI_Recv(kernelStartDistance,1,MPI_CUSTOM,0,rankid,MPI_COMM_WORLD,status,ierror)
-          call MPI_Recv(kernelEndDistance,1,MPI_CUSTOM,0,rankid,MPI_COMM_WORLD,status,ierror)
-          call MPI_Recv(importKernelsReceivers,1,MPI_LOGICAL,0,rankid,MPI_COMM_WORLD,status,ierror)
-          call MPI_Recv(SIMULATIONOUTPUT,1,MPI_LOGICAL,0,rankid,MPI_COMM_WORLD,status,ierror)
-          call MPI_Recv(cphasetype,8,MPI_CHARACTER,0,rankid,MPI_COMM_WORLD,status,ierror)
-          call MPI_Recv(MOVEDELTA,1,MPI_LOGICAL,0,rankid,MPI_COMM_WORLD,status,ierror)
-          call MPI_Recv(SECONDDELTA,1,MPI_LOGICAL,0,rankid,MPI_COMM_WORLD,status,ierror)
-          call MPI_Recv(latitudeStart,1,MPI_INTEGER,0,rankid,MPI_COMM_WORLD,status,ierror)
-          call MPI_Recv(latitudeEnd,1,MPI_INTEGER,0,rankid,MPI_COMM_WORLD,status,ierror)
-          call MPI_Recv(longitudeEnd,1,MPI_INTEGER,0,rankid,MPI_COMM_WORLD,status,ierror)
-          call MPI_Recv(deltaPerturbation,1,MPI_CUSTOM,0,rankid,MPI_COMM_WORLD,status,ierror)
-          call MPI_Recv(datadirectory,len(datadirectory),MPI_CHARACTER,0,rankid,MPI_COMM_WORLD,status,ierror)
-          call MPI_Recv(PARALLELSEISMO,1,MPI_LOGICAL,0,rankid,MPI_COMM_WORLD,status,ierror)
-          call MPI_Recv(phaseBlockFile,len(phaseBlockFile),MPI_CHARACTER,0,rankid,MPI_COMM_WORLD,status,ierror)
-          call MPI_Recv(phaseBlockVelocityReference,1,MPI_CUSTOM,0,rankid,MPI_COMM_WORLD,status,ierror)
-          call MPI_Recv(heterogeneousDataFile,len(heterogeneousDataFile),MPI_CHARACTER,0,rankid,MPI_COMM_WORLD,status,ierror)
-          call MPI_Recv(heterogeneousPixelsize,1,MPI_REAL,0,rankid,MPI_COMM_WORLD,status,ierror)
-          call MPI_Recv(gsh_maximum_expansion,1,MPI_INTEGER,0,rankid,MPI_COMM_WORLD,status,ierror)
+          call MPI_Recv(VERBOSE,1,MPI_LOGICAL,0,rankid,MPI_COMM_WORLD,status,ier)
+          call MPI_Recv(subdivisions,1,MPI_INTEGER,0,rankid,MPI_COMM_WORLD,status,ier)
+          call MPI_Recv(FIRSTTIME,1,MPI_CUSTOM,0,rankid,MPI_COMM_WORLD,status,ier)
+          call MPI_Recv(LASTTIME,1,MPI_CUSTOM,0,rankid,MPI_COMM_WORLD,status,ier)
+          call MPI_Recv(cphaseRef,1,MPI_CUSTOM,0,rankid,MPI_COMM_WORLD,status,ier)
+          call MPI_Recv(HETEROGENEOUS,1,MPI_LOGICAL,0,rankid,MPI_COMM_WORLD,status,ier)
+          call MPI_Recv(DELTA,1,MPI_LOGICAL,0,rank,MPI_COMM_WORLD,status,ier)
+          call MPI_Recv(DELTARADIUS,1,MPI_CUSTOM,0,rankid,MPI_COMM_WORLD,status,ier)
+          call MPI_Recv(deltaLat,1,MPI_CUSTOM,0,rankid,MPI_COMM_WORLD,status,ier)
+          call MPI_Recv(deltaLon,1,MPI_CUSTOM,0,rankid,MPI_COMM_WORLD,status,ier)
+          call MPI_Recv(DELTAfunction,8,MPI_CHARACTER,0,rankid,MPI_COMM_WORLD,status,ier)
+          call MPI_Recv(sourceLat,1,MPI_CUSTOM,0,rankid,MPI_COMM_WORLD,status,ier)
+          call MPI_Recv(sourceLon,1,MPI_CUSTOM,0,rankid,MPI_COMM_WORLD,status,ier)
+          call MPI_Recv(receiverLat,1,MPI_CUSTOM,0,rankid,MPI_COMM_WORLD,status,ier)
+          call MPI_Recv(receiverLon,1,MPI_CUSTOM,0,rankid,MPI_COMM_WORLD,status,ier)
+          call MPI_Recv(deltaMoveIncrement,1,MPI_CUSTOM,0,rankid,MPI_COMM_WORLD,status,ier)
+          call MPI_Recv(manyReceivers,1,MPI_LOGICAL,0,rankid,MPI_COMM_WORLD,status,ier)
+          call MPI_Recv(numofReceivers,1,MPI_INTEGER,0,rankid,MPI_COMM_WORLD,status,ier)
+          call MPI_Recv(manyKernels,1,MPI_LOGICAL,0,rankid,MPI_COMM_WORLD,status,ier)
+          call MPI_Recv(kernelStartDistance,1,MPI_CUSTOM,0,rankid,MPI_COMM_WORLD,status,ier)
+          call MPI_Recv(kernelEndDistance,1,MPI_CUSTOM,0,rankid,MPI_COMM_WORLD,status,ier)
+          call MPI_Recv(importKernelsReceivers,1,MPI_LOGICAL,0,rankid,MPI_COMM_WORLD,status,ier)
+          call MPI_Recv(SIMULATIONOUTPUT,1,MPI_LOGICAL,0,rankid,MPI_COMM_WORLD,status,ier)
+          call MPI_Recv(cphasetype,8,MPI_CHARACTER,0,rankid,MPI_COMM_WORLD,status,ier)
+          call MPI_Recv(MOVEDELTA,1,MPI_LOGICAL,0,rankid,MPI_COMM_WORLD,status,ier)
+          call MPI_Recv(SECONDDELTA,1,MPI_LOGICAL,0,rankid,MPI_COMM_WORLD,status,ier)
+          call MPI_Recv(latitudeStart,1,MPI_INTEGER,0,rankid,MPI_COMM_WORLD,status,ier)
+          call MPI_Recv(latitudeEnd,1,MPI_INTEGER,0,rankid,MPI_COMM_WORLD,status,ier)
+          call MPI_Recv(longitudeEnd,1,MPI_INTEGER,0,rankid,MPI_COMM_WORLD,status,ier)
+          call MPI_Recv(deltaPerturbation,1,MPI_CUSTOM,0,rankid,MPI_COMM_WORLD,status,ier)
+          call MPI_Recv(datadirectory,len(datadirectory),MPI_CHARACTER,0,rankid,MPI_COMM_WORLD,status,ier)
+          call MPI_Recv(PARALLELSEISMO,1,MPI_LOGICAL,0,rankid,MPI_COMM_WORLD,status,ier)
+          call MPI_Recv(phaseBlockFile,len(phaseBlockFile),MPI_CHARACTER,0,rankid,MPI_COMM_WORLD,status,ier)
+          call MPI_Recv(phaseBlockVelocityReference,1,MPI_CUSTOM,0,rankid,MPI_COMM_WORLD,status,ier)
+          call MPI_Recv(heterogeneousDataFile,len(heterogeneousDataFile),MPI_CHARACTER,0,rankid,MPI_COMM_WORLD,status,ier)
+          call MPI_Recv(heterogeneousPixelsize,1,MPI_REAL,0,rankid,MPI_COMM_WORLD,status,ier)
+          call MPI_Recv(gsh_maximum_expansion,1,MPI_INTEGER,0,rankid,MPI_COMM_WORLD,status,ier)
       endif
       end subroutine
 
@@ -118,7 +118,7 @@
       use propagationStartup, only: SIMULATIONOUTPUT
       implicit none
       ! local parameters
-      integer:: n,length,ierror
+      integer:: n,length,ier
 
       ! read vertices values from files
       if (MAIN_PROCESS) then
@@ -127,62 +127,62 @@
           ! vertices
           length = MaxVertices*3
           tag = n
-          call MPI_Send(vertices,length,MPI_CUSTOM,n,tag,MPI_COMM_WORLD,ierror)
-          if (ierror /= 0) then
-              print *,'Error: syncInitial - vertices',n,' ierror',ierror
+          call MPI_Send(vertices,length,MPI_CUSTOM,n,tag,MPI_COMM_WORLD,ier)
+          if (ier /= 0) then
+              print *,'Error: syncInitial - vertices',n,' error',ier
               call stopProgram( 'abort - syncInitialData    ')
           endif
           ! numVertices
           length = 1
-          call MPI_Send(numVertices,length,MPI_INTEGER,n,tag,MPI_COMM_WORLD,ierror)
+          call MPI_Send(numVertices,length,MPI_INTEGER,n,tag,MPI_COMM_WORLD,ier)
 
           ! cellNeighbors
           length = MaxVertices*7
-          call MPI_Send(cellNeighbors,length,MPI_INTEGER,n,tag,MPI_COMM_WORLD,ierror)
-          if (ierror /= 0) then
-              print *,'Error: syncInitial - cellNeighbors',n,' ierror',ierror
+          call MPI_Send(cellNeighbors,length,MPI_INTEGER,n,tag,MPI_COMM_WORLD,ier)
+          if (ier /= 0) then
+              print *,'Error: syncInitial - cellNeighbors',n,' error',ier
               call stopProgram( 'abort - syncInitialData    ')
           endif
           ! numNeighbors
           length = 1
-          call MPI_Send(numNeighbors,length,MPI_INTEGER,n,tag,MPI_COMM_WORLD,ierror)
+          call MPI_Send(numNeighbors,length,MPI_INTEGER,n,tag,MPI_COMM_WORLD,ier)
 
           ! cellCorners
           length = MaxTriangles*3
-          call MPI_Send(cellCorners,length,MPI_CUSTOM,n,tag,MPI_COMM_WORLD,ierror)
-          if (ierror /= 0) then
-              print *,'Error: syncInitial - cellCorners',n,' ierror',ierror
+          call MPI_Send(cellCorners,length,MPI_CUSTOM,n,tag,MPI_COMM_WORLD,ier)
+          if (ier /= 0) then
+              print *,'Error: syncInitial - cellCorners',n,' error',ier
               call stopProgram( 'abort - syncInitialData    ')
           endif
 
           ! numCorners
           length = 1
-          call MPI_Send(numCorners,length,MPI_INTEGER,n,tag,MPI_COMM_WORLD,ierror)
+          call MPI_Send(numCorners,length,MPI_INTEGER,n,tag,MPI_COMM_WORLD,ier)
 
           ! cellFace
           length = MaxVertices*7
-          call MPI_Send(cellFace,length,MPI_INTEGER,n,tag,MPI_COMM_WORLD,ierror)
-          if (ierror /= 0) then
-              print *,'Error: syncInitial - cellFaces',n,' ierror',ierror
+          call MPI_Send(cellFace,length,MPI_INTEGER,n,tag,MPI_COMM_WORLD,ier)
+          if (ier /= 0) then
+              print *,'Error: syncInitial - cellFaces',n,' error',ier
               call stopProgram( 'abort - syncInitialData    ')
           endif
 
           ! numFaces
           length = 1
-          call MPI_Send(numFaces,length,MPI_INTEGER,n,tag,MPI_COMM_WORLD,ierror)
+          call MPI_Send(numFaces,length,MPI_INTEGER,n,tag,MPI_COMM_WORLD,ier)
 
           if (Station_Correction .or. SIMULATIONOUTPUT) then
             ! cellTriangleFace
             length = MaxTriangles*3
-            call MPI_Send(cellTriangleFace,length,MPI_INTEGER,n,tag,MPI_COMM_WORLD,ierror)
-            if (ierror /= 0) then
-              print *,'Error: syncInitial - cellTriangleFaces',n,' ierror',ierror
+            call MPI_Send(cellTriangleFace,length,MPI_INTEGER,n,tag,MPI_COMM_WORLD,ier)
+            if (ier /= 0) then
+              print *,'Error: syncInitial - cellTriangleFaces',n,' error',ier
               call stopProgram( 'abort - syncInitialData    ')
             endif
 
             ! numFaces
             length = 1
-            call MPI_Send(numTriangleFaces,length,MPI_INTEGER,n,tag,MPI_COMM_WORLD,ierror)
+            call MPI_Send(numTriangleFaces,length,MPI_INTEGER,n,tag,MPI_COMM_WORLD,ier)
           endif
        enddo
       else
@@ -191,59 +191,59 @@
         !print *,'secondary ',rank,' trying to receive vert. from main process'
         length = MaxVertices*3
         tag = rank
-        call MPI_RECV(vertices,length,MPI_CUSTOM,0,tag,MPI_COMM_WORLD,status,ierror)
-        if (ierror /= 0) then
-              print *,'Error: syncInitial - vertices',rank,' ierror',ierror
+        call MPI_RECV(vertices,length,MPI_CUSTOM,0,tag,MPI_COMM_WORLD,status,ier)
+        if (ier /= 0) then
+              print *,'Error: syncInitial - vertices',rank,' error',ier
               call stopProgram( 'abort - syncInitialData    ')
         endif
         ! numVertices
         length = 1
-        call MPI_RECV(numVertices,length,MPI_INTEGER,0,tag,MPI_COMM_WORLD,status,ierror)
+        call MPI_RECV(numVertices,length,MPI_INTEGER,0,tag,MPI_COMM_WORLD,status,ier)
 
         ! cellNeighbors
         length = MaxVertices*7
-        call MPI_RECV(cellNeighbors,length,MPI_INTEGER,0,tag,MPI_COMM_WORLD,status,ierror)
-        if (ierror /= 0) then
-              print *,'Error: syncInitial - cellNeighbors',n,' ierror',ierror
+        call MPI_RECV(cellNeighbors,length,MPI_INTEGER,0,tag,MPI_COMM_WORLD,status,ier)
+        if (ier /= 0) then
+              print *,'Error: syncInitial - cellNeighbors',n,' error',ier
               call stopProgram( 'abort - syncInitialData    ')
         endif
         ! numNeighbors
         length = 1
-        call MPI_RECV(numNeighbors,length,MPI_INTEGER,0,tag,MPI_COMM_WORLD,status,ierror)
+        call MPI_RECV(numNeighbors,length,MPI_INTEGER,0,tag,MPI_COMM_WORLD,status,ier)
 
         ! cellCorners
         length = MaxTriangles*3
-        call MPI_RECV(cellCorners,length,MPI_CUSTOM,0,tag,MPI_COMM_WORLD,status,ierror)
-        if (ierror /= 0) then
-              print *,'Error: syncInitial - cellCorners',n,' ierror',ierror
+        call MPI_RECV(cellCorners,length,MPI_CUSTOM,0,tag,MPI_COMM_WORLD,status,ier)
+        if (ier /= 0) then
+              print *,'Error: syncInitial - cellCorners',n,' error',ier
               call stopProgram( 'abort - syncInitialData    ')
         endif
         ! numCorners
         length = 1
-        call MPI_RECV(numCorners,length,MPI_INTEGER,0,tag,MPI_COMM_WORLD,status,ierror)
+        call MPI_RECV(numCorners,length,MPI_INTEGER,0,tag,MPI_COMM_WORLD,status,ier)
 
         ! cellFace
         length = MaxVertices*7
-        call MPI_RECV(cellFace,length,MPI_INTEGER,0,tag,MPI_COMM_WORLD,status,ierror)
-        if (ierror /= 0) then
-              print *,'Error: syncInitial - cellFace',n,' ierror',ierror
+        call MPI_RECV(cellFace,length,MPI_INTEGER,0,tag,MPI_COMM_WORLD,status,ier)
+        if (ier /= 0) then
+              print *,'Error: syncInitial - cellFace',n,' error',ier
               call stopProgram( 'abort - syncInitialData    ')
         endif
         ! numFaces
         length = 1
-        call MPI_RECV(numFaces,length,MPI_INTEGER,0,tag,MPI_COMM_WORLD,status,ierror)
+        call MPI_RECV(numFaces,length,MPI_INTEGER,0,tag,MPI_COMM_WORLD,status,ier)
 
         if (Station_Correction .or. SIMULATIONOUTPUT) then
           ! cellTriangleFace
           length = MaxTriangles*3
-          call MPI_RECV(cellTriangleFace,length,MPI_INTEGER,0,tag,MPI_COMM_WORLD,status,ierror)
-          if (ierror /= 0) then
-            print *,'Error: syncInitial - cellTriangleFace',n,' ierror',ierror
+          call MPI_RECV(cellTriangleFace,length,MPI_INTEGER,0,tag,MPI_COMM_WORLD,status,ier)
+          if (ier /= 0) then
+            print *,'Error: syncInitial - cellTriangleFace',n,' error',ier
             call stopProgram( 'abort - syncInitialData    ')
           endif
           ! numFaces
           length = 1
-          call MPI_RECV(numTriangleFaces,length,MPI_INTEGER,0,tag,MPI_COMM_WORLD,status,ierror)
+          call MPI_RECV(numTriangleFaces,length,MPI_INTEGER,0,tag,MPI_COMM_WORLD,status,ier)
         endif
        endif
       end subroutine
@@ -259,7 +259,7 @@
 !      implicit none
 !      integer,intent(in):: myrank,numberofprocesses
 !      ! local parameters
-!      integer:: length,n,ierror
+!      integer:: length,n,ier
 !
 !      if (rank == 0) then
 !        ! send to secondary processes
@@ -267,22 +267,22 @@
 !          ! displacement
 !          length = numVertices
 !          tag = n
-!          call MPI_Send(displacement,length,MPI_CUSTOM,n,tag,MPI_COMM_WORLD,ierror)
+!          call MPI_Send(displacement,length,MPI_CUSTOM,n,tag,MPI_COMM_WORLD,ier)
 !          ! displacement_old
 !          length = numVertices
 !          tag = n
-!          call MPI_Send(displacement_old,length,MPI_CUSTOM,n,tag,MPI_COMM_WORLD,ierror)
+!          call MPI_Send(displacement_old,length,MPI_CUSTOM,n,tag,MPI_COMM_WORLD,ier)
 !        enddo
 !      else
 !        ! receive from main process
 !        ! displacement
 !        length = numVertices
 !        tag = rank
-!        call MPI_RECV(displacement(1:numVertices),length,MPI_CUSTOM,0,tag,MPI_COMM_WORLD,status,ierror)
+!        call MPI_RECV(displacement(1:numVertices),length,MPI_CUSTOM,0,tag,MPI_COMM_WORLD,status,ier)
 !        ! displacement_old
 !        length = numVertices
 !        tag = rank
-!        call MPI_RECV(displacement_old(1:numVertices),length,MPI_CUSTOM,0,tag,MPI_COMM_WORLD,status,ierror)
+!        call MPI_RECV(displacement_old(1:numVertices),length,MPI_CUSTOM,0,tag,MPI_COMM_WORLD,status,ier)
 !      endif
 !
 !      !debug
@@ -309,7 +309,7 @@
       use displacements;use griddomain;use parallel;use verbosity
       implicit none
       ! local parameters
-      integer:: dest,source,sendRange,recRange,n,k,neighbor,ierror
+      integer:: dest,source,sendRange,recRange,n,k,neighbor,ier
 
       ! check if many processes
       if (nprocesses == 1) return
@@ -342,9 +342,9 @@
           dest = neighbor
           source = neighbor
           call MPI_SendRecv(sendDisp,sendRange,MPI_CUSTOM,dest,rank,receiveDisp,recRange,MPI_CUSTOM,source, &
-                           source,MPI_COMM_WORLD, status, ierror)
-          if (ierror /= 0) then
-              print *,'syncNewdisplacement - p',rank,' ierror',ierror
+                           source,MPI_COMM_WORLD, status, ier)
+          if (ier /= 0) then
+              print *,'syncNewdisplacement - p',rank,' error',ier
           endif
           !these are the vertices we received
           do k = 1,recRange
@@ -360,8 +360,8 @@
       !debug
       !  print *,'      sync done, barrier to wait.',rank
       !  ! wait until all processes reached this point
-      !  call MPI_Barrier( MPI_COMM_WORLD, ierror )
-      !  if (ierror /= 0) call stopProgram('abort - MPI_Barrier kernels failed    ')
+      !  call MPI_Barrier( MPI_COMM_WORLD, ier )
+      !  if (ier /= 0) call stopProgram('abort - MPI_Barrier kernels failed    ')
 
       end subroutine
 
@@ -375,7 +375,7 @@
       implicit none
       integer,intent(in):: rank,nprocesses
       ! local parameters
-      integer:: ierror,n
+      integer:: ier,n
       integer:: status(MPI_STATUS_SIZE)
       integer:: startLocationVertex, endLocationVertex,recStartVertex,recEndVertex
       double precision, allocatable, dimension(:) :: tmpSend,tmpReceiv
@@ -398,8 +398,8 @@
       if (sendRange < 1) call stopProgram( 'abort-syncNewdisplacement short range    ')
 
       !allocate array for the data to send
-      allocate( tmpSend(sendRange), stat=ierror)
-      if (ierror > 0) then
+      allocate( tmpSend(sendRange), stat=ier)
+      if (ier /= 0) then
         print *,'Error: rank ',rank,' error in allocating send array'
         call stopProgram( 'abort - syncNewdisplacement_alt    ')
       endif
@@ -418,8 +418,8 @@
         if (range > rangeMax) rangeMax = range
       enddo
       ! prepare array to receive data
-      allocate( tmpReceiv(rangeMax), stat=ierror)
-      if (ierror > 0) then
+      allocate( tmpReceiv(rangeMax), stat=ier)
+      if (ier /= 0) then
         print *,'Error: rank ',rank,' error in allocating receiving array ',rangeMax
         call stopProgram( 'abort - syncNewdisplacement_alt    ')
       endif
@@ -441,9 +441,9 @@
           source = n
           call MPI_SendRecv( tmpSend,sendRange, MPI_DOUBLE_PRECISION, &
                              dest,rank,tmpReceiv,recRange,MPI_DOUBLE_PRECISION,source, &
-                             source,MPI_COMM_WORLD, status, ierror)
-          if (ierror /= 0) then
-              print *,'syncNewdisplacement - p',rank,' ierror',ierror
+                             source,MPI_COMM_WORLD, status, ier)
+          if (ier /= 0) then
+              print *,'syncNewdisplacement - p',rank,' error',ier
           endif
           !these are the vertices we received
           !startLocationVertex = source*range+1
@@ -464,7 +464,7 @@
 !      implicit none
 !      integer,intent(in):: rank,nprocesses
 !      ! local parameters
-!      integer:: ierror,n
+!      integer:: ier,n
 !      integer:: status(MPI_STATUS_SIZE)
 !      integer:: startLocationVertex, endLocationVertex
 !      !double precision:: tmp(numVertices/nprocesses)
@@ -487,7 +487,7 @@
 !!            tag = n
 !!            call MPI_Recv(tmp,length, &
 !!     &                          MPI_DOUBLE_PRECISION,n,tag, &
-!!     &                          MPI_COMM_WORLD,status,ierror)
+!!     &                          MPI_COMM_WORLD,status,ier)
 !            !print *,'main process ', range
 !
 !            tmpSend(1:range) = newdisplacement(1:range)
@@ -507,9 +507,9 @@
 !
 !            call MPI_SendRecv( tmpSend,sendcount, sendtype, dest, &
 !                               sendtag, tmpReceiv, recvcount, recvtype, source, recvtag, &
-!                               comm, status, ierror)
-!            if (ierror /= 0) then
-!              print *,'Error: syncNewdisplacement - main process ierror',ierror
+!                               comm, status, ier)
+!            if (ier /= 0) then
+!              print *,'Error: syncNewdisplacement - main process error',ier
 !              call stopProgram( 'abort - syncNewdisplacement_alt2   ')
 !            endif
 !
@@ -539,7 +539,7 @@
 !!            length=numVertices
 !!            tag = n
 !!            call MPI_Send(newdisplacement,length,MPI_DOUBLE_PRECISION, &
-!!     &                  n,tag,MPI_COMM_WORLD,ierror)
+!!     &                  n,tag,MPI_COMM_WORLD,ier)
 !!          enddo
 !      else
 !          ! send to main process
@@ -557,14 +557,14 @@
 !!          length=numVertices/nprocesses
 !!          tag = rank
 !!          call MPI_Send(tmp,length,MPI_DOUBLE_PRECISION, &
-!!     &                0,tag,MPI_COMM_WORLD,ierror)
+!!     &                0,tag,MPI_COMM_WORLD,ier)
 !
 !          ! receive from main process new updated array
 !          !print *,'secondary',rank,'receiving newdisp. from main process'
 !!          length=numVertices
 !!          tag = rank
 !!          call MPI_Recv(newdisplacement,length,MPI_DOUBLE_PRECISION, &
-!!     &                0,tag,MPI_COMM_WORLD,status,ierror)
+!!     &                0,tag,MPI_COMM_WORLD,status,ier)
 !
 !            startLocationVertex = rank*range + 1
 !            endLocationVertex = (rank+1)*range
@@ -587,9 +587,9 @@
 !
 !            call MPI_SendRecv( tmpSend,sendcount, sendtype, dest, &
 !                               sendtag, tmpReceiv, recvcount, recvtype, source, recvtag, &
-!                               comm, status, ierror)
-!            if (ierror /= 0) then
-!              print *,'Error: syncNewdisplacement - secondary', rank,'ierror',ierror
+!                               comm, status, ier)
+!            if (ier /= 0) then
+!              print *,'Error: syncNewdisplacement - secondary', rank,'error',ier
 !              call stopProgram( 'abort - syncNewdisplacement_alt2   ' )
 !            endif
 !
@@ -629,7 +629,7 @@
       use cells; use parallel; use propagationStartup; use verbosity
       implicit none
       ! local parameters
-      integer:: length,n,first,lastsent,i,ierror
+      integer:: length,n,first,lastsent,i,ier
       real(WP), allocatable, dimension(:):: tmpExchange
       integer,parameter::SLICE = 1000000 ! assuming MPI has a limited buffer size
 
@@ -648,8 +648,8 @@
       !    call stopProgram("array not allocated    ")
       !  endif
       !  ! barrier
-      !  call MPI_Barrier(MPI_COMM_WORLD,ierror)
-      !  if (ierror /= 0) call stopProgram('syncRoutines - MPI_Barrier kernels failed    ')
+      !  call MPI_Barrier(MPI_COMM_WORLD,ier)
+      !  if (ier /= 0) call stopProgram('syncRoutines - MPI_Barrier kernels failed    ')
 
       if (MAIN_PROCESS) then
         !read in values
@@ -670,10 +670,10 @@
               lastsent = lastsent+SLICE
               if (lastsent >= numVertices) lastsent=numVertices
               length = lastsent-first+1
-              call MPI_Send(cellAreas(first:lastsent),length,MPI_CUSTOM,n,tag,MPI_COMM_WORLD,ierror)
+              call MPI_Send(cellAreas(first:lastsent),length,MPI_CUSTOM,n,tag,MPI_COMM_WORLD,ier)
             enddo
           else
-            call MPI_Send(cellAreas,length,MPI_CUSTOM,n,tag,MPI_COMM_WORLD,ierror)
+            call MPI_Send(cellAreas,length,MPI_CUSTOM,n,tag,MPI_COMM_WORLD,ier)
           endif
 
           length = numVertices
@@ -685,29 +685,29 @@
               lastsent = lastsent+SLICE
               if (lastsent >= numVertices) lastsent=numVertices
               length=(lastsent-first+1)
-              allocate(tmpExchange(length),stat=ierror)
-              if (ierror /= 0) call stopProgram('could not allocate temporary exchange array!      ')
+              allocate(tmpExchange(length),stat=ier)
+              if (ier /= 0) call stopProgram('could not allocate temporary exchange array!      ')
 
               do i = 0,6
                 tmpExchange(:) = cellEdgesLength(first:lastsent,i)
-                call MPI_Send(tmpExchange,length,MPI_CUSTOM,n,tag,MPI_COMM_WORLD,ierror)
+                call MPI_Send(tmpExchange,length,MPI_CUSTOM,n,tag,MPI_COMM_WORLD,ier)
 
                 tmpExchange(:) = cellCenterDistances(first:lastsent,i)
-                call MPI_Send(tmpExchange,length,MPI_CUSTOM,n,tag,MPI_COMM_WORLD,ierror)
+                call MPI_Send(tmpExchange,length,MPI_CUSTOM,n,tag,MPI_COMM_WORLD,ier)
 
                 if (CORRECT_RATIO) then
                   tmpExchange(:) = cellFractions(first:lastsent,i)
-                  call MPI_Send(tmpExchange,length,MPI_CUSTOM,n,tag,MPI_COMM_WORLD,ierror)
+                  call MPI_Send(tmpExchange,length,MPI_CUSTOM,n,tag,MPI_COMM_WORLD,ier)
                 endif
               enddo
               deallocate(tmpExchange)
             enddo
           else
             length = numVertices*7
-            call MPI_Send(cellEdgesLength,length,MPI_CUSTOM,n,tag,MPI_COMM_WORLD,ierror)
-            call MPI_Send(cellCenterDistances,length,MPI_CUSTOM,n,tag,MPI_COMM_WORLD,ierror)
+            call MPI_Send(cellEdgesLength,length,MPI_CUSTOM,n,tag,MPI_COMM_WORLD,ier)
+            call MPI_Send(cellCenterDistances,length,MPI_CUSTOM,n,tag,MPI_COMM_WORLD,ier)
             if (CORRECT_RATIO) then
-              call MPI_Send(cellFractions,length,MPI_CUSTOM,n,tag,MPI_COMM_WORLD,ierror)
+              call MPI_Send(cellFractions,length,MPI_CUSTOM,n,tag,MPI_COMM_WORLD,ier)
             endif
           endif
        enddo
@@ -723,10 +723,10 @@
             lastsent = lastsent+SLICE
             if (lastsent >= numVertices) lastsent=numVertices
             length = lastsent-first+1
-            call MPI_RECV(cellAreas(first:lastsent),length,MPI_CUSTOM,0,tag,MPI_COMM_WORLD,status,ierror)
+            call MPI_RECV(cellAreas(first:lastsent),length,MPI_CUSTOM,0,tag,MPI_COMM_WORLD,status,ier)
           enddo
         else
-          call MPI_RECV(cellAreas,length,MPI_CUSTOM,0,tag,MPI_COMM_WORLD,status,ierror)
+          call MPI_RECV(cellAreas,length,MPI_CUSTOM,0,tag,MPI_COMM_WORLD,status,ier)
         endif
 
         length = numVertices
@@ -738,29 +738,29 @@
             lastsent = lastsent+SLICE
             if (lastsent >= numVertices) lastsent=numVertices
             length=(lastsent-first+1)
-            allocate(tmpExchange(length),stat=ierror)
-            if (ierror /= 0) call stopProgram('could not allocate temporary exchange array in secondary!      ')
+            allocate(tmpExchange(length),stat=ier)
+            if (ier /= 0) call stopProgram('could not allocate temporary exchange array in secondary!      ')
 
             do i = 0,6
-              call MPI_RECV(tmpExchange,length,MPI_CUSTOM,0,tag,MPI_COMM_WORLD,status,ierror)
-              cellEdgesLength(first:lastsent,i)=tmpExchange(:)
+              call MPI_RECV(tmpExchange,length,MPI_CUSTOM,0,tag,MPI_COMM_WORLD,status,ier)
+              cellEdgesLength(first:lastsent,i) = tmpExchange(:)
 
-              call MPI_RECV(tmpExchange,length,MPI_CUSTOM,0,tag,MPI_COMM_WORLD,status,ierror)
-              cellCenterDistances(first:lastsent,i)=tmpExchange(:)
+              call MPI_RECV(tmpExchange,length,MPI_CUSTOM,0,tag,MPI_COMM_WORLD,status,ier)
+              cellCenterDistances(first:lastsent,i) = tmpExchange(:)
 
               if (CORRECT_RATIO) then
-                call MPI_RECV(tmpExchange,length,MPI_CUSTOM,0,tag,MPI_COMM_WORLD,status,ierror)
-                cellFractions(first:lastsent,i)=tmpExchange(:)
+                call MPI_RECV(tmpExchange,length,MPI_CUSTOM,0,tag,MPI_COMM_WORLD,status,ier)
+                cellFractions(first:lastsent,i) = tmpExchange(:)
               endif
             enddo
             deallocate(tmpExchange)
           enddo
         else
           length = numVertices*7
-          call MPI_RECV(cellEdgesLength,length,MPI_CUSTOM,0,tag,MPI_COMM_WORLD,status,ierror)
-          call MPI_RECV(cellCenterDistances,length,MPI_CUSTOM,0,tag,MPI_COMM_WORLD,status,ierror)
+          call MPI_RECV(cellEdgesLength,length,MPI_CUSTOM,0,tag,MPI_COMM_WORLD,status,ier)
+          call MPI_RECV(cellCenterDistances,length,MPI_CUSTOM,0,tag,MPI_COMM_WORLD,status,ier)
           if (CORRECT_RATIO) then
-            call MPI_RECV(cellFractions,length,MPI_CUSTOM,0,tag,MPI_COMM_WORLD,status,ierror)
+            call MPI_RECV(cellFractions,length,MPI_CUSTOM,0,tag,MPI_COMM_WORLD,status,ier)
           endif
         endif
       endif
@@ -773,7 +773,7 @@
       use cells;use phaseVelocityMap;use propagationStartup;use verbosity;use parallel
       implicit none
       ! local parameters
-      integer:: length,n,ierror
+      integer:: length,n,ier
 
       if (rank == 0) then
         ! send to secondary processes
@@ -782,13 +782,13 @@
           length = numVertices
           tag = n
 
-          call MPI_Send(phaseMap,length,MPI_CUSTOM,n,tag,MPI_COMM_WORLD,ierror)
+          call MPI_Send(phaseMap,length,MPI_CUSTOM,n,tag,MPI_COMM_WORLD,ier)
        enddo
       else
         ! receive from main process
         length = numVertices
         tag = rank
-        call MPI_RECV(phaseMap,length,MPI_CUSTOM,0,tag,MPI_COMM_WORLD,status,ierror)
+        call MPI_RECV(phaseMap,length,MPI_CUSTOM,0,tag,MPI_COMM_WORLD,status,ier)
       endif
       end subroutine
 
@@ -800,7 +800,7 @@
       use cells; use parallel; use propagationStartup; use verbosity
       implicit none
       ! local parameters
-      integer:: length,n,m,ierror
+      integer:: length,n,m,ier
 
       if (MAIN_PROCESS) then
         ! send to secondary processes
@@ -810,12 +810,12 @@
             do m = 1,numofKernels
               length = size(kernelsReceiversSeismogramRef(m,:,:))
               tag = n
-              call MPI_Send(kernelsReceiversSeismogramRef(m,:,:),length,MPI_CUSTOM,n,tag,MPI_COMM_WORLD,ierror)
+              call MPI_Send(kernelsReceiversSeismogramRef(m,:,:),length,MPI_CUSTOM,n,tag,MPI_COMM_WORLD,ier)
             enddo
           else
             length=size(receiversSeismogramRef)
             tag = n
-            call MPI_Send(receiversSeismogramRef,length,MPI_CUSTOM,n,tag,MPI_COMM_WORLD,ierror)
+            call MPI_Send(receiversSeismogramRef,length,MPI_CUSTOM,n,tag,MPI_COMM_WORLD,ier)
           endif
        enddo
       else
@@ -824,13 +824,13 @@
             ! receive from main process
             length = size(kernelsReceiversSeismogramRef(m,:,:))
             tag = rank
-            call MPI_Recv(kernelsReceiversSeismogramRef(m,:,:),length,MPI_CUSTOM,0,tag,MPI_COMM_WORLD,status,ierror)
+            call MPI_Recv(kernelsReceiversSeismogramRef(m,:,:),length,MPI_CUSTOM,0,tag,MPI_COMM_WORLD,status,ier)
           enddo
         else
           ! receive from main process
           length=size(receiversSeismogramRef)
           tag = rank
-          call MPI_Recv(receiversSeismogramRef,length,MPI_CUSTOM,0,tag,MPI_COMM_WORLD,status,ierror)
+          call MPI_Recv(receiversSeismogramRef,length,MPI_CUSTOM,0,tag,MPI_COMM_WORLD,status,ier)
         endif
       endif
       end subroutine
@@ -843,7 +843,7 @@
       implicit none
       logical,intent(in):: doReference
       ! local parameters
-      integer:: i,countVertices,recRange,sendRange,n,m,ierror
+      integer:: i,countVertices,recRange,sendRange,n,m,ier
       real(WP),allocatable,dimension(:,:)::tmpExchange
 !      real(WP),allocatable,dimension(:,:,:)::tmpManyExchange
 
@@ -873,12 +873,12 @@
 
           ! allocate array to receive
           if (manyKernels) then
-            !allocate(tmpManyExchange(numofKernels,recRange,numofTimeSteps),stat=ierror)
-            !allocate(tmpExchange(recRange,numofTimeSteps),stat=ierror)
+            !allocate(tmpManyExchange(numofKernels,recRange,numofTimeSteps),stat=ier)
+            !allocate(tmpExchange(recRange,numofTimeSteps),stat=ier)
             continue
           else
-            allocate(tmpExchange(recRange,numofTimeSteps),stat=ierror)
-            if (ierror /= 0) then
+            allocate(tmpExchange(recRange,numofTimeSteps),stat=ier)
+            if (ier /= 0) then
               print *,'Error: main process collects receivers seismogram:',numofKernels,recRange,numofTimeSteps
               call stopProgram('collectReceiversSeismogram() - error allocating receive array   ')
             endif
@@ -887,7 +887,7 @@
           ! get info from secondary
           tag = n
           if (manyKernels) then
-            !call MPI_Recv(tmpManyExchange,size(tmpManyExchange),MPI_CUSTOM,n,tag,MPI_COMM_WORLD,status,ierror)
+            !call MPI_Recv(tmpManyExchange,size(tmpManyExchange),MPI_CUSTOM,n,tag,MPI_COMM_WORLD,status,ier)
             do m = 1,numofKernels
               countVertices = 0
               do i = 1,numofReceivers
@@ -897,15 +897,15 @@
               enddo
               recRange = countVertices
 
-              allocate(tmpExchange(recRange,numofTimeSteps),stat=ierror)
-              if (ierror /= 0) then
+              allocate(tmpExchange(recRange,numofTimeSteps),stat=ier)
+              if (ier /= 0) then
                 print *,'Error: main process collects receivers seismogram:',m,numofKernels,recRange,numofTimeSteps
                 call stopProgram('collectReceiversSeismogram() - error allocating receive array   ')
               endif
 
-              call MPI_Recv(tmpExchange,size(tmpExchange),MPI_CUSTOM,n,tag,MPI_COMM_WORLD,status,ierror)
-              if (ierror /= 0) then
-                print *,'Error: collectReceiversSeismogram - ',rank,n,ierror
+              call MPI_Recv(tmpExchange,size(tmpExchange),MPI_CUSTOM,n,tag,MPI_COMM_WORLD,status,ier)
+              if (ier /= 0) then
+                print *,'Error: collectReceiversSeismogram - ',rank,n,ier
                 call stopProgram('collectReceiversSeismogram() - error mpi-recv   ')
               endif
 
@@ -926,9 +926,9 @@
               deallocate( tmpExchange )
             enddo
           else
-            call MPI_Recv(tmpExchange,size(tmpExchange),MPI_CUSTOM,n,tag,MPI_COMM_WORLD,status,ierror)
-            if (ierror /= 0) then
-              print *,'Error: collectReceiversSeismogram - ',rank,n,ierror
+            call MPI_Recv(tmpExchange,size(tmpExchange),MPI_CUSTOM,n,tag,MPI_COMM_WORLD,status,ier)
+            if (ier /= 0) then
+              print *,'Error: collectReceiversSeismogram - ',rank,n,ier
               call stopProgram('collectReceiversSeismogram() - error mpi-recv   ')
             endif
           endif
@@ -981,12 +981,12 @@
 
         ! allocate array
         if (manyKernels) then
-          !allocate(tmpManyExchange(numofKernels,sendRange,numofTimeSteps),stat=ierror)
-          !allocate(tmpExchange(sendRange,numofTimeSteps),stat=ierror)
+          !allocate(tmpManyExchange(numofKernels,sendRange,numofTimeSteps),stat=ier)
+          !allocate(tmpExchange(sendRange,numofTimeSteps),stat=ier)
           continue
         else
-          allocate(tmpExchange(sendRange,numofTimeSteps),stat=ierror)
-          if (ierror /= 0) then
+          allocate(tmpExchange(sendRange,numofTimeSteps),stat=ier)
+          if (ier /= 0) then
             print *,'Error: secondary sends receivers seismograms:',rank,numofKernels,sendRange,numofTimeSteps
             call stopProgram('collectReceiversSeismogram() - error allocating send array    ')
           endif
@@ -1021,7 +1021,7 @@
         ! send to main process
         tag = rank
         if (manyKernels) then
-          !call MPI_Send(tmpManyExchange,size(tmpManyExchange),MPI_CUSTOM,0,tag,MPI_COMM_WORLD,ierror)
+          !call MPI_Send(tmpManyExchange,size(tmpManyExchange),MPI_CUSTOM,0,tag,MPI_COMM_WORLD,ier)
           do m = 1,numofKernels
             countVertices = 0
             do i = 1,numofReceivers
@@ -1031,8 +1031,8 @@
             enddo
             sendRange = countVertices
 
-            allocate(tmpExchange(sendRange,numofTimeSteps),stat=ierror)
-            if (ierror /= 0) then
+            allocate(tmpExchange(sendRange,numofTimeSteps),stat=ier)
+            if (ier /= 0) then
               print *,'Error: secondary sends receivers seismograms:',rank,m,numofKernels,sendRange,numofTimeSteps
               call stopProgram('collectReceiversSeismogram() - error allocating send array    ')
             endif
@@ -1050,17 +1050,17 @@
               endif
             enddo
             ! send
-            call MPI_Send(tmpExchange,size(tmpExchange),MPI_CUSTOM,0,tag,MPI_COMM_WORLD,ierror)
-            if (ierror /= 0) then
-              print *,'collectReceiversSeismogram - ',rank,n,ierror
+            call MPI_Send(tmpExchange,size(tmpExchange),MPI_CUSTOM,0,tag,MPI_COMM_WORLD,ier)
+            if (ier /= 0) then
+              print *,'collectReceiversSeismogram - ',rank,n,ier
             endif
 
             deallocate( tmpExchange )
           enddo
         else
-          call MPI_Send(tmpExchange,size(tmpExchange),MPI_CUSTOM,0,tag,MPI_COMM_WORLD,ierror)
-          if (ierror /= 0) then
-            print *,'collectReceiversSeismogram - ',rank,n,ierror
+          call MPI_Send(tmpExchange,size(tmpExchange),MPI_CUSTOM,0,tag,MPI_COMM_WORLD,ier)
+          if (ier /= 0) then
+            print *,'collectReceiversSeismogram - ',rank,n,ier
           endif
         endif ! manykernels
       endif ! MAIN_PROCESS
@@ -1074,7 +1074,7 @@
       use displacements;use griddomain;use parallel;use propagationStartup; use adjointVariables
       implicit none
       ! local parameters
-      integer:: dest,source,sendRange,recRange,n,k,neighbor,ierror
+      integer:: dest,source,sendRange,recRange,n,k,neighbor,ier
 
       ! check if many processes
       if (nprocesses == 1) return
@@ -1108,9 +1108,9 @@
           source = neighbor
           call MPI_SendRecv( sendDisp,sendRange, MPI_CUSTOM, &
                              dest,rank,receiveDisp,recRange,MPI_CUSTOM,source, &
-                             source,MPI_COMM_WORLD, status, ierror)
-          if (ierror /= 0) then
-              print *,'syncbackwardNewdisplacement - p',rank,' ierror',ierror
+                             source,MPI_COMM_WORLD, status, ier)
+          if (ier /= 0) then
+              print *,'syncbackwardNewdisplacement - p',rank,' error',ier
           endif
           !these are the vertices we received
           do k = 1,recRange
@@ -1132,7 +1132,7 @@
       use parallel;use propagationStartup; use verbosity
       implicit none
       ! local parameters
-      integer:: domain,i,length,ierror
+      integer:: domain,i,length,ier
       integer,external::getDomain
 
       ! check if different grid domains exist
@@ -1146,14 +1146,14 @@
             ! send seismogram
             length = size(seismogramReceiver(:,:))
             tag = rank
-            call MPI_Send(seismogramReceiver,length,MPI_CUSTOM,i,tag,MPI_COMM_WORLD,ierror)
+            call MPI_Send(seismogramReceiver,length,MPI_CUSTOM,i,tag,MPI_COMM_WORLD,ier)
           endif
         enddo
       else
         ! receive from domain process
         length = size(seismogramReceiver(:,:))
         tag = domain
-        call MPI_Recv(seismogramReceiver,length,MPI_CUSTOM,domain,tag,MPI_COMM_WORLD,status,ierror)
+        call MPI_Recv(seismogramReceiver,length,MPI_CUSTOM,domain,tag,MPI_COMM_WORLD,status,ier)
       endif
 
       end subroutine
@@ -1168,7 +1168,7 @@
       use adjointVariables; use cells
       implicit none
       ! local parameters
-      integer:: sendRange,recRange,n,i,countVertices,ierror
+      integer:: sendRange,recRange,n,i,countVertices,ier
       real(WP),allocatable,dimension(:)::tmpExchange
 
       ! check if many processes
@@ -1187,17 +1187,17 @@
           recRange = countVertices
 
           ! allocate array to receive
-          allocate(tmpExchange(recRange),stat=ierror)
-          if (ierror /= 0) then
-            print *,'Error: main process allocate error:',ierror,recRange,n
+          allocate(tmpExchange(recRange),stat=ier)
+          if (ier /= 0) then
+            print *,'Error: main process allocate error:',ier,recRange,n
             call stopProgram('collectAdjointKernel() - error allocating receive array   ')
           endif
 
           ! get info from secondary
           tag = n
-          call MPI_Recv(tmpExchange,recRange,MPI_CUSTOM,n,tag,MPI_COMM_WORLD,status,ierror)
-          if (ierror /= 0) then
-              print *,'Error: collectAdjointKernel - ',rank,n,ierror
+          call MPI_Recv(tmpExchange,recRange,MPI_CUSTOM,n,tag,MPI_COMM_WORLD,status,ier)
+          if (ier /= 0) then
+              print *,'Error: collectAdjointKernel - ',rank,n,ier
               call stopProgram('collectAdjointKernel() - error mpi-recv   ')
           endif
 
@@ -1220,8 +1220,8 @@
         sendRange = size(domainVertices(:))
 
         ! allocate array
-        allocate(tmpExchange(sendRange),stat=ierror)
-        if (ierror /= 0) call stopProgram('collectAdjointKernel() - error allocating send array    ')
+        allocate(tmpExchange(sendRange),stat=ier)
+        if (ier /= 0) call stopProgram('collectAdjointKernel() - error allocating send array    ')
 
         ! fill in corresponding values
         do i = 1,sendRange
@@ -1230,9 +1230,9 @@
 
         ! send to main process
         tag = rank
-        call MPI_Send(tmpExchange,sendRange,MPI_CUSTOM,0,tag,MPI_COMM_WORLD,ierror)
-        if (ierror /= 0) then
-            print *,'error collectAdjointKernel - ',rank,n,ierror
+        call MPI_Send(tmpExchange,sendRange,MPI_CUSTOM,0,tag,MPI_COMM_WORLD,ier)
+        if (ier /= 0) then
+            print *,'error collectAdjointKernel - ',rank,n,ier
         endif
       endif
       end subroutine
@@ -1246,7 +1246,7 @@
       use propagationStartup; use cells
       implicit none
       ! local parameters
-      integer:: sendRange,recRange,n,i,countVertices,ierror
+      integer:: sendRange,recRange,n,i,countVertices,ier
 
       ! check if many processes
       if (nprocesses == 1) return
@@ -1269,9 +1269,9 @@
           ! get info from secondary
           receiveDisp(:)=0.0_WP
           tag = n
-          call MPI_Recv(receiveDisp,recRange,MPI_CUSTOM,n,tag,MPI_COMM_WORLD,status,ierror)
-          if (ierror /= 0) then
-              print *,'collectFullNewdisplacement - ',rank,n,ierror
+          call MPI_Recv(receiveDisp,recRange,MPI_CUSTOM,n,tag,MPI_COMM_WORLD,status,ier)
+          if (ier /= 0) then
+              print *,'collectFullNewdisplacement - ',rank,n,ier
           endif
           !these are the vertices we received
           countVertices = 0
@@ -1292,9 +1292,9 @@
 
         ! send to main process
         tag = rank
-        call MPI_Send(sendDisp,sendRange,MPI_CUSTOM,0,tag,MPI_COMM_WORLD,ierror)
-        if (ierror /= 0) then
-            print *,'collectFullNewdisplacement - ',rank,n,ierror
+        call MPI_Send(sendDisp,sendRange,MPI_CUSTOM,0,tag,MPI_COMM_WORLD,ier)
+        if (ier /= 0) then
+            print *,'collectFullNewdisplacement - ',rank,n,ier
         endif
       endif
       end subroutine
@@ -1306,7 +1306,7 @@
       use cells; use parallel; use propagationStartup; use verbosity
       implicit none
       ! local parameters
-      integer:: n,length,ierror
+      integer:: n,length,ier
 
       ! read vertices values from files
       if (MAIN_PROCESS) then
@@ -1315,25 +1315,25 @@
           ! distances
           length = 3
           tag = n
-          call MPI_Send(interpolation_distances,length,MPI_CUSTOM,n,tag,MPI_COMM_WORLD,ierror)
-          if (ierror /= 0) then
-              print *,'Error: syncInterpolation - distances',n,' ierror',ierror
+          call MPI_Send(interpolation_distances,length,MPI_CUSTOM,n,tag,MPI_COMM_WORLD,ier)
+          if (ier /= 0) then
+              print *,'Error: syncInterpolation - distances',n,' error',ier
               call stopProgram( 'abort - syncInterpolation    ')
           endif
           ! side lengths
           length = 3
           tag = n
-          call MPI_Send(interpolation_triangleLengths,length,MPI_CUSTOM,n,tag,MPI_COMM_WORLD,ierror)
-          if (ierror /= 0) then
-              print *,'Error: syncInterpolation - lengths',n,' ierror',ierror
+          call MPI_Send(interpolation_triangleLengths,length,MPI_CUSTOM,n,tag,MPI_COMM_WORLD,ier)
+          if (ier /= 0) then
+              print *,'Error: syncInterpolation - lengths',n,' error',ier
               call stopProgram( 'abort - syncInterpolation    ')
           endif
           ! corner indices
           length = 3
           tag = n
-          call MPI_Send(interpolation_corners,length,MPI_INTEGER,n,tag,MPI_COMM_WORLD,ierror)
-          if (ierror /= 0) then
-              print *,'Error: syncInterpolation - corners',n,' ierror',ierror
+          call MPI_Send(interpolation_corners,length,MPI_INTEGER,n,tag,MPI_COMM_WORLD,ier)
+          if (ier /= 0) then
+              print *,'Error: syncInterpolation - corners',n,' error',ier
               call stopProgram( 'abort - syncInterpolation    ')
           endif
        enddo
@@ -1342,25 +1342,25 @@
         ! distances
         length = 3
         tag = rank
-        call MPI_RECV(interpolation_distances,length,MPI_CUSTOM,0,tag,MPI_COMM_WORLD,status,ierror)
-        if (ierror /= 0) then
-              print *,'Error: syncInterpolation - distances',rank,' ierror',ierror
+        call MPI_RECV(interpolation_distances,length,MPI_CUSTOM,0,tag,MPI_COMM_WORLD,status,ier)
+        if (ier /= 0) then
+              print *,'Error: syncInterpolation - distances',rank,' error',ier
               call stopProgram( 'abort - syncInterpolation    ')
         endif
         ! side lengths
         length = 3
         tag = rank
-        call MPI_RECV(interpolation_triangleLengths,length,MPI_CUSTOM,0,tag,MPI_COMM_WORLD,status,ierror)
-        if (ierror /= 0) then
-              print *,'Error: syncInterpolation - lengths',rank,' ierror',ierror
+        call MPI_RECV(interpolation_triangleLengths,length,MPI_CUSTOM,0,tag,MPI_COMM_WORLD,status,ier)
+        if (ier /= 0) then
+              print *,'Error: syncInterpolation - lengths',rank,' error',ier
               call stopProgram( 'abort - syncInterpolation    ')
         endif
         ! corner indices
         length = 3
         tag = rank
-        call MPI_RECV(interpolation_corners,length,MPI_INTEGER,0,tag,MPI_COMM_WORLD,status,ierror)
-        if (ierror /= 0) then
-              print *,'Error: syncInterpolation - corners',rank,' ierror',ierror
+        call MPI_RECV(interpolation_corners,length,MPI_INTEGER,0,tag,MPI_COMM_WORLD,status,ier)
+        if (ier /= 0) then
+              print *,'Error: syncInterpolation - corners',rank,' error',ier
               call stopProgram( 'abort - syncInterpolation    ')
         endif
       endif
@@ -1377,7 +1377,7 @@
       real,intent(inout):: eq_incr
       integer,intent(inout):: ifa
       ! local parameters
-      integer:: ierror,i,length
+      integer:: ier,i,length
       integer:: status(MPI_STATUS_SIZE)
 
       ! string length
@@ -1390,26 +1390,26 @@
       if (rank == 0) then
         ! main process sends
         do i = 1, nprocesses-1
-          call MPI_Send(txtfile,length,MPI_CHARACTER,i,i,MPI_COMM_WORLD,ierror)
-          call MPI_Send(filen,length,MPI_CHARACTER,i,i,MPI_COMM_WORLD,ierror)
-          call MPI_Send(eq_incr,1,MPI_REAL,i,i,MPI_COMM_WORLD,ierror)
-          call MPI_Send(ifa,1,MPI_INTEGER,i,i,MPI_COMM_WORLD,ierror)
+          call MPI_Send(txtfile,length,MPI_CHARACTER,i,i,MPI_COMM_WORLD,ier)
+          call MPI_Send(filen,length,MPI_CHARACTER,i,i,MPI_COMM_WORLD,ier)
+          call MPI_Send(eq_incr,1,MPI_REAL,i,i,MPI_COMM_WORLD,ier)
+          call MPI_Send(ifa,1,MPI_INTEGER,i,i,MPI_COMM_WORLD,ier)
         enddo
       else
         ! secondary process receives information
-        call MPI_Recv(txtfile,length,MPI_CHARACTER,0,rank,MPI_COMM_WORLD,status,ierror)
-        call MPI_Recv(filen,length,MPI_CHARACTER,0,rank,MPI_COMM_WORLD,status,ierror)
-        call MPI_Recv(eq_incr,1,MPI_REAL,0,rank,MPI_COMM_WORLD,status,ierror)
-        call MPI_Recv(ifa,1,MPI_INTEGER,0,rank,MPI_COMM_WORLD,status,ierror)
+        call MPI_Recv(txtfile,length,MPI_CHARACTER,0,rank,MPI_COMM_WORLD,status,ier)
+        call MPI_Recv(filen,length,MPI_CHARACTER,0,rank,MPI_COMM_WORLD,status,ier)
+        call MPI_Recv(eq_incr,1,MPI_REAL,0,rank,MPI_COMM_WORLD,status,ier)
+        call MPI_Recv(ifa,1,MPI_INTEGER,0,rank,MPI_COMM_WORLD,status,ier)
       endif
 
       ! check
-      if (ierror /= 0) then
-        print *,'error in syncInput()',rank,ierror
+      if (ier /= 0) then
+        print *,'error in syncInput()',rank,ier
         ! note: MPI_ABORT does not return, it makes the program exit with an error code of 30
-        call MPI_Abort(MPI_COMM_WORLD, 30, ierror )
-        call MPI_FINALIZE(ierror)
-        stop 'abort - syncInput'
+        call MPI_Abort(MPI_COMM_WORLD, 30, ier )
+        call MPI_FINALIZE(ier)
+        stop 'Abort - syncInput'
       endif
       end subroutine
 
@@ -1424,7 +1424,7 @@
       integer,intent(inout):: nfree
       integer,intent(inout):: hitcount(nfree)
       ! local parameters
-      integer:: ierror,i,k,status(MPI_STATUS_SIZE)
+      integer:: ier,i,k,status(MPI_STATUS_SIZE)
       integer:: hitcount_proc(nfree)
 
       ! nothing to do for single processor job
@@ -1438,9 +1438,9 @@
         do i = 1,nprocesses-1
           ! get data
           !print *,'getting from',i
-          call MPI_Recv(hitcount_proc,nfree,MPI_INTEGER,i,i,MPI_COMM_WORLD,status,ierror)
-          if (ierror /= 0) then
-            print *,'Error: hitcount_proc',rank,ierror
+          call MPI_Recv(hitcount_proc,nfree,MPI_INTEGER,i,i,MPI_COMM_WORLD,status,ier)
+          if (ier /= 0) then
+            print *,'Error: hitcount_proc',rank,ier
             call stopProgram("syncHits    ")
           endif
 
@@ -1451,9 +1451,9 @@
         enddo
       else
         ! secondary process sends information
-          call MPI_Send(hitcount,nfree,MPI_INTEGER,0,rank,MPI_COMM_WORLD,ierror)
-          if (ierror /= 0) then
-            print *,'Error: hitcount process',rank,ierror
+          call MPI_Send(hitcount,nfree,MPI_INTEGER,0,rank,MPI_COMM_WORLD,ier)
+          if (ier /= 0) then
+            print *,'Error: hitcount process',rank,ier
             call stopProgram("syncHits    ")
           endif
       endif
@@ -1469,7 +1469,7 @@
       integer,intent(in):: rank,nprocesses
       logical,intent(inout):: flag
       ! local parameters
-      integer:: ierror
+      integer:: ier
       logical:: sum_flag
 
       ! nothing to do for single processor job
@@ -1477,8 +1477,8 @@
 
       ! sees if a process has the flag set to true ( logical or )
       sum_flag = .false.
-      call MPI_AllReduce(flag,sum_flag,1,MPI_LOGICAL,MPI_LOR,MPI_COMM_WORLD,ierror)
-      if (ierror /= 0) then
+      call MPI_AllReduce(flag,sum_flag,1,MPI_LOGICAL,MPI_LOR,MPI_COMM_WORLD,ier)
+      if (ier /= 0) then
         print *,'Error: rank ',rank,' failed in allReduce'
         call stopProgram("syncFlag error  " )
       endif
@@ -1497,10 +1497,10 @@
       use mpi
       implicit none
       ! local parameters
-      integer:: ierror
+      integer:: ier
 
       ! wait until all processes reached this point
-      call MPI_Barrier( MPI_COMM_WORLD, ierror )
+      call MPI_Barrier( MPI_COMM_WORLD, ier )
 
       end subroutine
 

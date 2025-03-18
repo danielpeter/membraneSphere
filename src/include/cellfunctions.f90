@@ -505,11 +505,11 @@
       !check index
       if (cellFace(vertex,0) > 6.or.cellFace(vertex,0) < 5) then
         print *,'vertex',vertex
-        stop 'abort-cellDerivativeFraction cellFace'
+        stop 'Abort - cellDerivativeFraction cellFace'
       endif
       if (cellNeighbors(vertex,0) > 6.or.cellNeighbors(vertex,0) < 5) then
         print *,'vertex',vertex
-        stop 'abort-cellDerivativeFraction cellNeighbors'
+        stop 'Abort - cellDerivativeFraction cellNeighbors'
       endif
 
       !set how many neighbors

@@ -19,7 +19,7 @@
       use cells; use verbosity
       implicit none
       ! local parameters
-      integer:: i,ioerror
+      integer:: i,ier
       character(len=1):: divString
       character(len=14):: ending
 
@@ -35,12 +35,12 @@
 ! 100  format(f16.14,2x,f16.14,2x,f16.8)
 
       ! read cellArea
-      open(IIN,file='data/griddata/cellAreas.'//divString//trim(ending),status='old',iostat=ioerror)
-      if (ioerror /= 0) call stopProgram( 'abort - readPrecalculated cellAreas    ')
+      open(IIN,file='data/griddata/cellAreas.'//divString//trim(ending),status='old',iostat=ier)
+      if (ier /= 0) call stopProgram( 'abort - readPrecalculated cellAreas    ')
 
       do i = 1, numVertices
-        read(IIN, *, iostat=ioerror) cellAreas(i)
-        if (ioerror /= 0) then
+        read(IIN, *, iostat=ier) cellAreas(i)
+        if (ier /= 0) then
           print *,'error at: ',i
           exit
         endif
@@ -48,12 +48,12 @@
       close(IIN)
 
       ! read cellEdgesLength
-      open(IIN,file='data/griddata/cellEdgesLength.'//divString//trim(ending),status='old',iostat=ioerror)
-      if (ioerror /= 0) call stopProgram( 'abort - readPrecalculated cellEdgesLength   ')
+      open(IIN,file='data/griddata/cellEdgesLength.'//divString//trim(ending),status='old',iostat=ier)
+      if (ier /= 0) call stopProgram( 'abort - readPrecalculated cellEdgesLength   ')
 
       do i = 1, numVertices
-        read(IIN, *, iostat=ioerror) cellEdgesLength(i,0:6)
-        if (ioerror /= 0) then
+        read(IIN, *, iostat=ier) cellEdgesLength(i,0:6)
+        if (ier /= 0) then
           print *,'error at: ',i
           exit
         endif
@@ -61,12 +61,12 @@
       close(IIN)
 
       ! read cellCenterDistances
-      open(IIN,file='data/griddata/cellCenterDistances.'//divString//trim(ending),status='old',iostat=ioerror)
-      if (ioerror /= 0) call stopProgram( 'abort - readPrecalculated cellEdgesLength   ')
+      open(IIN,file='data/griddata/cellCenterDistances.'//divString//trim(ending),status='old',iostat=ier)
+      if (ier /= 0) call stopProgram( 'abort - readPrecalculated cellEdgesLength   ')
 
       do i = 1, numVertices
-        read(IIN, *, iostat=ioerror) cellCenterDistances(i,0:6)
-        if (ioerror /= 0) then
+        read(IIN, *, iostat=ier) cellCenterDistances(i,0:6)
+        if (ier /= 0) then
           print *,'error at: ',i
           exit
         endif
@@ -75,12 +75,12 @@
 
       ! get heikes&randall ratios for each hexagonal cell edge
       if (CORRECT_RATIO) then
-        open(IIN,file='data/griddata/cellFractions.'//divString//trim(ending),status='old',iostat=ioerror)
-        if (ioerror /= 0) call stopProgram( 'abort - readPrecalculated cellFractions   ')
+        open(IIN,file='data/griddata/cellFractions.'//divString//trim(ending),status='old',iostat=ier)
+        if (ier /= 0) call stopProgram( 'abort - readPrecalculated cellFractions   ')
 
         do i = 1, numVertices
-          read(IIN, *, iostat=ioerror) cellFractions(i,0:6)
-          if (ioerror /= 0) then
+          read(IIN, *, iostat=ier) cellFractions(i,0:6)
+          if (ier /= 0) then
             print *,'error at: ',i
             exit
           endif

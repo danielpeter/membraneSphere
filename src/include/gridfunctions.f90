@@ -18,7 +18,7 @@
       use parallel;use griddomain;use propagationStartup; use cells; use verbosity
       implicit none
       ! local parameters
-      integer:: range,index,n,domain,numDomainVert(0:nprocesses-1),ierror
+      integer:: range,index,n,domain,numDomainVert(0:nprocesses-1),ier
       integer,external:: getDomain
 
       ! domains only make sense for more then 1 processors
@@ -45,13 +45,13 @@
         print *,'    vertexDomain size   :  ',numVertices * 4/1024./1024.,'Mb' ! assume integer == 4 bytes
         print *,'    domainVertices size :  ',range * 4/1024./1024.,'Mb'
       endif
-      allocate(vertexDomain(numVertices),stat=ierror)
-      if (ierror > 0) call stopProgram('abort - constructParallelDomains:error vertexDomain array   ')
+      allocate(vertexDomain(numVertices),stat=ier)
+      if (ier /= 0) call stopProgram('abort - constructParallelDomains:error vertexDomain array   ')
       vertexDomain(:) = -1
 
       !allocates array which holds all vertices in the boundary to another parallel domain
-      allocate(domainVertices(range),stat=ierror)
-      if (ierror > 0) call stopProgram('abort - constructParallelDomains: error domainVertices array   ')
+      allocate(domainVertices(range),stat=ier)
+      if (ier /= 0) call stopProgram('abort - constructParallelDomains: error domainVertices array   ')
       domainVertices(:) = -1
 
       ! divide vertices into domains
@@ -404,7 +404,7 @@
       use parallel;use griddomain; use propagationStartup; use verbosity; use cells
       implicit none
       ! local parameters
-      integer:: numDomainVert(0:nprocesses,0:nprocesses),index,maxRange,n,k,domain,ierror
+      integer:: numDomainVert(0:nprocesses,0:nprocesses),index,maxRange,n,k,domain,ier
       logical:: isBoundary
       integer:: getDomain,neighbors(nprocesses-1)
       external:: isBoundary,getDomain
@@ -451,8 +451,8 @@
         print *,'    size :  ',nprocesses*nprocesses*maxRange * 4/1024./1024.,'Mb'  ! assume integer == 4 bytes
       endif
       allocate(boundaries(0:nprocesses-1,0:nprocesses-1,maxRange), &
-                sendDisp(maxRange),receiveDisp(maxRange),stat=ierror)
-      if (ierror > 0) call stopProgram( 'abort - findBoundaries     ')
+                sendDisp(maxRange),receiveDisp(maxRange),stat=ier)
+      if (ier /= 0) call stopProgram( 'abort - findBoundaries     ')
       boundaries(:,:,:) = 0
       sendDisp(:) = 0
       receiveDisp(:) = 0
@@ -568,7 +568,7 @@
       use parallel;use griddomain; use verbosity
       implicit none
       ! local parameters
-      integer:: domain,index,k,ierror
+      integer:: domain,index,k,ier
 
       !check
       if (nprocesses == 1) return
@@ -578,8 +578,8 @@
         print *,'  allocating domainNeighbors array:'
         print *,'    size :  ',nprocesses*nprocesses * 4/1024./1024.,'Mb'   ! assume integer == 4 bytes
       endif
-      allocate(domainNeighbors(0:nprocesses-1,nprocesses-1),stat=ierror)
-      if (ierror > 0) call stopProgram( 'abort - findDomainNeighbors    ')
+      allocate(domainNeighbors(0:nprocesses-1,nprocesses-1),stat=ier)
+      if (ier /= 0) call stopProgram( 'abort - findDomainNeighbors    ')
       domainNeighbors(:,:)=-1
 
       !find neighbor domains

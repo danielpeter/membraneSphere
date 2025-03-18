@@ -19,7 +19,7 @@
       use verbosity; use adjointVariables; use cells
       implicit none
       ! local parameters
-      integer:: length,ierror,tmpInteger
+      integer:: length,ier,tmpInteger
       character(len=32):: inputName
       character(len=150):: line
       character(len=128):: tmp
@@ -28,15 +28,15 @@
       inputName = 'Parameter_Input'
       inputName = trim(inputName)
       !if (VERBOSE) print *,inputName
-      open(IIN, file=trim(inputName),status='old',iostat=ierror)
-      if (ierror /= 0) then
+      open(IIN, file=trim(inputName),status='old',iostat=ier)
+      if (ier /= 0) then
         print *,'Error: opening file ',trim(inputName)
         call stopProgram( 'abort - readParameters() opening input    ')
       endif
 
-      do while( ierror == 0)
-        read(IIN,'(a150)', iostat=ierror) line
-        if (ierror /= 0) exit
+      do while( ier == 0)
+        read(IIN,'(a150)', iostat=ier) line
+        if (ier /= 0) exit
 
         length = len_trim(line)
         if (length == 0) then

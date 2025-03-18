@@ -49,7 +49,7 @@
       use propagationStartup; use parallel; use displacements; use verbosity
       implicit none
       ! local parameters
-      integer:: ierror
+      integer:: ier
 
       ! make first a reference run without scatterer, then all others with scatterer
       ! assume that all processes have access to the same data directory
@@ -73,8 +73,8 @@
             DELTA = .true.
 
             ! wait for reference simulation
-            call MPI_Barrier( MPI_COMM_WORLD, ierror )
-            if (ierror /= 0) call stopProgram( "abort - program phaseshift MPI_Barrier failed    ")
+            call MPI_Barrier( MPI_COMM_WORLD, ier )
+            if (ier /= 0) call stopProgram( "abort - program phaseshift MPI_Barrier failed    ")
 
             ! synchronize reference seismograms
             call syncReceiversRef()
@@ -109,7 +109,7 @@
       logical,intent(inout):: looping
       ! local parameters
       logical:: available
-      integer:: m,ierror
+      integer:: m,ier
       real(WP):: timerStart,timerEnd
       character(len=128):: datafile
 
@@ -191,8 +191,8 @@
             DELTA = .true.
 
             ! let all processes pass to simulate scattered seismograms
-            call MPI_Barrier( MPI_COMM_WORLD, ierror )
-            if (ierror /= 0) call stopProgram( "abort - processSolutions() MPI_Barrier failed    ")
+            call MPI_Barrier( MPI_COMM_WORLD, ier )
+            if (ier /= 0) call stopProgram( "abort - processSolutions() MPI_Barrier failed    ")
 
             ! synchronize reference seismograms
             call syncReceiversRef()
@@ -217,7 +217,7 @@
       use parallel;use propagationStartup
       implicit none
       ! local parameters
-      integer:: i,recvVertex,n,ioerror  !,filenameBaseLength,index
+      integer:: i,recvVertex,n,ier  !,filenameBaseLength,index
       character(len=128):: filename,fileReference
       real(WP):: vperturbation,phaseVelocityRef,realdeltaLat,realdeltaLon, &
                  correctedLat,correctedLon
@@ -370,11 +370,11 @@
 
           !print '(2f8.2,2f12.6,i10,5f12.6)',real(correctedLon),real(correctedLat), &
           !  kernel,kernelAnalytic,recvVertex,t_lag,t_lagAnalytic,vperturbation,recvLat,recvLon
-          write(80,'(2f8.2, 2e16.6, i10,5f12.6)',iostat=ioerror) &
+          write(80,'(2f8.2, 2e16.6, i10,5f12.6)',iostat=ier) &
               real(correctedLon),real(correctedLat),kernel,kernelAnalytic, &
               recvVertex,t_lag,t_lagAnalytic,vperturbation,recvLat,recvLon
-          if (ioerror /= 0) then
-            print *,'Error: writing to file:',ioerror
+          if (ier /= 0) then
+            print *,'Error: writing to file:',ier
             call stopProgram( 'abort - calculatePhaseshifts   ')
           endif
 
@@ -414,7 +414,7 @@
       character(len=3):: rankstr,kernelstr ! recstr
       character(len=6):: latstr,lonstr
       character(len=128):: ttkernelfile,ttkernelRotatedfile
-      integer::ioerror
+      integer:: ier
 
       ! get filename for latitude/longitude
       if (.not. manyReceivers) then
@@ -441,15 +441,15 @@
         write(kernelstr,'(i3.3)') int(kernelStartDistance+currentKernel-1)
 
         ttkernelfile = trim(datadirectory)//'ttkernel'//kernelstr//'.rank'//rankstr//'.dat'
-        open(80,file=trim(ttkernelfile),position='APPEND',iostat=ioerror)
-        if (ioerror /= 0) then
+        open(80,file=trim(ttkernelfile),position='APPEND',iostat=ier)
+        if (ier /= 0) then
           print *,'Error: could not open file ',trim(ttkernelfile)
           call stopProgram( 'abort - prepareForKernel     ')
         endif
 
         ttkernelRotatedfile = trim(datadirectory)//'ttkernel'//kernelstr//'.rot.rank'//rankstr//'.dat'
-        open(81,file=trim(ttkernelRotatedfile),position='APPEND',iostat=ioerror)
-        if (ioerror /= 0) then
+        open(81,file=trim(ttkernelRotatedfile),position='APPEND',iostat=ier)
+        if (ier /= 0) then
           print *,'Error: could not open file ',trim(ttkernelRotatedfile)
           call stopProgram( 'abort - prepareForKernel     ')
         endif
@@ -457,15 +457,15 @@
         write(rankstr,'(i3.3)') rank
 
         ttkernelfile = trim(datadirectory)//'ttkernel.rank'//rankstr//'.dat'
-        open(80,file=trim(ttkernelfile),position='APPEND',iostat=ioerror)
-        if (ioerror /= 0) then
+        open(80,file=trim(ttkernelfile),position='APPEND',iostat=ier)
+        if (ier /= 0) then
           print *,'Error: could not open file',trim(ttkernelfile)
           call stopProgram( 'abort - prepareForKernel     ')
         endif
 
         ttkernelRotatedfile = trim(datadirectory)//'ttkernel.rot.rank'//rankstr//'.dat'
-        open(81,file=trim(ttkernelRotatedfile),position='APPEND',iostat=ioerror)
-        if (ioerror /= 0) then
+        open(81,file=trim(ttkernelRotatedfile),position='APPEND',iostat=ier)
+        if (ier /= 0) then
           print *,'Error: could not open file ',trim(ttkernelRotatedfile)
           call stopProgram( 'abort - prepareForKernel     ')
         endif
@@ -553,7 +553,7 @@
       use parallel; use propagationStartup;use traveltime;use cells;use verbosity
       implicit none
       ! local parameters
-      integer:: index,n,i,ioerror,recvVertex
+      integer:: index,n,i,ier,recvVertex
       character(len=128):: line,datafile,kernelfile  ! fileReference
       character(len=3):: rankstr,kernelstr  ! recstr
       real(WP):: lat,lon,t_lagfromFile,t_laganalyticfromFile,vperturbation,recvlon,recvlat
@@ -579,8 +579,8 @@
           else
             kernelfile = trim(datadirectory)//'ttkernel.dat'
           endif
-          open(60,file=trim(kernelfile),iostat=ioerror)
-          if (ioerror /= 0) call stopProgram('abort - collectData could not open ttkernel-file    ')
+          open(60,file=trim(kernelfile),iostat=ier)
+          if (ier /= 0) call stopProgram('abort - collectData could not open ttkernel-file    ')
         else
           if (manyKernels) then
             write(kernelstr,'(i3.3)') int(kernelStartDistance+currentKernel-1)
@@ -588,8 +588,8 @@
           else
             kernelfile = trim(datadirectory)//'ttkernel.rot.dat'
           endif
-          open(60,file=trim(kernelfile),iostat=ioerror)
-          if (ioerror /= 0) call stopProgram('abort - collectData could not open ttkernel-file    ')
+          open(60,file=trim(kernelfile),iostat=ier)
+          if (ier /= 0) call stopProgram('abort - collectData could not open ttkernel-file    ')
         endif
 
         if (manyKernels) then
@@ -619,8 +619,8 @@
             else
               datafile = trim(datadirectory)//'ttkernel.rank'//rankstr//'.dat'
             endif
-            open(70,file=trim(datafile),iostat=ioerror)
-            if (ioerror /= 0) then
+            open(70,file=trim(datafile),iostat=ier)
+            if (ier /= 0) then
               print *,'  could not read data from ',trim(datafile)
               print *,'  continue with others...'
               continue
@@ -631,8 +631,8 @@
             else
               datafile = trim(datadirectory)//'ttkernel.rot.rank'//rankstr//'.dat'
             endif
-            open(70,file=trim(datafile),iostat=ioerror)
-            if (ioerror /= 0) then
+            open(70,file=trim(datafile),iostat=ier)
+            if (ier /= 0) then
               print *,'  could not read data from ',trim(datafile)
               print *,'  continue with others...'
               continue
@@ -644,12 +644,12 @@
           read(70,*) line
 
           ! collect data
-          do while( ioerror == 0)
-            read(70,'(2f8.2, 2e16.6, i10,5f12.6)',iostat=ioerror) &
+          do while (ier == 0)
+            read(70,'(2f8.2, 2e16.6, i10,5f12.6)',iostat=ier) &
               lon,lat,kernelfromFile,kernelAnalyticFromFile, &
               recvVertex, t_lagfromFile,t_lagAnalyticfromFile, &
               vperturbation,recvLat,recvLon
-            if (ioerror == 0) then
+            if (ier == 0) then
               n = n+1
               !phaseshifts(n,1)=lon
               !phaseshifts(n,2)=lat
@@ -681,8 +681,8 @@
       !    ! determine filenames
       !    write(recstr,'(i3.2)') int(i)
       !    fileReference=fileReference(1:len_trim(fileReference)-7)//recstr//'.dat'
-      !    open(300,file=fileReference,iostat=ioerror)
-      !    if (ioerror == 0) close(300,status='DELETE')
+      !    open(300,file=fileReference,iostat=ier)
+      !    if (ier == 0) close(300,status='DELETE')
       !  enddo
       !endif
 

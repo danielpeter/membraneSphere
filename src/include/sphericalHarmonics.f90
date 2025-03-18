@@ -206,7 +206,7 @@
       integer:: i
 
       !check
-      if (N < 0) stop 'abort - factorial'
+      if (N < 0) stop 'Abort - factorial'
 
       factorial = 1
       do i = 2,N

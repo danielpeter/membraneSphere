@@ -97,8 +97,8 @@
       xcorrlength = WindowSIZE !or: xcorrlength = WindowSIZE+zeropad
 
       ! attention of seismo arrays: zero padding of length WindowSIZE at the end to get corresponding length of cross-correlation
-      !allocate(seismoTmp(2,xcorrlength),stat=ierror)
-      !if (ierror /= 0) call stopProgram( 'abort - dofilterSeismogram       ')
+      !allocate(seismoTmp(2,xcorrlength),stat=ier)
+      !if (ier /= 0) call stopProgram( 'abort - dofilterSeismogram       ')
 
       ! determine startingTime
       endtime=seismo(1,seismoLength)

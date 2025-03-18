@@ -1855,7 +1855,7 @@ end module
       if (trace_length /= seismoLength) then
         if (allocated(seismoHom)) deallocate(seismoHom,seismoHet)
         allocate(seismoHom(2,seismoLength),seismoHet(2,seismoLength),stat=ier)
-        if (ier /= 0) stop 'error allocating minimizing traces'
+        if (ier /= 0) stop 'Error allocating minimizing traces'
       endif
 
       trace_length = seismoLength

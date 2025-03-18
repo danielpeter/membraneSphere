@@ -71,7 +71,7 @@
       implicit none
       ! local parameters
       real(WP)::memory
-      integer:: ierror
+      integer:: ier
 
       ! allocates array for storing the adjoint kernel values
       if (.not. allocated(adjointKernel)) then
@@ -79,8 +79,8 @@
           print *,'  allocating adjointKernel array...'
           print *,'    size: ',numVertices*WP/1024./1024.,'Mb'
         endif
-        allocate(adjointKernel(numVertices), stat=ierror)
-        if (ierror /= 0) call stopProgram('error allocating adjoint kernel arrays    ')
+        allocate(adjointKernel(numVertices), stat=ier)
+        if (ier /= 0) call stopProgram('error allocating adjoint kernel arrays    ')
       endif
       ! initializes array
       adjointKernel(:) = 0.0_WP
@@ -92,8 +92,8 @@
       endif
 
       if (.not. allocated(adjointSource)) then
-        allocate(adjointSource(2,numofTimeSteps),stat=ierror)
-        if (ierror /= 0) call stopProgram('error allocating adjoint source arrays   ')
+        allocate(adjointSource(2,numofTimeSteps),stat=ier)
+        if (ier /= 0) call stopProgram('error allocating adjoint source arrays   ')
       endif
 
       ! initializes the adjoint source trace
@@ -121,8 +121,8 @@
           print *,'    time steps : ',numofTimeSteps
           print *,'    size       : ',memory/1024./1024.,'Mb'
         endif
-        allocate(wavefieldForward(numDomainVertices,numofTimeSteps),stat=ierror)
-        if (ierror /= 0) then
+        allocate(wavefieldForward(numDomainVertices,numofTimeSteps),stat=ier)
+        if (ier /= 0) then
           ! sets some reasonable limit to computation:
           ! required harddisk memory shouldn't be bigger than 10 GB,
           ! else the kernels will waste too much space for storage
@@ -167,8 +167,8 @@
             print *,'  allocating wavefieldAdjoint array...'
             print *,'    size       : ',numDomainVertices*numofTimeSteps*WP/1024./1024.,'Mb'
           endif
-          allocate(wavefieldAdjoint(numDomainVertices,numofTimeSteps),stat=ierror)
-          if (ierror /= 0) call stopProgram('error allocating adjoint wavefield    ')
+          allocate(wavefieldAdjoint(numDomainVertices,numofTimeSteps),stat=ier)
+          if (ier /= 0) call stopProgram('error allocating adjoint wavefield    ')
         endif
 
         ! initializes
@@ -190,7 +190,7 @@
       implicit none
       integer,intent(in):: timestep,index
       ! local parameters
-      integer::vertex,n,ierror
+      integer::vertex,n,ier
       character(len=8):: timestepstr
       character(len=3):: rankstr
 
@@ -206,8 +206,8 @@
         write(timestepstr,'(i8.7)')timestep
         write(rankstr,'(i3.3)') rank
         open(10,file=trim(datadirectory)//'wavefield_'//timestepstr//'.rank'//rankstr//'.dat', &
-              access='direct',recl=WP,iostat=ierror)
-        if (ierror /= 0) call stopProgram('could not open file: wavefield_'//timestepstr//'.rank'//rankstr//'.dat ....     ')
+              access='direct',recl=WP,iostat=ier)
+        if (ier /= 0) call stopProgram('could not open file: wavefield_'//timestepstr//'.rank'//rankstr//'.dat ....     ')
         ! fill in displacements
         !do i=1,numVertices
         !  call getSphericalCoord_Lat(i,lat,lon)
@@ -252,7 +252,7 @@
       implicit none
       integer,intent(in):: timestep,index
       ! local parameters
-      integer::vertex,n,ierror
+      integer::vertex,n,ier
       character(len=8):: timestepstr
       character(len=3):: rankstr
 
@@ -261,8 +261,8 @@
         write(timestepstr,'(i8.7)')timestep
         write(rankstr,'(i3.3)') rank
         open(10,file=trim(datadirectory)//'wavefieldAdj_'//timestepstr//'.rank'//rankstr//'.dat', &
-              access='direct',recl=WP,iostat=ierror)
-        if (ierror /= 0) call stopProgram('could not open file wavefieldAdj_'//timestepstr//'.rank'//rankstr//'.dat ....     ')
+              access='direct',recl=WP,iostat=ier)
+        if (ier /= 0) call stopProgram('could not open file wavefieldAdj_'//timestepstr//'.rank'//rankstr//'.dat ....     ')
         ! fill in displacements
         do n = 1, numDomainVertices
           ! choose vertex
@@ -299,7 +299,7 @@
       ! local parameters
       real(WP)::seismo(numofTimeSteps),seismoDisplacement(numofTimeSteps)
       real(WP),dimension(:,:),allocatable:: window_signal
-      integer::n,i,ierror
+      integer::n,i,ier
       integer:: window_startindex,window_endindex,window_range
       logical,parameter:: TAPER_SIGNAL = .true.
 
@@ -357,8 +357,8 @@
         if (WINDOWEDINTEGRATION) then
           ! cuts out a window of the adjoint signal
           !if (MAIN_PROCESS .and. VERBOSE) print *,'    allocating window...',window_startindex,window_endindex
-          allocate(window_signal(2,window_startindex-window_endindex-1),stat=ierror)
-          if (ierror /= 0) call stopProgram('error - window_signal ')
+          allocate(window_signal(2,window_startindex-window_endindex-1),stat=ier)
+          if (ier /= 0) call stopProgram('error - window_signal ')
 
           ! sets window which contains signal
           window_signal(1,:) = adjointSource(1,window_endindex+1:window_startindex-1)
@@ -518,7 +518,7 @@
       real(WP):: u_t,u_tplus1,u_tminus1,forcing,D2,time
       real(WP), external:: forceAdjointSource,discreteLaplacian,precalc_discreteLaplacian
       real(WP), external:: precalc_backdiscreteLaplacian
-      integer:: n,timestep,vertex,index,ierror
+      integer:: n,timestep,vertex,index,ier
 
       ! benchmark
       if (MAIN_PROCESS .and. VERBOSE) benchstart = MPI_WTIME()
@@ -553,8 +553,8 @@
               print *,'      array size  : ',numDomainVertices*numofTimeSteps*WP/1024./1024.,'Mb'
             endif
 
-            allocate(wavefieldAdjoint(numDomainVertices,numofTimeSteps),stat=ierror)
-            if (ierror /= 0) call stopProgram('error allocating adjoint wavefield    ')
+            allocate(wavefieldAdjoint(numDomainVertices,numofTimeSteps),stat=ier)
+            if (ier /= 0) call stopProgram('error allocating adjoint wavefield    ')
             !initialize
             wavefieldAdjoint(:,:)=0.0_WP
           endif
@@ -1005,7 +1005,7 @@
       implicit none
       ! local parameters
       real(WP):: lat,lon,sum_kern
-      integer:: i,ierror
+      integer:: i,ier
       character(len=128):: kernelfile
 
       ! console output
@@ -1026,8 +1026,8 @@
           print *,'    storing kernel values in file:'
           print *,'      ',trim(kernelfile)
         endif
-        open(10,file=trim(kernelfile),iostat=ierror)
-        if (ierror /= 0) then
+        open(10,file=trim(kernelfile),iostat=ier)
+        if (ier /= 0) then
           print *,'Error: could not open '//trim(kernelfile)
           call stopProgram( 'abort - storeAdjointKernel    ')
         endif
@@ -1054,8 +1054,8 @@
       endif
 
       ! wait until all processes reached this point
-      call MPI_Barrier( MPI_COMM_WORLD, ierror )
-      if (ierror /= 0) call stopProgram('abort - final MPI_Barrier failed    ')
+      call MPI_Barrier( MPI_COMM_WORLD, ier )
+      if (ier /= 0) call stopProgram('abort - final MPI_Barrier failed    ')
 
       end subroutine
 
@@ -1070,7 +1070,7 @@
       ! local parameters
       character(len=8):: timestepstr
       character(len=3):: rankstr
-      integer:: i,timestep,ierror
+      integer:: i,timestep,ier
 
       ! input
       write(rankstr,'(i3.3)') rank
@@ -1080,14 +1080,14 @@
         write(timestepstr,'(i8.7)')timestep
         !if (rank == 1) print *,'    open timestep:',i,timestep
         open(10,file=trim(datadirectory)//'wavefield_'//timestepstr//'.rank'//rankstr//'.dat', &
-            access='direct',recl=WP,iostat=ierror)
-        if (ierror /= 0) call stopProgram('could not open for input, file wavefield_'//&
+            access='direct',recl=WP,iostat=ier)
+        if (ier /= 0) call stopProgram('could not open for input, file wavefield_'//&
             timestepstr//'.rank'//rankstr//'.dat ...    ')
         ! fill in displacements
         !if (rank == 1) print *,'    read timestep:',i,timestep
-        read(10,rec=index,iostat=ierror) seismo(i)
-        if (ierror /= 0) then
-          print *,'Error: read error:',timestep,index,ierror
+        read(10,rec=index,iostat=ier) seismo(i)
+        if (ier /= 0) then
+          print *,'Error: read error:',timestep,index,ier
           call stopProgram('could not read input from file wavefield_'//&
                   timestepstr//'.rank'//rankstr//'.dat ...    ')
         endif
@@ -1109,7 +1109,7 @@
       ! local parameters
       character(len=8):: timestepstr
       character(len=3):: rankstr
-      integer:: i,timestep,ierror
+      integer:: i,timestep,ier
 
       ! output
       write(rankstr,'(i3.3)') rank
@@ -1118,13 +1118,13 @@
         i = i+1
         write(timestepstr,'(i8.7)')timestep
         open(10,file=trim(datadirectory)//'wavefield_'//timestepstr//'.rank'//rankstr//'.dat', &
-            access='direct',recl=WP,iostat=ierror)
-        if (ierror /= 0) call stopProgram('could not open for output, file wavefield_'//&
+            access='direct',recl=WP,iostat=ier)
+        if (ier /= 0) call stopProgram('could not open for output, file wavefield_'//&
             timestepstr//'.rank'//rankstr//'.dat ...    ')
         ! fill in displacements
-        write(10,rec=index,iostat=ierror) seismo(i)
-        if (ierror /= 0) then
-          print *,'Error: write error:',timestep,index,ierror
+        write(10,rec=index,iostat=ier) seismo(i)
+        if (ier /= 0) then
+          print *,'Error: write error:',timestep,index,ier
           call stopProgram('could not write input from file wavefield_'//&
               timestepstr//'.rank'//rankstr//'.dat ...    ')
         endif
@@ -1145,7 +1145,7 @@
       ! local parameters
       character(len=8):: timestepstr
       character(len=3):: rankstr
-      integer:: i,timestep,ierror
+      integer:: i,timestep,ier
 
       ! input
       write(rankstr,'(i3.3)') rank
@@ -1153,13 +1153,13 @@
       do timestep = firsttimestep, lasttimestep
         write(timestepstr,'(i8.7)')timestep
         open(10,file=trim(datadirectory)//'wavefieldAdj_'//timestepstr//'.rank'//rankstr//'.dat', &
-            access='direct',recl=WP,iostat=ierror)
-        if (ierror /= 0) call stopProgram('could not open for input, file wavefieldAdj_'//&
+            access='direct',recl=WP,iostat=ier)
+        if (ier /= 0) call stopProgram('could not open for input, file wavefieldAdj_'//&
             timestepstr//'.rank'//rankstr//'.dat ...    ')
         ! fill in displacements
-        read(10,rec=index,iostat=ierror) seismo(i)
-        if (ierror /= 0) then
-          print *,'Error: read error:',timestep,index,ierror
+        read(10,rec=index,iostat=ier) seismo(i)
+        if (ier /= 0) then
+          print *,'Error: read error:',timestep,index,ier
           call stopProgram('could not read input from file wavefieldAdj_'//&
               timestepstr//'.rank'//rankstr//'.dat ...    ')
         endif
@@ -1180,7 +1180,7 @@
       ! local parameters
       character(len=8):: timestepstr
       character(len=3):: rankstr
-      integer:: timestep,ierror
+      integer:: timestep,ier
 
       ! get rid of files
       write(rankstr,'(i3.3)') rank
@@ -1188,12 +1188,12 @@
         write(timestepstr,'(i8.7)')timestep
         ! forward wavefield files
         open(10,file=trim(datadirectory)//'wavefield_'//timestepstr//'.rank'//rankstr//'.dat', &
-            access='direct',recl=WP,iostat=ierror)
-        if (ierror == 0) close(10,status='DELETE')
+            access='direct',recl=WP,iostat=ier)
+        if (ier == 0) close(10,status='DELETE')
         ! adjoint wavefield files
         open(20,file=trim(datadirectory)//'wavefieldAdj_'//timestepstr//'.rank'//rankstr//'.dat', &
-            access='direct',recl=WP,iostat=ierror)
-        if (ierror == 0) close(20,status='DELETE')
+            access='direct',recl=WP,iostat=ier)
+        if (ier == 0) close(20,status='DELETE')
       enddo
       end subroutine
 

@@ -25,23 +25,23 @@
       implicit none
       character(len=64),intent(in):: fileName
       ! local parameters
-      integer:: i,ioerror,id
+      integer:: i,ier,id
       real(WP):: phasepercent,lat,lon
 
       ! read phase map
       if (VERBOSE) print *,trim(fileName)
 
       !open file
-      open(IIN, file=trim(fileName),status='old',iostat=ioerror)
-      if (ioerror /= 0) then
+      open(IIN, file=trim(fileName),status='old',iostat=ier)
+      if (ier /= 0) then
         print *,'Error: opening file ',trim(fileName)
         call stopProgram( 'abort - readPhasemap   ')
       endif
 
       !fill in values
       do i = 1, numVertices
-        read(IIN, *, iostat=ioerror) lat,lon,phaseMap(i)
-        if (ioerror /= 0) then
+        read(IIN, *, iostat=ier) lat,lon,phaseMap(i)
+        if (ier /= 0) then
           exit
         endif
         !print *,'vertex',lat,lon,phaseMap(i)

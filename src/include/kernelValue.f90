@@ -613,7 +613,7 @@
 !      implicit none
 !      ! local parameters
 !      character(len=128)::filename
-!      integer:: ierror,i,triangleIndex,lat,lon,corners(3),lengths(3)
+!      integer:: i,triangleIndex,lat,lon,corners(3),lengths(3)
 !      real(WP):: kernelvalue,distances(3),xlat,xlon
 !
 !      do lat = -89,89

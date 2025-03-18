@@ -459,7 +459,7 @@
       use parallel;use griddomain;use propagationStartup; use verbosity
       implicit none
       ! local parameters
-      integer:: i,n,domain,ierror
+      integer:: i,n,domain,ier
       character(len=6):: latstr,lonstr
       character(len=3):: recstr
       character(len=128):: filename
@@ -506,8 +506,8 @@
               endif
 
               ! write to file
-              open(200+i,file=trim(filename),iostat=ierror)
-              if (ierror /= 0) call stopProgram('could not open '//trim(filename)//'   ')
+              open(200+i,file=trim(filename),iostat=ier)
+              if (ier /= 0) call stopProgram('could not open '//trim(filename)//'   ')
               write(200+i,*) 'receiver:',i,real(reclat),real(reclon),receivers(i)
               do n = 1,size( receiversSeismogram(size(receivers)+1,:) )
                 write(200+i,*) receiversSeismogram(size(receivers)+1,n),receiversSeismogram(i,n)
@@ -549,8 +549,8 @@
             endif
 
             ! write to file
-            open(200+i,file=trim(filename),iostat=ierror)
-            if (ierror /= 0) call stopProgram('could not open '//trim(filename)//'   ')
+            open(200+i,file=trim(filename),iostat=ier)
+            if (ier /= 0) call stopProgram('could not open '//trim(filename)//'   ')
             write(200+i,*) 'receiver:',i,real(reclat),real(reclon),receivers(i)
             do n = 1,size( receiversSeismogram(size(receivers)+1,:) )
               write(200+i,*) receiversSeismogram(size(receivers)+1,n),receiversSeismogram(i,n)

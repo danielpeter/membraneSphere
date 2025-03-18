@@ -106,7 +106,7 @@
       open(10,file=trim(inputName),status='old',iostat=ier)
       if (ier /= 0) then
         print *,'Error: opening file ',trim(inputName)
-        stop 'abort - opening input'
+        stop 'Abort - opening input'
       endif
 
       ! parse file for parameters
@@ -174,7 +174,7 @@
       ! check number of files
       if (i /= 2) then
         print *,'Error: reading input parameters'
-        stop
+        stop 'Error reading input parameters'
       endif
 
       end subroutine
@@ -217,7 +217,7 @@
       open(10,file=trim(fileName),status='old',iostat=ier)
       if (ier /= 0) then
         print *,'Error: opening file ',trim(fileName)
-        stop 'abort - determineFileLength taped'
+        stop 'Abort - determineFileLength taped'
       endif
 
       ! parse file for line with zero time and number of lines
@@ -249,7 +249,7 @@
           read(10, *, iostat=ier) time,displace !,sourceterm
           if (ier /= 0) then
             print *,'Error: reading input. last line ',i,ZEROLINE,index
-            stop 'abort - determineFileLength taped'
+            stop 'Abort - determineFileLength taped'
           endif
 
           if (time-start >= 0.0 .and. ending-time >= 0.0) then ! starts with times from 'start time' on
@@ -304,7 +304,7 @@
       endif
 
       ! stop process
-      stop 'abort - program '
+      stop 'Abort - program '
 
       end subroutine
 

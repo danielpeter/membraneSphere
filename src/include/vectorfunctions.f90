@@ -320,8 +320,8 @@
           enddo
           ! check if we have the two points
           if (count < 1) then
-            print *,'abort condition met pentagonCentral neighbors!'
-            stop 'abort - pentagonCentral'
+            print *,'Error: condition met pentagonCentral neighbors!'
+            stop 'Abort - pentagonCentral'
           endif
        endif !ordered
 
@@ -399,8 +399,8 @@
       det = B**2 - 4*A*C
       !check
       if (det < 0.0) then
-        print *,'complex calculation found, abort...'
-        stop 'abort - projectToSphere'
+        print *,'Error: complex calculation found, abort...'
+        stop 'Abort - projectToSphere'
       endif
       det = sqrt(det)
 
@@ -483,8 +483,8 @@
 
       !check if point is on sphere
       if (abs(vectorlength(vector) - 1.0) > 1.0e-4) then
-         print *,vertex,'vector not normalized ', vectorlength(vector)
-         stop 'abort-getSphericalCoord length'
+         print *,'Error: vertex ',vertex,'vector not normalized ', vectorlength(vector)
+         stop 'Abort - getSphericalCoord length'
       endif
 
       !calculate spherical coordinates
@@ -494,7 +494,7 @@
       if (longitude < 0.0) longitude = longitude+2*PI
 
       !check
-      if (longitude < 0.0) stop 'abort-getSphericalCoord longitude'
+      if (longitude < 0.0) stop 'Abort - getSphericalCoord longitude'
 
       !debug
       !print *,vertex,' vector: ',vector(1),vector(2),vector(3)
@@ -529,8 +529,8 @@
 
       !check if point is on sphere
       !if (abs(vectorlength(vector) - 1.0) > 1.0e-4) then
-      !   print *,vertex,'vector not normalized ', vectorlength(vector)
-      !   stop 'abort-getSphericalCoord_Lat length'
+      !   print *,'Error: vertex ',vertex,'vector not normalized ', vectorlength(vector)
+      !   stop 'Abort - getSphericalCoord_Lat length'
       !endif
 
       !calculate spherical coordinates
@@ -1180,9 +1180,9 @@
                vector1(3)*vector1(3) - 1.0d0) > 0.00001d0              &
           .or. abs(vector2(1)*vector2(1)+vector2(2)*vector2(2)+               &
                    vector2(3)*vector2(3) - 1.0d0) > 0.00001d0) then
-        print *,'vector1',(vector1(k),k=1,3),vectorlength(vector1)
-        print *,'vector2',(vector2(k),k=1,3),vectorlength(vector2)
-        stop 'abort-greatCircleDistance vectorlength'
+        print *,'Error: vector1',(vector1(k),k=1,3),vectorlength(vector1)
+        print *,'       vector2',(vector2(k),k=1,3),vectorlength(vector2)
+        stop 'Abort - greatCircleDistance vectorlength'
       endif
 
       call scalarproduct( vector1,vector2,scalar)
@@ -1213,9 +1213,9 @@
       !   of its great circle distance)
       if (abs(vectorlength(vector1) - 1.0_WP) > 0.00001 &
            .or. abs(vectorlength(vector2) - 1.0_WP) > 0.00001) then
-        print *,'vector1',(vector1(k),k=1,3),vectorlength(vector1)
-        print *,'vector2',(vector2(k),k=1,3),vectorlength(vector2)
-        stop 'abort-greatCircleMidpoint vectorlength'
+        print *,'Error: vector1',(vector1(k),k=1,3),vectorlength(vector1)
+        print *,'       vector2',(vector2(k),k=1,3),vectorlength(vector2)
+        stop 'Abort - greatCircleMidpoint vectorlength'
       endif
 
       !get the half of the distance and the multiplication factor

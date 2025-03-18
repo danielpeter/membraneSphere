@@ -439,7 +439,7 @@ end module
       integer,intent(in):: ACCURACY
       real(WP):: u_f2_orbit
       ! local parameters
-      integer:: ierror,length,i,icount
+      integer:: ier,length,i,icount
       real(WP):: degreel,l_min,l_max
       real(WP):: integralvalue
       real(WP):: freq_min,freq_max,center_freq,result
@@ -500,8 +500,8 @@ end module
         ! initialize
         i1 = 1
         i2 = length
-        allocate(X(i2),Y(i2),Q(3,i2),F(3,i2),stat=ierror)
-        if (ierror /= 0) call stopProgram('u_f2_orbit - error allocating spline arrays ')
+        allocate(X(i2),Y(i2),Q(3,i2),F(3,i2),stat=ier)
+        if (ier /= 0) call stopProgram('u_f2_orbit - error allocating spline arrays ')
 
         ! get spline representation
         icount = 0

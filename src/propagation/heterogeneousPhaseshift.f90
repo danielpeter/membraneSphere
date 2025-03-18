@@ -223,9 +223,7 @@
     do i = 1,len_trim(heterogeneousDataFile)
       if (heterogeneousDataFile(i:i) == '/') slashindex = i
     enddo
-    nameout = datadirectory(1:len_trim(datadirectory))// &
-        heterogeneousDataFile(slashindex+1:len_trim(heterogeneousDataFile))&
-        //'.new'
+    nameout = trim(datadirectory)//heterogeneousDataFile(slashindex+1:len_trim(heterogeneousDataFile))//'.new'
     open(newdataUnit,file=trim(nameout),iostat=ier)
     if (ier /= 0) call stopProgram("Error opening new data file .new for output   ")
 

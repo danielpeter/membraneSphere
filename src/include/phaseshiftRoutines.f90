@@ -130,18 +130,16 @@
         available = .false.
         if (.not. manyReceivers) then
           ! see if file is there
-          datafile = datadirectory(1:len_trim(datadirectory))//'seismo.'//&
-                            cphasetype(1:4)//'.withoutDelta.dat'
-          datafile=trim(datafile)
-          inquire(file=datafile,exist=available)
+          datafile = trim(datadirectory)//'seismo.'//cphasetype(1:4)//'.withoutDelta.dat'
+          inquire(file=trim(datafile),exist=available)
           if (.not. available) then
             ! wait and poll until it exists
             timerStart = MPI_WTIME()
             do while(.not. available )
-              inquire(file=datafile ,exist=available)
+              inquire(file=trim(datafile),exist=available)
               timerEnd = MPI_WTIME()
               if (abs(timerEnd - timerStart) > 120.0) then
-                print *,'Error: did not find reference seismogram:'//datafile
+                print *,'Error: did not find reference seismogram:',trim(datafile)
                 print *,'       time out of process',rank
                 print *,'shutting down...'
                 call stopProgram( 'abort - processSolutions()   ')
@@ -150,8 +148,7 @@
           endif
         endif
         !else
-          !datafile=datadirectory(1:len_trim(datadirectory))//'seismo.'//&
-          !                         cphasetype(1:4)//'.withoutDelta.360.dat'
+          !datafile = trim(datadirectory)//'seismo.'//cphasetype(1:4)//'.withoutDelta.360.dat'
         !endif
 
         ! both seismograms are available, get phaseshift
@@ -556,7 +553,7 @@
       use parallel; use propagationStartup;use traveltime;use cells;use verbosity
       implicit none
       ! local parameters
-      integer:: index,n,i,ioerror,recvVertex,length
+      integer:: index,n,i,ioerror,recvVertex
       character(len=128):: line,datafile,kernelfile  ! fileReference
       character(len=3):: rankstr,kernelstr  ! recstr
       real(WP):: lat,lon,t_lagfromFile,t_laganalyticfromFile,vperturbation,recvlon,recvlat
@@ -573,28 +570,25 @@
 
       ! phase shift data from all processes
       ! all data from each process should be available in same directory
-      length=len_trim(datadirectory)
       do index = 1,2
         ! open combined, total data file
         if (index == 1) then
           if (manyKernels) then
             write(kernelstr,'(i3.3)') int(kernelStartDistance+currentKernel-1)
-            kernelfile = datadirectory(1:length)//cphasetype(1:len_trim(cphasetype))//&
-                          '_'//kernelstr//'.dat'
+            kernelfile = trim(datadirectory)//trim(cphasetype)//'_'//kernelstr//'.dat'
           else
-            kernelfile=datadirectory(1:length)//'ttkernel.dat'
+            kernelfile = trim(datadirectory)//'ttkernel.dat'
           endif
-          open(60,file=kernelfile,iostat=ioerror)
+          open(60,file=trim(kernelfile),iostat=ioerror)
           if (ioerror /= 0) call stopProgram('abort - collectData could not open ttkernel-file    ')
         else
           if (manyKernels) then
             write(kernelstr,'(i3.3)') int(kernelStartDistance+currentKernel-1)
-            kernelfile = datadirectory(1:length)//cphasetype(1:len_trim(cphasetype))//&
-                        '_'//kernelstr//'.rot.dat'
+            kernelfile = trim(datadirectory)//trim(cphasetype)//'_'//kernelstr//'.rot.dat'
           else
-            kernelfile=datadirectory(1:length)//'ttkernel.rot.dat'
+            kernelfile = trim(datadirectory)//'ttkernel.rot.dat'
           endif
-          open(60,file=kernelfile,iostat=ioerror)
+          open(60,file=trim(kernelfile),iostat=ioerror)
           if (ioerror /= 0) call stopProgram('abort - collectData could not open ttkernel-file    ')
         endif
 
@@ -621,27 +615,25 @@
           write(rankstr,'(i3.3)') i
           if (index == 1) then
             if (manyKernels) then
-              datafile=datadirectory(1:length)//'ttkernel'//kernelstr//&
-                        '.rank'//rankstr//'.dat'
+              datafile = trim(datadirectory)//'ttkernel'//kernelstr//'.rank'//rankstr//'.dat'
             else
-              datafile=datadirectory(1:length)//'ttkernel.rank'//rankstr//'.dat'
+              datafile = trim(datadirectory)//'ttkernel.rank'//rankstr//'.dat'
             endif
-            open(70,file=datafile,iostat=ioerror)
+            open(70,file=trim(datafile),iostat=ioerror)
             if (ioerror /= 0) then
-              print *,'  could not read data from '//datafile
+              print *,'  could not read data from ',trim(datafile)
               print *,'  continue with others...'
               continue
             endif
           else
             if (manyKernels) then
-              datafile=datadirectory(1:length)//'ttkernel'//kernelstr//&
-                            '.rot.rank'//rankstr//'.dat'
+              datafile = trim(datadirectory)//'ttkernel'//kernelstr//'.rot.rank'//rankstr//'.dat'
             else
-              datafile=datadirectory(1:length)//'ttkernel.rot.rank'//rankstr//'.dat'
+              datafile = trim(datadirectory)//'ttkernel.rot.rank'//rankstr//'.dat'
             endif
-            open(70,file=datafile,iostat=ioerror)
+            open(70,file=trim(datafile),iostat=ioerror)
             if (ioerror /= 0) then
-              print *,'  could not read data from '//datafile
+              print *,'  could not read data from ',trim(datafile)
               print *,'  continue with others...'
               continue
             endif
@@ -676,7 +668,7 @@
         close(60)
       enddo
 
-      print *,'  wrote to '//kernelfile(1:(len_trim(kernelfile)-8))//'***.dat'
+      print *,'  wrote to ',kernelfile(1:(len_trim(kernelfile)-8))//'***.dat'
       print *,'  entries read: ',n
       if (n == 65160) print *,'  kernel full...'
       print *,'ended successfully!'

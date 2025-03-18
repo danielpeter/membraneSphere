@@ -229,7 +229,7 @@
 !      !read*,ialpha
 !      !print *,"input model?"
 !      !read*,namein
-!      namein = datadirectory(1:len_trim(datadirectory))//'ttkernel.rot.dat'
+!      namein = trim(datadirectory)//'ttkernel.rot.dat'
 !      open(IIN,file=trim(namein),status='old',iostat=ier)
 !      if (ier /= 0) then
 !        print *,'Error: file not found ',trim(namein)
@@ -267,7 +267,7 @@
 !      enddo
 !      call contribution_ata_alt(rowa,dat(i),ncoef,nunk,ilata,ata,atd)
 !
-!      if (VERBOSE .and. mod(i,1000) == 0)print *,i," gridpoints read"
+!      if (VERBOSE .and. mod(i,1000) == 0) print *,i," gridpoints read"
 !      !--go back to read the next datum
 !      i = i+1
 !      goto 1
@@ -562,7 +562,7 @@
 !      ! file output
 !      write(chlmax,'(i3.3)')lmax
 !      write(chialpha,"(i1.1)")ialpha
-!      nameout = datadirectory(1:len_trim(datadirectory))//'ttkernel.regular.xyz'
+!      nameout = trim(datadirectory)//'ttkernel.regular.xyz'
 !      open(12,file=nameout)
 !
 !      igrid = 0
@@ -578,7 +578,7 @@
 !
 !          ! console status display
 !          igrid = igrid+1
-!          if (mod(igrid,1000) == 0)print *,igrid," grid points done"
+!          if (mod(igrid,1000) == 0) print *,igrid," grid points done"
 !
 !          ! determine value
 !          call ylmv0(xlat,xlon,lmx,y,wkspc)

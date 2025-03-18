@@ -112,10 +112,10 @@
       if (beVerbose) then
         print *,'    captured seismogram:'
         print *,'      dt                  : ',dt
-        print *,'      time first entry      : ',seismoTmp(1,1) !,seismoTmp(2,1)
-        print *,'      time last entry      : ',seismoTmp(1,entries) !,seismoTmp(2,entries)
+        print *,'      time first entry    : ',seismoTmp(1,1) !,seismoTmp(2,1)
+        print *,'      time last entry     : ',seismoTmp(1,entries) !,seismoTmp(2,entries)
         print *,'      entries read        : ',entries
-        print *,'      last time readin     : ',seismoTmp(1,entries) !,'seismo:',endtime
+        print *,'      last time readin    : ',seismoTmp(1,entries) !,'seismo:',endtime
       endif
 
       ! apply hanning window  to smooth seismograms ends
@@ -156,8 +156,8 @@
 
       ! debug output
       if (fileOutput .and. MAIN_PROCESS .and. beVerbose) then
-        print *,'printing to file:',datadirectory(1:len_trim(datadirectory))//'Filter_input.dat'
-        open(10,file=datadirectory(1:len_trim(datadirectory))//'Filter_input.dat')
+        print *,'printing to file:',trim(datadirectory)//'Filter_input.dat'
+        open(10,file=trim(datadirectory)//'Filter_input.dat')
         do i = 1,xcorrlength
           write(10,*) seismoTmp(1,i),seismoTmp(2,i)
         enddo
@@ -178,8 +178,8 @@
 
       ! debug output
       if (fileOutput .and. MAIN_PROCESS .and. beVerbose) then
-        print *,'printing to file:',datadirectory(1:len_trim(datadirectory))//'Filter_output.dat'
-        open(10,file=datadirectory(1:len_trim(datadirectory))//'Filter_output.dat')
+        print *,'printing to file:',trim(datadirectory)//'Filter_output.dat'
+        open(10,file=trim(datadirectory)//'Filter_output.dat')
         do i = 1,seismoLength
           write(10,*) seismo(1,i),seismo(2,i)
         enddo
@@ -270,8 +270,8 @@
         call FFT_complex(fftdataTest,1)
 
         !debug output
-        print *,'  printing to file:',datadirectory(1:len_trim(datadirectory))//'FilterTest_FFT.dat'
-        open(IOUT,file=datadirectory(1:len_trim(datadirectory))//'FilterTest_FFT.dat')
+        print *,'  printing to file:',trim(datadirectory)//'FilterTest_FFT.dat'
+        open(IOUT,file=trim(datadirectory)//'FilterTest_FFT.dat')
         do i = 1,dataLength
           write(IOUT,*) i,real(fftdataTest(i)),aimag(fftdataTest(i))
         enddo
@@ -286,8 +286,8 @@
         call FFT_complex(fftdataTest,-1)
 
         ! debug output
-        print *,'  printing to file:',datadirectory(1:len_trim(datadirectory))//'FilterTest_after.dat'
-        open(IOUT,file=datadirectory(1:len_trim(datadirectory))//'FilterTest_after.dat')
+        print *,'  printing to file:',trim(datadirectory)//'FilterTest_after.dat'
+        open(IOUT,file=trim(datadirectory)//'FilterTest_after.dat')
         do i = 1,dataLength
           write(IOUT,*) i,real(fftdataTest(i)),aimag(fftdataTest(i))
         enddo
@@ -299,8 +299,8 @@
 
       ! debug output
       if (TEST .and. fileOutput .and. MAIN_PROCESS) then
-        print *,'  printing to file:',datadirectory(1:len_trim(datadirectory))//'FilterSeismo_data.dat'
-        open(IOUT,file=datadirectory(1:len_trim(datadirectory))//'FilterSeismo_data.dat')
+        print *,'  printing to file:',trim(datadirectory)//'FilterSeismo_data.dat'
+        open(IOUT,file=trim(datadirectory)//'FilterSeismo_data.dat')
         do i = 1,dataLength
           write(IOUT,*) i,real(fftdata(i)),aimag(fftdata(i))
         enddo
@@ -318,8 +318,8 @@
 
       ! debug output
       if (TEST .and. fileOutput .and. MAIN_PROCESS) then
-        print *,'  printing to file:',datadirectory(1:len_trim(datadirectory))//'FilterSeismo_datafiltered.dat'
-        open(IOUT,file=datadirectory(1:len_trim(datadirectory))//'FilterSeismo_datafiltered.dat')
+        print *,'  printing to file:',trim(datadirectory)//'FilterSeismo_datafiltered.dat'
+        open(IOUT,file=trim(datadirectory)//'FilterSeismo_datafiltered.dat')
         write(IOUT,*) "# filterSeismogram"
         write(IOUT,*) "# index realData imagData filter"
       endif

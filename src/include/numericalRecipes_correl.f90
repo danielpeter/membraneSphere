@@ -100,7 +100,7 @@
       call assert(mod(m,2) == 1, 'm must be odd in convlv')
       convlv(1:m)=respns(:)
       convlv(n-(m-3)/2:n)=convlv((m+3)/2:m)
-      convlv((m+3)/2:n-(m-1)/2)=0.0
+      convlv((m+3)/2:n-(m-1)/2) = 0.0
       no2 = n/2
       call realft(data,1,tmpd)
       call realft(convlv,1,tmpr)
@@ -743,7 +743,7 @@
           if (abs(dqromb) <= EPS*abs(qromb)) return
         endif
         s(j+1)=s(j)
-        h(j+1)=0.25_dp*h(j)
+        h(j+1) = 0.25_dp*h(j)
       enddo
       call nrerror('qromb: too many steps')
       end function qromb
@@ -856,7 +856,7 @@
             !Can't seemtoget ridof that highpoint. Better contract aroundthe lowest
             !(best) point.
 
-            p(:,:)=0.5_sp*(p(:,:)+spread(p(ilo,:),1,size(p,1)))
+            p(:,:) = 0.5_sp*(p(:,:)+spread(p(ilo,:),1,size(p,1)))
             do i = 1,ndim+1
               if (i /= ilo) y(i) = func(p(i,:))
             enddo

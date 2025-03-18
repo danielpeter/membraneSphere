@@ -437,8 +437,8 @@ end module
 
       ! debug output
       if (fileOutput) then
-        print *,'  printing to file:',datadirectory(1:len_trim(datadirectory))//'Timelag_read.dat'
-        open(IOUT,file=datadirectory(1:len_trim(datadirectory))//'Timelag_read.dat')
+        print *,'  printing to file:',trim(datadirectory)//'Timelag_read.dat'
+        open(IOUT,file=trim(datadirectory)//'Timelag_read.dat')
         do i = 1,seismoLength
           write(IOUT,*) seismo1(1,i),seismo1(2,i),seismo2(2,i)
         enddo
@@ -504,8 +504,8 @@ end module
 
       ! debug output
       if (fileOutput) then
-        print *,'  printing to file:',datadirectory(1:len_trim(datadirectory))//'Timelag_window.dat'
-        open(10,file=datadirectory(1:len_trim(datadirectory))//'Timelag_window.dat')
+        print *,'  printing to file:',trim(datadirectory)//'Timelag_window.dat'
+        open(10,file=trim(datadirectory)//'Timelag_window.dat')
         write(10,*) "#format: time trace referencetrace"
         do i = 1,xcorrlength
           if (STRETCH) then
@@ -525,8 +525,8 @@ end module
 
       ! debug output
       if (fileOutput) then
-        print *,'  printing to file:',datadirectory(1:len_trim(datadirectory))//'Timelag_correlation.dat'
-        open(11, file=datadirectory(1:len_trim(datadirectory))//'Timelag_correlation.dat')
+        print *,'  printing to file:',trim(datadirectory)//'Timelag_correlation.dat'
+        open(11, file=trim(datadirectory)//'Timelag_correlation.dat')
         write(11,*) '#correlation'
         do i = 1,xcorrlength
           write(11,*) i,crosscorrelation(i)
@@ -1551,8 +1551,8 @@ end module
 
       ! debug output
       if (fileOutput) then
-        print *,'  printing to file:',datadirectory(1:len_trim(datadirectory))//'TimelagAnalytic_read.dat'
-        open(IOUT,file=datadirectory(1:len_trim(datadirectory))//'TimelagAnalytic_read.dat')
+        print *,'  printing to file:',trim(datadirectory)//'TimelagAnalytic_read.dat'
+        open(IOUT,file=trim(datadirectory)//'TimelagAnalytic_read.dat')
         do i = 1,seismoLength
           write(IOUT,*) seismo(1,i),seismo(2,i),seismoRef(2,i)
         enddo
@@ -1572,7 +1572,7 @@ end module
 
         ! debug output
         if (fileOutput) then
-          print *,'  printing to file:',datadirectory(1:len_trim(datadirectory))//'TimelagAnalytic_filter.dat'
+          print *,'  printing to file:',trim(datadirectory)//'TimelagAnalytic_filter.dat'
           open(IOUT,file=trim(datadirectory)//'TimelagAnalytic_filter.dat')
           do i = 1,seismoLength
             write(IOUT,*) seismo(1,i),seismo(2,i),seismoRef(2,i)
@@ -1587,7 +1587,7 @@ end module
 
       ! debug output
       if (fileOutput) then
-        print *,'  printing to file:',datadirectory(1:len_trim(datadirectory))//'TimelagAnalytic_perturbed.dat'
+        print *,'  printing to file:',trim(datadirectory)//'TimelagAnalytic_perturbed.dat'
         open(IOUT,file=trim(datadirectory)//'TimelagAnalytic_perturbed.dat')
         do i = 1,seismoLength
           write(IOUT,*) seismo(1,i),seismoPerturbed(i)
@@ -1601,7 +1601,7 @@ end module
 
       ! debug output
       if (fileOutput) then
-        print *,'  printing to file:',datadirectory(1:len_trim(datadirectory))//'TimelagAnalytic_first.dat'
+        print *,'  printing to file:',trim(datadirectory)//'TimelagAnalytic_first.dat'
         open(IOUT,file=trim(datadirectory)//'TimelagAnalytic_first.dat')
         do i = 1,seismoLength
           write(IOUT,*) seismo(1,i),seismo1(i)
@@ -1615,7 +1615,7 @@ end module
 
       ! debug output
       if (fileOutput) then
-        print *,'  printing to file:',datadirectory(1:len_trim(datadirectory))//'TimelagAnalytic_second.dat'
+        print *,'  printing to file:',trim(datadirectory)//'TimelagAnalytic_second.dat'
         open(IOUT,file=trim(datadirectory)//'TimelagAnalytic_second.dat')
         do i = 1,seismoLength
           write(IOUT,*) seismo(1,i),seismo2(i)
@@ -1742,8 +1742,8 @@ end module
 
       ! debug output
       if (fileOutput) then
-        print *,'  printing to file:',datadirectory(1:len_trim(datadirectory))//'TimelagSimplex_read.dat'
-        open(10,file=datadirectory(1:len_trim(datadirectory))//'TimelagSimplex_read.dat')
+        print *,'  printing to file:',trim(datadirectory)//'TimelagSimplex_read.dat'
+        open(10,file=trim(datadirectory)//'TimelagSimplex_read.dat')
         do i = 1,seismoLength
           write(10,*) seismo1(1,i),seismo1(2,i),seismo2(2,i)
         enddo
@@ -1780,8 +1780,8 @@ end module
 
       ! debug output
       if (fileOutput) then
-        print *,'  printing to file:',datadirectory(1:len_trim(datadirectory))//'TimelagSimplex_window.dat'
-        open(10,file=datadirectory(1:len_trim(datadirectory))//'TimelagSimplex_window.dat')
+        print *,'  printing to file:',trim(datadirectory)//'TimelagSimplex_window.dat'
+        open(10,file=trim(datadirectory)//'TimelagSimplex_window.dat')
         do i = 1,seismoLength
           write(10,*) seismo2(1,i),seismo1(2,i),seismo2(2,i)
         enddo
@@ -1792,10 +1792,10 @@ end module
       call minimizeTraces(t_lag,amplification,seismo1,seismo2,seismoLength)
 
       if (fileOutput) then
-        print *,'  printing to file:',datadirectory(1:len_trim(datadirectory))//'TimelagSimplex_shift.dat'
+        print *,'  printing to file:',trim(datadirectory)//'TimelagSimplex_shift.dat'
         allocate(seismoShift(seismoLength))
         call sumSeismogram(t_lag,amplification,seismo2,seismo1,seismoShift,seismoLength)
-        open(10,file=datadirectory(1:len_trim(datadirectory))//'TimelagSimplex_shift.dat')
+        open(10,file=trim(datadirectory)//'TimelagSimplex_shift.dat')
         do i = 1,seismoLength
           write(10,*) seismo1(1,i),seismoShift(i)
         enddo

@@ -360,19 +360,19 @@
       ! check for sampling rate and wave period (nyquist frequency limitation )
       if (bw_waveperiod < dt*2 .or. bw_waveperiod*cphaseRef < averageCellDistance) then
         print *,'sampling rate is too low compared to wave period length!'
-        print *,'    wave period     : ',bw_waveperiod
-        print *,'    wave length     : ',bw_waveperiod*cphaseRef
-        print *,'    sampling rate   : ',dt
-        print *,'    cell length      : ',averageCellDistance
+        print *,'    wave period           : ',bw_waveperiod
+        print *,'    wave length           : ',bw_waveperiod*cphaseRef
+        print *,'    sampling rate         : ',dt
+        print *,'    cell length           : ',averageCellDistance
         !call stopProgram('abort initializeWorld() - sampling too low   ')
       endif
 
       !console output
       if (MAIN_PROCESS .and. VERBOSE) then
-        print *,'    time step dt         : ',dt
-        print *,'    time range           : ',firsttimestep*dt,lasttimestep*dt
-        print *,'    time iteration steps : ',numofTimeSteps
-        print *,'    phase velocity       : ',cphaseRef
+        print *,'    time step dt          : ',dt
+        print *,'    time range            : ',firsttimestep*dt,lasttimestep*dt
+        print *,'    time iteration steps  : ',numofTimeSteps
+        print *,'    phase velocity        : ',cphaseRef
         if (DELTA) &
           print *,'    delta heterogeneity - radius = ',DELTARADIUS
       endif
@@ -432,9 +432,9 @@
           ! console output
           if (MAIN_PROCESS .and. VERBOSE) then
             print *,'  allocating prescribedForce array: '
-            print *,'      vertices : ',numDomainVertices
-            print *,'      steps   : ',numofTimeSteps
-            print *,'      size    : ',arraysize,'Mb'
+            print *,'      vertices            : ',numDomainVertices
+            print *,'      steps               : ',numofTimeSteps
+            print *,'      size                : ',arraysize,'Mb'
           endif
 
           ! allocate array
@@ -466,14 +466,13 @@
 
             ! names file
             write(rankstr,'(i3.3)') rank
-            print *,'      prescribed source file:', &
-            datadirectory(1:len_trim(datadirectory))//'forceTermPrescribed'//rankstr//'.bin'
+            print *,'      prescribed source file:',trim(datadirectory)//'forceTermPrescribed'//rankstr//'.bin'
             ! opens file to store data for each process
-            open(sourceFileID,file=datadirectory(1:len_trim(datadirectory))//'forceTermPrescribed'//rankstr//'.bin', &
+            open(sourceFileID,file=trim(datadirectory)//'forceTermPrescribed'//rankstr//'.bin', &
                access='direct',form='unformatted',recl=WP)
 
             ! storage in scratch dir
-            !open(sourceFileID,file=temporaryDir(1:len_trim(temporaryDir))//'forceTermPrescribed'//rankstr//'.bin', &
+            !open(sourceFileID,file=trim(temporaryDir)//'forceTermPrescribed'//rankstr//'.bin', &
             !     access='direct',form='unformatted',recl=WP)
           endif
         endif ! not allocated
@@ -601,12 +600,10 @@
         ! file output for sourceVertex
         if (vertex == sourceVertex .and. beVerbose .and. .not. sourceOnFile) then
           write(vertexstr,'(i8.8)') vertex
-          print *,'    writing to file: ',datadirectory(1:len_trim(datadirectory))// &
-                        'source2Prescribed.'//vertexstr//'.dat'
-          open(22,file=datadirectory(1:len_trim(datadirectory))// &
-                        'source2Prescribed.'//vertexstr//'.dat',iostat=ierror)
-          if (ierror /= 0) call stopProgram('error opening file: '// &
-              datadirectory(1:len_trim(datadirectory))//'source2Prescribed.'//vertexstr//'.dat   ')
+          print *,'    writing to file: ',trim(datadirectory)//'source2Prescribed.'//vertexstr//'.dat'
+          open(22,file=trim(datadirectory)//'source2Prescribed.'//vertexstr//'.dat',iostat=ierror)
+          if (ierror /= 0) &
+            call stopProgram('error opening file: '//trim(datadirectory)//'source2Prescribed.'//vertexstr//'.dat   ')
           do i = 1,numofTimeSteps
             write(22,*) seismo(1,i),forceTermPrescribed(n,i)
           enddo
@@ -645,10 +642,9 @@
         ! file output
         if (vertex == sourceVertex .and. beVerbose .and. .not. sourceOnFile) then
           write(vertexstr,'(i8.8)') vertex
-          open(22,file=datadirectory(1:len_trim(datadirectory))// &
-              'source2Prescribed.filtered.'//vertexstr//'.dat',iostat=ierror)
-          if (ierror /= 0) call stopProgram('error opening file: '// &
-            datadirectory(1:len_trim(datadirectory))//'source2Prescribed.filtered'//vertexstr//'.dat   ')
+          open(22,file=trim(datadirectory)//'source2Prescribed.filtered.'//vertexstr//'.dat',iostat=ierror)
+          if (ierror /= 0) &
+            call stopProgram('error opening file: '//trim(datadirectory)//'source2Prescribed.filtered'//vertexstr//'.dat   ')
           do i = 1,numofTimeSteps
             write(22,*) seismo(1,i),forceTermPrescribed(n,i)
           enddo
@@ -963,7 +959,7 @@
 
       ! output epicentral distances
       if (MAIN_PROCESS) then
-        open(10,file=datadirectory(1:len_trim(datadirectory))//'tmpEpiDistances.dat')
+        open(10,file=trim(datadirectory)//'tmpEpiDistances.dat')
         write(10,*)'# epicentral distances'
         write(10,*)'# rounded  exactDistance (in degrees)'
         if (VERBOSE) print *,'epicentral distances:'
@@ -1038,7 +1034,7 @@
           ! read in values
           if (manyKernels) then
             write(kernelstr,'(i3.3)')int(kernelStartDistance+currentKernel-1)
-            datafile = datadirectory(1:len_trim(datadirectory))//'tmpReceiverStations'//kernelstr//'.dat'
+            datafile = trim(datadirectory)//'tmpReceiverStations'//kernelstr//'.dat'
             open(10,file=datafile)
             do i = 1, numofReceivers
               read(10,*) lat,lon,kernelsReceivers(currentKernel,i)
@@ -1084,7 +1080,7 @@
         if (MAIN_PROCESS) then
           if (manyKernels) then
             write(kernelstr,'(i3.3)')int(kernelStartDistance+currentKernel-1)
-            datafile = datadirectory(1:len_trim(datadirectory))//'tmpReceiverStations'//kernelstr//'.dat'
+            datafile = trim(datadirectory)//'tmpReceiverStations'//kernelstr//'.dat'
             open(10,file=datafile)
             do i = 1, numofReceivers
               call getSphericalCoord_Lat(kernelsReceivers(currentKernel,i),lat,lon)
@@ -1092,7 +1088,7 @@
             enddo
             close(10)
           else
-            datafile = datadirectory(1:len_trim(datadirectory))//'tmpReceiverStations.dat'
+            datafile = trim(datadirectory)//'tmpReceiverStations.dat'
             open(10,file=datafile)
             do i = 1, numofReceivers
               call getSphericalCoord_Lat(receivers(i),lat,lon)
@@ -1124,8 +1120,8 @@
 
       if (VERBOSE .and. currentKernel <= 1) then
         print *,'creating new output files:'
-        print *,'   ',datadirectory(1:len_trim(datadirectory))//'ttkernel.rank***.dat'
-        print *,'   ',datadirectory(1:len_trim(datadirectory))//'ttkernel.rot.rank***.dat'
+        print *,'   ',trim(datadirectory)//'ttkernel.rank***.dat'
+        print *,'   ',trim(datadirectory)//'ttkernel.rot.rank***.dat'
       endif
 
       do i = 0,nprocesses-1
@@ -1137,18 +1133,16 @@
           if (n == 1) then
             if (manyKernels) then
               write(kernelstr,'(i3.3)') int(kernelStartDistance+currentKernel-1)
-              datafile = datadirectory(1:len_trim(datadirectory))//'ttkernel'//&
-                                          kernelstr//'.rank'//rankstr//'.dat'
+              datafile = trim(datadirectory)//'ttkernel'//kernelstr//'.rank'//rankstr//'.dat'
             else
-              datafile = datadirectory(1:len_trim(datadirectory))//'ttkernel.rank'//rankstr//'.dat'
+              datafile = trim(datadirectory)//'ttkernel.rank'//rankstr//'.dat'
             endif
           else
             if (manyKernels) then
               write(kernelstr,'(i3.3)') int(kernelStartDistance+currentKernel-1)
-              datafile = datadirectory(1:len_trim(datadirectory))//'ttkernel'//&
-                                  kernelstr//'.rot.rank'//rankstr//'.dat'
+              datafile = trim(datadirectory)//'ttkernel'//kernelstr//'.rot.rank'//rankstr//'.dat'
             else
-              datafile = datadirectory(1:len_trim(datadirectory))//'ttkernel.rot.rank'//rankstr//'.dat'
+              datafile = trim(datadirectory)//'ttkernel.rot.rank'//rankstr//'.dat'
             endif
           endif
           datafile=trim(datafile)
@@ -1309,18 +1303,18 @@
             call determineOrbitDistance(distance,iorbit)
 
             ! print epicentral distances into file
-            open(10,file=datadirectory(1:len_trim(datadirectory))//&
-                distanceFile(1:len_trim(distanceFile)),status='old',position='append',iostat=ierror)
+            open(10,file=trim(datadirectory)//trim(distanceFile), &
+                 status='old',position='append',iostat=ierror)
             if (ierror /= 0) then
               ! console output
               if (VERBOSE) then
                 print *,'  epicentral distances of kernels in file:'
-                print *,'    ',datadirectory(1:len_trim(datadirectory))//distanceFile(1:len_trim(distanceFile))
+                print *,'    ',trim(datadirectory)//trim(distanceFile)
                 print *
               endif
               ! open as new file
-              open(10,file=datadirectory(1:len_trim(datadirectory))//&
-                  distanceFile(1:len_trim(distanceFile)),status='new',iostat=ierror)
+              open(10,file=trim(datadirectory)//trim(distanceFile), &
+                   status='new',iostat=ierror)
               if (ierror == 0) then
                 write(10,*) '# epicentral distances'
                 write(10,*) '# rounded exactDistance (in degrees)'
@@ -1508,8 +1502,8 @@
       ! console output
       if (MAIN_PROCESS .and. VERBOSE) then
         print *,'  source parameters:'
-        print *,'    time parameter sigma :',TimeParameterSigma
-        print *,'    width parameter mu   :',WidthParameterMu
+        print *,'    time parameter sigma  :',TimeParameterSigma
+        print *,'    width parameter mu    :',WidthParameterMu
         print *,'    empirical spectral maximum around period:',tmp
         print *
       endif

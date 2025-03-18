@@ -96,11 +96,11 @@
       endif
 
       ! debug check values
-      !open(20,file=fileName(1:len_trim(fileName) )//'-readin.check.dat')
+      !open(20,file=trim(fileName)//'-readin.check.dat')
       !write(20,*) lmaxuser, lmax, ncoef
       !write(20,*) (cmod(i),i=1,ncoef)
       !close(20)
-      !print *,'  check file:',fileName(1:len_trim(fileName) )//'-readin.check.dat'
+      !print *,'  check file:',trim(fileName)//'-readin.check.dat'
 
       ! sets maxiumum expansion
       lmax = lmaxuser
@@ -115,9 +115,9 @@
       endif
 
       ! debug phase speed values on grid
-      !nameout=fileName(1:len_trim(fileName) )//"-"//chlmax//'.spheregrid.xyz'
+      !nameout=trim(fileName)//"-"//chlmax//'.spheregrid.xyz'
       !open(22,file=nameout)
-      !open(33,file=fileName(1:len_trim(fileName) )//"-"//chlmax//'.spheregrid.relative.xyz')
+      !open(33,file=trim(fileName)//"-"//chlmax//'.spheregrid.relative.xyz')
 
       ! phase speeds
       open(IOUT,file=trim(datadirectory)//'PhaseMap.percent.dat')
@@ -154,7 +154,7 @@
 
         ! status display
         igrid = igrid+1
-        !if (mod(igrid,10000)==0)print *,"  grid points ",igrid
+        !if (mod(igrid,10000)==0) print *,"  grid points ",igrid
 
         ! determine value
         call ylmv0(xlat,xlon,lmx,y,wkspc)
@@ -984,8 +984,7 @@ end subroutine rotmx2
         print *,'    phase velocity min/max:',zmin/100.0*cphaseRef+cphaseRef, &
                                       zmax/100.0*cphaseRef+cphaseRef
         print *,'  phase maps stored as: '
-        print *,'    ',datadirectory(1:len_trim(datadirectory))//&
-                    'PhaseMap.L'//chL//'-M'//chM//'.dat'
+        print *,'    ',trim(datadirectory)//'PhaseMap.L'//chL//'-M'//chM//'.dat'
       endif
 
       end subroutine

@@ -172,7 +172,7 @@
         endif
 
         ! initializes
-        wavefieldAdjoint(:,:)=0.0_WP
+        wavefieldAdjoint(:,:) = 0.0_WP
       endif
 
       end subroutine
@@ -205,11 +205,9 @@
         ! output to file for each process
         write(timestepstr,'(i8.7)')timestep
         write(rankstr,'(i3.3)') rank
-        open(10,file=datadirectory(1:len_trim(datadirectory))//'wavefield_'//&
-                timestepstr//'.rank'//rankstr//'.dat', &
+        open(10,file=trim(datadirectory)//'wavefield_'//timestepstr//'.rank'//rankstr//'.dat', &
               access='direct',recl=WP,iostat=ierror)
-        if (ierror /= 0) call stopProgram('could not open file: wavefield_'//&
-              timestepstr//'.rank'//rankstr//'.dat ....     ')
+        if (ierror /= 0) call stopProgram('could not open file: wavefield_'//timestepstr//'.rank'//rankstr//'.dat ....     ')
         ! fill in displacements
         !do i=1,numVertices
         !  call getSphericalCoord_Lat(i,lat,lon)
@@ -218,7 +216,7 @@
         do n = 1, numDomainVertices
           ! choose vertex
           if (PARALLELSEISMO) then
-            vertex=domainVertices(n)
+            vertex = domainVertices(n)
           else
             vertex = n
           endif
@@ -232,7 +230,7 @@
         do n = 1, numDomainVertices
           ! choose vertex
           if (PARALLELSEISMO) then
-            vertex=domainVertices(n)
+            vertex = domainVertices(n)
           else
             vertex = n
           endif
@@ -262,16 +260,14 @@
         ! output to file for each process
         write(timestepstr,'(i8.7)')timestep
         write(rankstr,'(i3.3)') rank
-        open(10,file=datadirectory(1:len_trim(datadirectory))//'wavefieldAdj_'//&
-              timestepstr//'.rank'//rankstr//'.dat', &
+        open(10,file=trim(datadirectory)//'wavefieldAdj_'//timestepstr//'.rank'//rankstr//'.dat', &
               access='direct',recl=WP,iostat=ierror)
-        if (ierror /= 0) call stopProgram('could not open file wavefieldAdj_'//&
-              timestepstr//'.rank'//rankstr//'.dat ....     ')
+        if (ierror /= 0) call stopProgram('could not open file wavefieldAdj_'//timestepstr//'.rank'//rankstr//'.dat ....     ')
         ! fill in displacements
         do n = 1, numDomainVertices
           ! choose vertex
           if (PARALLELSEISMO) then
-            vertex=domainVertices(n)
+            vertex = domainVertices(n)
           else
             vertex = n
           endif
@@ -283,7 +279,7 @@
         do n = 1,numDomainVertices
           ! choose vertex
           if (PARALLELSEISMO) then
-            vertex=domainVertices(n)
+            vertex = domainVertices(n)
           else
             vertex = n
           endif
@@ -327,8 +323,8 @@
       seismoDisplacement(:) = seismogramReceiver(2,:)
 
       if (MAIN_PROCESS .and. fileOutput) then
-        print *,'  printing to file: '//datadirectory(1:len_trim(datadirectory))//'seismo.displacement.dat'
-        open(10,file=datadirectory(1:len_trim(datadirectory))//'seismo.displacement.dat')
+        print *,'  printing to file: ',trim(datadirectory)//'seismo.displacement.dat'
+        open(10,file=trim(datadirectory)//'seismo.displacement.dat')
         do n = 1,numofTimeSteps
           write(10,*) seismoDisplacement(n)
         enddo
@@ -339,8 +335,8 @@
 
       ! file output
       if (MAIN_PROCESS .and. fileOutput) then
-        print *,'  printing to file: '//datadirectory(1:len_trim(datadirectory))//'seismo.velocity.dat'
-        open(10,file=datadirectory(1:len_trim(datadirectory))//'seismo.velocity.dat')
+        print *,'  printing to file: ',trim(datadirectory)//'seismo.velocity.dat'
+        open(10,file=trim(datadirectory)//'seismo.velocity.dat')
         do n = 1,numofTimeSteps
           write(10,*) seismogramReceiver(1,n),seismo(n)
         enddo
@@ -384,15 +380,15 @@
 
       ! file output
       if (MAIN_PROCESS .and. fileOutput) then
-        print *,'  printing to file: '//datadirectory(1:len_trim(datadirectory))//'seismo.acceleration.dat'
-        open(10,file=datadirectory(1:len_trim(datadirectory))//'seismo.acceleration.dat')
+        print *,'  printing to file: ',trim(datadirectory)//'seismo.acceleration.dat'
+        open(10,file=trim(datadirectory)//'seismo.acceleration.dat')
         do n = 1,numofTimeSteps
           write(10,*) seismogramReceiver(1,n),seismo(n)
         enddo
         close(10)
         if (WINDOWEDINTEGRATION) then
-          print *,'  printing to file: '//datadirectory(1:len_trim(datadirectory))//'seismo.window.dat'
-          open(10,file=datadirectory(1:len_trim(datadirectory))//'seismo.window.dat')
+          print *,'  printing to file: ',trim(datadirectory)//'seismo.window.dat'
+          open(10,file=trim(datadirectory)//'seismo.window.dat')
           do n = 1,numofTimeSteps
             write(10,*) adjointSource(1,n),adjointSource(2,n)
           enddo
@@ -431,8 +427,8 @@
 
         ! store adjoint source seismogram
         if (fileOutput) then
-          print *,'  printing to file: '//datadirectory(1:len_trim(datadirectory))//'seismo.adjointSource.dat'
-          open(10,file=datadirectory(1:len_trim(datadirectory))//'seismo.adjointSource.dat')
+          print *,'  printing to file: ',trim(datadirectory)//'seismo.adjointSource.dat'
+          open(10,file=trim(datadirectory)//'seismo.adjointSource.dat')
           do n = 1,numofTimeSteps
             write(10,*) adjointSource(1,n),adjointSource(2,n)
           enddo
@@ -537,15 +533,15 @@
         call findVertex(sourceLat+nint((receiverLat-sourceLat)/2.0), &
                 sourceLon+nint((receiverLon-sourceLon)/2.0),midpointVertex)
 
-        if (MAIN_PROCESS .and. VERBOSE) print *,'   storing file:', &
-              datadirectory(1:len_trim(datadirectory))//'seismo.integral_source.dat'
-        open(adjSourceFileID,file=datadirectory(1:len_trim(datadirectory))//'seismo.integral_source.dat')
-        if (MAIN_PROCESS .and. VERBOSE) print *,'   storing file:', &
-              datadirectory(1:len_trim(datadirectory))//'seismo.integral_rec.dat'
-        open(adjRecFileID,file=datadirectory(1:len_trim(datadirectory))//'seismo.integral_rec.dat')
-        if (MAIN_PROCESS .and. VERBOSE) print *,'   storing file:', &
-              datadirectory(1:len_trim(datadirectory))//'seismo.integral_midpoint.dat'
-        open(adjMidpointFileID,file=datadirectory(1:len_trim(datadirectory))//'seismo.integral_midpoint.dat')
+        if (MAIN_PROCESS .and. VERBOSE) &
+          print *,'   storing file:',trim(datadirectory)//'seismo.integral_source.dat'
+        open(adjSourceFileID,file=trim(datadirectory)//'seismo.integral_source.dat')
+        if (MAIN_PROCESS .and. VERBOSE) &
+          print *,'   storing file:',trim(datadirectory)//'seismo.integral_rec.dat'
+        open(adjRecFileID,file=trim(datadirectory)//'seismo.integral_rec.dat')
+        if (MAIN_PROCESS .and. VERBOSE) &
+          print *,'   storing file:',trim(datadirectory)//'seismo.integral_midpoint.dat'
+        open(adjMidpointFileID,file=trim(datadirectory)//'seismo.integral_midpoint.dat')
       else
         if (.not. storeAsFile) then
           ! allocate adjoint wavefield
@@ -553,7 +549,7 @@
             if (MAIN_PROCESS .and. VERBOSE) then
               print *,'    allocating adjoint wavefield...'
               print *,'      vertices    : ',numDomainVertices
-              print *,'      time steps : ',numofTimeSteps
+              print *,'      time steps  : ',numofTimeSteps
               print *,'      array size  : ',numDomainVertices*numofTimeSteps*WP/1024./1024.,'Mb'
             endif
 
@@ -1025,14 +1021,14 @@
       if (MAIN_PROCESS) then
 
         ! open kernel file
-        kernelfile = datadirectory(1:len_trim(datadirectory))//adjointKernelName(1:len_trim(adjointKernelName))
+        kernelfile = trim(datadirectory)//trim(adjointKernelName)
         if (VERBOSE) then
           print *,'    storing kernel values in file:'
-          print *,'      ',kernelfile(1:len_trim(kernelfile))
+          print *,'      ',trim(kernelfile)
         endif
-        open(10,file=kernelfile,iostat=ierror)
+        open(10,file=trim(kernelfile),iostat=ierror)
         if (ierror /= 0) then
-          print *,'Error: could not open '//kernelfile
+          print *,'Error: could not open '//trim(kernelfile)
           call stopProgram( 'abort - storeAdjointKernel    ')
         endif
 
@@ -1083,8 +1079,7 @@
         i = i+1
         write(timestepstr,'(i8.7)')timestep
         !if (rank == 1) print *,'    open timestep:',i,timestep
-        open(10,file=datadirectory(1:len_trim(datadirectory))//'wavefield_'//&
-            timestepstr//'.rank'//rankstr//'.dat', &
+        open(10,file=trim(datadirectory)//'wavefield_'//timestepstr//'.rank'//rankstr//'.dat', &
             access='direct',recl=WP,iostat=ierror)
         if (ierror /= 0) call stopProgram('could not open for input, file wavefield_'//&
             timestepstr//'.rank'//rankstr//'.dat ...    ')
@@ -1122,8 +1117,7 @@
       do timestep = firsttimestep, lasttimestep
         i = i+1
         write(timestepstr,'(i8.7)')timestep
-        open(10,file=datadirectory(1:len_trim(datadirectory))//'wavefield_'//&
-            timestepstr//'.rank'//rankstr//'.dat', &
+        open(10,file=trim(datadirectory)//'wavefield_'//timestepstr//'.rank'//rankstr//'.dat', &
             access='direct',recl=WP,iostat=ierror)
         if (ierror /= 0) call stopProgram('could not open for output, file wavefield_'//&
             timestepstr//'.rank'//rankstr//'.dat ...    ')
@@ -1158,8 +1152,7 @@
       i = numofTimeSteps
       do timestep = firsttimestep, lasttimestep
         write(timestepstr,'(i8.7)')timestep
-        open(10,file=datadirectory(1:len_trim(datadirectory))//'wavefieldAdj_'//&
-            timestepstr//'.rank'//rankstr//'.dat', &
+        open(10,file=trim(datadirectory)//'wavefieldAdj_'//timestepstr//'.rank'//rankstr//'.dat', &
             access='direct',recl=WP,iostat=ierror)
         if (ierror /= 0) call stopProgram('could not open for input, file wavefieldAdj_'//&
             timestepstr//'.rank'//rankstr//'.dat ...    ')
@@ -1194,13 +1187,11 @@
       do timestep = firsttimestep, lasttimestep
         write(timestepstr,'(i8.7)')timestep
         ! forward wavefield files
-        open(10,file=datadirectory(1:len_trim(datadirectory))//'wavefield_'//&
-            timestepstr//'.rank'//rankstr//'.dat', &
+        open(10,file=trim(datadirectory)//'wavefield_'//timestepstr//'.rank'//rankstr//'.dat', &
             access='direct',recl=WP,iostat=ierror)
         if (ierror == 0) close(10,status='DELETE')
         ! adjoint wavefield files
-        open(20,file=datadirectory(1:len_trim(datadirectory))//'wavefieldAdj_'//&
-            timestepstr//'.rank'//rankstr//'.dat', &
+        open(20,file=trim(datadirectory)//'wavefieldAdj_'//timestepstr//'.rank'//rankstr//'.dat', &
             access='direct',recl=WP,iostat=ierror)
         if (ierror == 0) close(20,status='DELETE')
       enddo
@@ -1385,12 +1376,12 @@
       ! only main process writes to files
       if (mod(timestep,10) == 0 .and. time >= 0.0 .and. MAIN_PROCESS) then
         write(timestr,'(i4.4)') timestep
-        open(10,file=datadirectory(1:len_trim(datadirectory))//'simulationAdjoint.'//timestr//'.dat')
+        open(10,file=trim(datadirectory)//'simulationAdjoint.'//timestr//'.dat')
         do n = 1, numVertices
           write(10,'(4f18.6)')(vertices(n,k),k=1,3),newdisplacement(n)
         enddo
         close(10)
-        print *,'    file written: '//datadirectory(1:len_trim(datadirectory))//'simulationAdjoint.'//timestr//'.dat'
+        print *,'    file written: ',trim(datadirectory)//'simulationAdjoint.'//timestr//'.dat'
       endif
       end subroutine
 

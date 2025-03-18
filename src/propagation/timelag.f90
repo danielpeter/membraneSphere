@@ -126,11 +126,11 @@
             ! start value to begin reading lines from
             case('START')
               read(line(35:len_trim(line)),*) startingTime
-              if (Verbose)print *,'firsttime',startingTime
+              if (Verbose) print *,'firsttime',startingTime
               FIRSTTIME = startingTime
             case('ENDIN')
               read(line(35:len_trim(line)),*) endingTime
-              if (Verbose)print *,'endtime',endingTime
+              if (Verbose) print *,'endtime',endingTime
               LASTTIME = endingTime
 
             ! verbosity
@@ -143,20 +143,19 @@
               read(line(35:len_trim(line)),'(A128)') tmp
               fileReference = trim(tmp)
               i = i+1
-              if (Verbose)print *,'reference file:',fileReference
+              if (Verbose) print *,'reference file:',fileReference
 
             case('PERTU')
               read(line(35:len_trim(line)),'(A128)') tmp
               fileDelta = trim(tmp)
               i = i+1
-              if (Verbose)print *,'perturbation file:',fileDelta
+              if (Verbose) print *,'perturbation file:',fileDelta
 
             ! file output directory
             case('DATAD')
               read(line(35:len_trim(line)),*) tmp
               datadirectory = trim(tmp)
-              if (Verbose)print *,'data output directory : '//&
-                              datadirectory(1:len_trim(datadirectory))
+              if (Verbose) print *,'data output directory : ',trim(datadirectory)
 
             ! wave type e.g. L150
             case('CPHAS')
@@ -164,7 +163,7 @@
                 read(line(35:len_trim(line)),*) cphasetype
                 cphasetype = trim(cphasetype)
                 call determinePhaseRef(cphasetype,8,cphaseRef)
-                if (Verbose)print *,'cphase    ', cphasetype, cphaseRef
+                if (Verbose) print *,'cphase    ', cphasetype, cphaseRef
               endif
             end select
           endif

@@ -79,7 +79,7 @@
         !  print *,'vertex ',ilocal,' :',lat,lon
         !endif
       enddo
-      if (VERBOSE)print *,'   number of vertices: ',numVertices
+      if (VERBOSE) print *,'   number of vertices: ',numVertices
       close(10)
       !debug
       !print *,'vertex',1,(vertices(1,k),k=1,3)
@@ -97,14 +97,14 @@
         if (ioerror /= 0) exit
         numCorners = numCorners +1
       enddo
-      if (VERBOSE)print *,'   number of corners: ',numCorners
+      if (VERBOSE) print *,'   number of corners: ',numCorners
       close(20)
       !debug
       !print *,'vertex',1,(cellCorners(1,k),k=1,3)
 
       !read in the corresponding cell neighbors indices
       fileName = 'data/griddata/Dnear'//divString//ending
-      if (VERBOSE)print *,'  ',trim(fileName)
+      if (VERBOSE) print *,'  ',trim(fileName)
       open(30,file=trim(fileName),status='old',iostat=ioerror)
       if (ioerror /= 0) call stopProgram( 'abort - readData File3   ')
 
@@ -114,7 +114,7 @@
         read(30,*) (cellNeighbors(i,k),k=1,6)
         numNeighbors = numNeighbors +1
       enddo
-      if (VERBOSE)print *,'   number of neighbors: ',numNeighbors
+      if (VERBOSE) print *,'   number of neighbors: ',numNeighbors
       close(30)
 
       !prepare cellNeighbors info
@@ -130,7 +130,7 @@
 
       !read in the corresponding cell face indices
       fileName = 'data/griddata/Dvface'//divString//ending
-      if (VERBOSE)print *,'  ',trim(fileName)
+      if (VERBOSE) print *,'  ',trim(fileName)
       open(40,file=trim(fileName),status='old',iostat=ioerror)
       if (ioerror /= 0) call stopProgram( 'abort - readData File4   ')
 
@@ -140,7 +140,7 @@
         read(40,*) (cellFace(i,k),k=1,6)
         numFaces = numFaces +1
       enddo
-      if (VERBOSE)print *,'   number of faces: ',numFaces
+      if (VERBOSE) print *,'   number of faces: ',numFaces
       close(40)
 
       !prepare cellNeighbors info

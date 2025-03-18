@@ -459,7 +459,7 @@
       use parallel;use griddomain;use propagationStartup; use verbosity
       implicit none
       ! local parameters
-      integer:: i,n,domain,strlength,ierror
+      integer:: i,n,domain,ierror
       character(len=6):: latstr,lonstr
       character(len=3):: recstr
       character(len=128):: filename
@@ -471,12 +471,11 @@
       latstr = trim(latstr)
       lonstr = trim(lonstr)
       cphasetype = trim(cphasetype)
-      strlength = len_trim(datadirectory)
 
       if (DELTA) then
-        filename = datadirectory(1:strlength)//'seismo.'//cphasetype(1:4)//'.'//latstr//'.'//lonstr//'.dat'
+        filename = trim(datadirectory)//'seismo.'//cphasetype(1:4)//'.'//latstr//'.'//lonstr//'.dat'
       else
-        filename = datadirectory(1:strlength)//'seismo.'//cphasetype(1:4)//'.withoutDelta.dat'
+        filename = trim(datadirectory)//'seismo.'//cphasetype(1:4)//'.withoutDelta.dat'
       endif
 
       ! output
@@ -501,18 +500,14 @@
 
               ! create filename
               if (DELTA) then
-                filename = datadirectory(1:strlength)//'seismo.'//cphasetype(1:4)//&
-                    '.'//latstr//'.'//lonstr//'.'//recstr//'.dat'
+                filename = trim(datadirectory)//'seismo.'//cphasetype(1:4)//'.'//latstr//'.'//lonstr//'.'//recstr//'.dat'
               else
-                filename = datadirectory(1:strlength)//'seismo.'//cphasetype(1:4)//&
-                    '.withoutDelta.'//recstr//'.dat'
+                filename = trim(datadirectory)//'seismo.'//cphasetype(1:4)//'.withoutDelta.'//recstr//'.dat'
               endif
-              ! just to remove unneccessary spaces
-              filename=trim(filename)
 
               ! write to file
-              open(200+i,file=filename,iostat=ierror)
-              if (ierror /= 0) call stopProgram('could not open '//filename//'   ')
+              open(200+i,file=trim(filename),iostat=ierror)
+              if (ierror /= 0) call stopProgram('could not open '//trim(filename)//'   ')
               write(200+i,*) 'receiver:',i,real(reclat),real(reclon),receivers(i)
               do n = 1,size( receiversSeismogram(size(receivers)+1,:) )
                 write(200+i,*) receiversSeismogram(size(receivers)+1,n),receiversSeismogram(i,n)
@@ -527,8 +522,8 @@
           ! output
           if (MAIN_PROCESS) then
             ! displacement at receiver
-            print *,'    printing to file: '//filename
-            open(200,file=filename)
+            print *,'    printing to file: ',trim(filename)
+            open(200,file=trim(filename))
             do n = 1,size(seismogramReceiver(1,:))
               write(200,*) seismogramReceiver(1,n),seismogramReceiver(2,n)
             enddo
@@ -539,7 +534,7 @@
         ! each process prints its own output to the current directory
         ! displacement at receiver
         if (manyReceivers) then
-          print *,'    printing to receiver files: '//filename(1:len_trim(filename)-4)
+          print *,'    printing to receiver files: ',filename(1:len_trim(filename)-4)
 
           do i = 1,size(receivers)
             write(recstr,'(i3.2)') int(i)
@@ -548,18 +543,14 @@
 
             ! create filename
             if (DELTA) then
-              filename = datadirectory(1:strlength)//'seismo.'//cphasetype(1:4)//&
-                  '.'//latstr//'.'//lonstr//'.'//recstr//'.dat'
+              filename = trim(datadirectory)//'seismo.'//cphasetype(1:4)//'.'//latstr//'.'//lonstr//'.'//recstr//'.dat'
             else
-              filename = datadirectory(1:strlength)//'seismo.'//cphasetype(1:4)//&
-                  '.withoutDelta.'//recstr//'.dat'
+              filename = trim(datadirectory)//'seismo.'//cphasetype(1:4)//'.withoutDelta.'//recstr//'.dat'
             endif
-            ! just to remove unneccessary spaces
-            filename=trim(filename)
 
             ! write to file
-            open(200+i,file=filename,iostat=ierror)
-            if (ierror /= 0) call stopProgram('could not open '//filename//'   ')
+            open(200+i,file=trim(filename),iostat=ierror)
+            if (ierror /= 0) call stopProgram('could not open '//trim(filename)//'   ')
             write(200+i,*) 'receiver:',i,real(reclat),real(reclon),receivers(i)
             do n = 1,size( receiversSeismogram(size(receivers)+1,:) )
               write(200+i,*) receiversSeismogram(size(receivers)+1,n),receiversSeismogram(i,n)
@@ -567,8 +558,8 @@
             close(200+i)
           enddo
         else
-          print *,'    printing to file: '//filename
-          open(200,file=filename)
+          print *,'    printing to file: ',trim(filename)
+          open(200,file=trim(filename))
           do n = 1,size(seismogramReceiver(1,:))
             write(200,*) seismogramReceiver(1,n),seismogramReceiver(2,n)
           enddo
@@ -604,7 +595,7 @@
         write(timestr,'(i5.5)') index
 
         if (.not. FORMAT_VTK) then
-          open(10,file=datadirectory(1:len_trim(datadirectory))//'simulation.'//timestr//'.dat')
+          open(10,file=trim(datadirectory)//'simulation.'//timestr//'.dat')
           do n = 1, numVertices
             ! #format: x, y, z, displacement  ( in Cartesian coordinates )
             !write(10,'(4f18.6)') (vertices(n,k),k=1,3),newdisplacement(n)
@@ -615,10 +606,10 @@
 
           enddo
           close(10)
-          print *,'    file written: '//datadirectory(1:len_trim(datadirectory))//'simulation.'//timestr//'.dat'
+          print *,'    file written: ',trim(datadirectory)//'simulation.'//timestr//'.dat'
         else
           ! vtk file
-          open(IOUT,file=datadirectory(1:len_trim(datadirectory))//'simulation.'//timestr//'.vtk')
+          open(IOUT,file=trim(datadirectory)//'simulation.'//timestr//'.vtk')
 
           write(IOUT,'(a26)') "# vtk DataFile Version 3.1"
           write(IOUT,'(a14)') "membraneSphere"
@@ -653,7 +644,7 @@
           write(IOUT,*)
           close(IOUT)
 
-          print *,'    file written: '//datadirectory(1:len_trim(datadirectory))//'simulation.'//timestr//'.vtk'
+          print *,'    file written: ',trim(datadirectory)//'simulation.'//timestr//'.vtk'
         endif
       endif
       end subroutine

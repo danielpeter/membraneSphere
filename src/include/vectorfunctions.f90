@@ -1147,7 +1147,7 @@
 
       !rare case that a becomes too big (numerical possible)
       if (a > 1.0) then
-        !if (VERBOSE)print *,'greatCircleDistance: a=',a,dlon,dlat
+        !if (VERBOSE) print *,'greatCircleDistance: a=',a,dlon,dlat
         a = 1.0_WP
       endif
 

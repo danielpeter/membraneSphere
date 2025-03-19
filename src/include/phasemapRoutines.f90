@@ -96,11 +96,11 @@
       endif
 
       ! debug check values
-      !open(20,file=trim(fileName)//'-readin.check.dat')
-      !write(20,*) lmaxuser, lmax, ncoef
-      !write(20,*) (cmod(i),i=1,ncoef)
-      !close(20)
-      !print *,'  check file:',trim(fileName)//'-readin.check.dat'
+      !open(IOUT,file=trim(fileName)//'-readin.check.dat')
+      !write(IOUT,*) lmaxuser, lmax, ncoef
+      !write(IOUT,*) (cmod(i),i=1,ncoef)
+      !close(IOUT)
+      !print *,'  check file: ',trim(fileName)//'-readin.check.dat'
 
       ! sets maxiumum expansion
       lmax = lmaxuser
@@ -906,8 +906,8 @@ end subroutine rotmx2
       ! file output
       write(chL,'(i2.2)') MAP_DEGREE_L
       write(chM,'(i2.2)') MAP_DEGREE_M
-      open(20,file=trim(datadirectory)//'PhaseMap.L'//chL//'-M'//chM//'.dat')
-      open(40,file=trim(datadirectory)//'PhaseMap.L'//chL//'-M'//chM//'.percent.dat')
+      open(IOUT,file=trim(datadirectory)//'PhaseMap.L'//chL//'-M'//chM//'.dat')
+      open(IOUT+1,file=trim(datadirectory)//'PhaseMap.L'//chL//'-M'//chM//'.percent.dat')
 
       igrid = 0
       l = MAP_DEGREE_L
@@ -969,14 +969,14 @@ end subroutine rotmx2
         if (z > zmax) zmax = z
 
         ! file output
-        write(20,*)lon_degree,lat_degree,phaseMap(i)
+        write(IOUT,*)lon_degree,lat_degree,phaseMap(i)
         ! given_as_percent
-        write(40,*)lon_degree,lat_degree,z
+        write(IOUT+1,*)lon_degree,lat_degree,z
       enddo
 
       ! close output-file
-      close(20)
-      close(40)
+      close(IOUT)
+      close(IOUT+1)
       if (MAIN_PROCESS .and. VERBOSE) then
         print *,'  total points readin: ',igrid
         print *,'    percent values minimum/maximum: ',zmin,zmax
@@ -1043,9 +1043,9 @@ end subroutine rotmx2
 !      phaseMap=rotPhaseMap
 !
 !      ! output
-!      open(10,file='tmpRotatedPhaseMap.dat')
+!      open(IOUT,file='tmpRotatedPhaseMap.dat')
 !      do i=1, numVertices
-!        write(10,*) i, phaseMap(i)
+!        write(IOUT,*) i, phaseMap(i)
 !      enddo
-!      close(10)
+!      close(IOUT)
 !      end subroutine

@@ -28,7 +28,7 @@
 
       ! construct domains
       ! count vertices in each domain
-      numDomainVert(:)=0
+      numDomainVert(:) = 0
       do n = 1,numVertices
         domain = getDomain(n)
         numDomainVert(domain) = numDomainVert(domain)+1
@@ -410,7 +410,7 @@
       external:: isBoundary,getDomain
 
       !count boundary vertices in each domain
-      numDomainVert(:,:)=0
+      numDomainVert(:,:) = 0
       do n = 1,numVertices
         domain = getDomain(n)
         !check if on bounday
@@ -458,7 +458,7 @@
       receiveDisp(:) = 0
 
       ! fill boundaries array
-      numDomainVert(:,:)=0
+      numDomainVert(:,:) = 0
       do n = 1,numVertices
         domain=getDomain(n)
         ! check if on bounday

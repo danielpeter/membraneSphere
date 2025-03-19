@@ -563,7 +563,7 @@
 !      write(chlmax,'(i3.3)')lmax
 !      write(chialpha,"(i1.1)")ialpha
 !      nameout = trim(datadirectory)//'ttkernel.regular.xyz'
-!      open(12,file=nameout)
+!      open(IOUT,file=nameout)
 !
 !      igrid = 0
 !      if (lmax > lmx)stop "l too big"
@@ -591,12 +591,12 @@
 !          enddo
 !
 !          ! file output
-!          write(12,*)xlon,xlat,z
+!          write(IOUT,*)xlon,xlat,z
 !        enddo
 !      enddo
 !
 !      ! close output-file
-!      close(12)
+!      close(IOUT)
 !
 !      ! console output
 !      if (VERBOSE) then

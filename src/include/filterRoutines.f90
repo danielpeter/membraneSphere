@@ -27,8 +27,15 @@
       log2 = log(real(numofTimeSteps))/log(2.0)
       WindowSIZE = 2**(ceiling(log2))
 
-      if (MAIN_PROCESS .and. VERBOSE) print *,'    fft window size =',WindowSIZE,'time steps=',numofTimeSteps
-      end
+      ! debug - double window size to check influence on FFT
+      !WindowSize = 2 * WindowSize
+
+      if (MAIN_PROCESS .and. VERBOSE) then
+        print *,'    FFT window size          = ',WindowSIZE
+        print *,'        number of time steps = ',numofTimeSteps
+      endif
+
+      end subroutine
 
 !-----------------------------------------------------------------------
       subroutine determineFilterParameters()
@@ -38,32 +45,68 @@
       use precisions
       implicit none
 
-      ! determine wave period
-      if (cphasetype == 'R35') bw_waveperiod=WAVEPERIOD_R35
-      if (cphasetype == 'R37') bw_waveperiod=WAVEPERIOD_R37
-      if (cphasetype == 'R40') bw_waveperiod=WAVEPERIOD_R40  ! wave period in seconds
-      if (cphasetype == 'R45') bw_waveperiod=WAVEPERIOD_R45
-      if (cphasetype == 'R50') bw_waveperiod=WAVEPERIOD_R50
-      if (cphasetype == 'R60') bw_waveperiod=WAVEPERIOD_R60
-      if (cphasetype == 'R75') bw_waveperiod=WAVEPERIOD_R75
-      if (cphasetype == 'R100') bw_waveperiod=WAVEPERIOD_R100
-      if (cphasetype == 'R150') bw_waveperiod=WAVEPERIOD_R150
-      if (cphasetype == 'R200') bw_waveperiod=WAVEPERIOD_R200
-      if (cphasetype == 'R250') bw_waveperiod=WAVEPERIOD_R250
-      if (cphasetype == 'R300') bw_waveperiod=WAVEPERIOD_R300
+      ! check if anything to do
+      if (trim(cphasetype) == "") return
 
-      if (cphasetype == 'L35') bw_waveperiod=WAVEPERIOD_L35
-      if (cphasetype == 'L37') bw_waveperiod=WAVEPERIOD_L37
-      if (cphasetype == 'L40') bw_waveperiod=WAVEPERIOD_L40
-      if (cphasetype == 'L45') bw_waveperiod=WAVEPERIOD_L45
-      if (cphasetype == 'L50') bw_waveperiod=WAVEPERIOD_L50
-      if (cphasetype == 'L60') bw_waveperiod=WAVEPERIOD_L60
-      if (cphasetype == 'L75') bw_waveperiod=WAVEPERIOD_L75
-      if (cphasetype == 'L100') bw_waveperiod=WAVEPERIOD_L100
-      if (cphasetype == 'L150') bw_waveperiod=WAVEPERIOD_L150
-      if (cphasetype == 'L200') bw_waveperiod=WAVEPERIOD_L200
-      if (cphasetype == 'L250') bw_waveperiod=WAVEPERIOD_L250
-      if (cphasetype == 'L300') bw_waveperiod=WAVEPERIOD_L300
+      ! determine wave period
+      select case (trim(cphasetype))
+      ! Rayleigh waves
+      case ('R35')
+        bw_waveperiod = WAVEPERIOD_R35
+      case ('R37')
+        bw_waveperiod = WAVEPERIOD_R37
+      case ('R40')
+        bw_waveperiod = WAVEPERIOD_R40  ! wave period in seconds
+      case ('R45')
+        bw_waveperiod = WAVEPERIOD_R45
+      case ('R50')
+        bw_waveperiod = WAVEPERIOD_R50
+      case ('R60')
+        bw_waveperiod = WAVEPERIOD_R60
+      case ('R75')
+        bw_waveperiod = WAVEPERIOD_R75
+      case ('R100')
+        bw_waveperiod = WAVEPERIOD_R100
+      case ('R150')
+        bw_waveperiod = WAVEPERIOD_R150
+      case ('R200')
+        bw_waveperiod = WAVEPERIOD_R200
+      case ('R250')
+        bw_waveperiod = WAVEPERIOD_R250
+      case ('R300')
+        bw_waveperiod = WAVEPERIOD_R300
+
+      ! Love waves
+      case ('L35')
+        bw_waveperiod = WAVEPERIOD_L35
+      case ('L37')
+        bw_waveperiod = WAVEPERIOD_L37
+      case ('L40')
+        bw_waveperiod = WAVEPERIOD_L40
+      case ('L45')
+        bw_waveperiod = WAVEPERIOD_L45
+      case ('L50')
+        bw_waveperiod = WAVEPERIOD_L50
+      case ('L60')
+        bw_waveperiod = WAVEPERIOD_L60
+      case ('L75')
+        bw_waveperiod = WAVEPERIOD_L75
+      case ('L100')
+        bw_waveperiod = WAVEPERIOD_L100
+      case ('L150')
+        bw_waveperiod = WAVEPERIOD_L150
+      case ('L200')
+        bw_waveperiod = WAVEPERIOD_L200
+      case ('L250')
+        bw_waveperiod = WAVEPERIOD_L250
+      case ('L300')
+        bw_waveperiod = WAVEPERIOD_L300
+
+      ! default
+      case default
+        print *,'Error: phase type not recognized: ',trim(cphasetype)
+        call stopProgram('Invalid phase type in determineFilterParameters()    ')
+      end select
 
       ! get (upper) half-bandwidth frequency for filtering
       if (BW_FIXFREQUENCY) then
@@ -72,7 +115,7 @@
         bw_frequency = BW_PERCENT/((BW_PERCENT+1.0)*bw_waveperiod)
       endif
 
-      end
+      end subroutine
 
 
 !-----------------------------------------------------------------------
@@ -105,7 +148,7 @@
       call getStartTimeSeismogram(seismo,seismoLength,endtime,dt,startingTime)
 
       ! read in seismograms from startingTime
-      seismoTmp(:,:)=0.0
+      seismoTmp(:,:) = 0.0
       call captureSeismogram(seismo,seismoLength,seismoTmp,xcorrlength,startingTime,entries,endtime)
 
       ! console output
@@ -156,12 +199,12 @@
 
       ! debug output
       if (fileOutput .and. MAIN_PROCESS .and. beVerbose) then
-        print *,'printing to file:',trim(datadirectory)//'Filter_input.dat'
-        open(10,file=trim(datadirectory)//'Filter_input.dat')
+        print *,'printing to file: ',trim(datadirectory)//'Filter_input.dat'
+        open(IOUT,file=trim(datadirectory)//'Filter_input.dat')
         do i = 1,xcorrlength
-          write(10,*) seismoTmp(1,i),seismoTmp(2,i)
+          write(IOUT,*) seismoTmp(1,i),seismoTmp(2,i)
         enddo
-        close(10)
+        close(IOUT)
       endif
 
       ! filter seismograms in frequency domain
@@ -178,17 +221,17 @@
 
       ! debug output
       if (fileOutput .and. MAIN_PROCESS .and. beVerbose) then
-        print *,'printing to file:',trim(datadirectory)//'Filter_output.dat'
-        open(10,file=trim(datadirectory)//'Filter_output.dat')
+        print *,'printing to file: ',trim(datadirectory)//'Filter_output.dat'
+        open(IOUT,file=trim(datadirectory)//'Filter_output.dat')
         do i = 1,seismoLength
-          write(10,*) seismo(1,i),seismo(2,i)
+          write(IOUT,*) seismo(1,i),seismo(2,i)
         enddo
-        close(10)
+        close(IOUT)
       endif
 
       ! be only once verbose
       beVerbose = .false.
-      end
+      end subroutine
 
 
 !-----------------------------------------------------------------------
@@ -235,43 +278,48 @@
       integer,intent(in):: dataLength,bandwidth,power,centerIndex
       real(WP),dimension(dataLength),intent(inout):: seismodata
       ! local parameters
-      integer:: i
-      complex(kind=8):: fftdata(dataLength),fftdataTest(dataLength),dn2 !,scale
+      integer:: i,N
+      complex(kind=8):: fftdata(dataLength),fftdataTest(dataLength) !,scale
+      double precision:: dnorm
       double precision:: butterworth
-
       interface
-        subroutine FFT_complex(data,isign)
-          complex(kind=8), dimension(:), intent(inout) :: data
-          integer, intent(in) :: isign
+        subroutine FFT_complex(data,N,isign)
+          integer, intent(in) :: N,isign
+          complex(kind=8), dimension(N), intent(inout) :: data
         end subroutine
       end interface
-
-      logical,parameter:: TEST = .false.
+      logical,parameter:: DEBUG_TEST = .false.
 
       !Normalization for inverse FFT
-      dn2 = 1.0d0/dataLength
+      N = dataLength
+      dnorm = 1.0d0 / dble(N)
 
       ! construct complex array for fourier-transformation
       fftdata(:) = cmplx(seismodata(:),0.0d0,kind=8)
 
       ! test fourier transformation
-      if (TEST .and. fileOutput .and. MAIN_PROCESS) then
+      if (DEBUG_TEST .and. fileOutput .and. MAIN_PROCESS) then
+        print *,'  testing filter seismogram:'
+        print *,'    size N = ',N
+
         fftdataTest(:) = fftdata(:)
 
         ! debug output
-        print *,'  printing to file: ',trim(datadirectory)//'FilterTest_before.dat'
+        print *,'    printing to file: ',trim(datadirectory)//'FilterTest_before.dat'
         open(IOUT,file=trim(datadirectory)//'FilterTest_before.dat')
+        write(IOUT,*) "# format: #i #real-part #imaginary-part"
         do i = 1,dataLength
           write(IOUT,*) i,real(fftdataTest(i)),aimag(fftdataTest(i))
         enddo
         close(IOUT)
 
         ! fourier-transform
-        call FFT_complex(fftdataTest,1)
+        call FFT_complex(fftdataTest,N,1)
 
         !debug output
-        print *,'  printing to file:',trim(datadirectory)//'FilterTest_FFT.dat'
+        print *,'    printing to file: ',trim(datadirectory)//'FilterTest_FFT.dat'
         open(IOUT,file=trim(datadirectory)//'FilterTest_FFT.dat')
+        write(IOUT,*) "# format: #i #real-part #imaginary-part"
         do i = 1,dataLength
           write(IOUT,*) i,real(fftdataTest(i)),aimag(fftdataTest(i))
         enddo
@@ -279,15 +327,16 @@
 
         ! normalize
         do i = 1,dataLength
-          fftdataTest(i) = fftdataTest(i)*dn2  ! normalization
+          fftdataTest(i) = fftdataTest(i) * dnorm  ! normalization
         enddo
 
         ! inverse fourier-transform
-        call FFT_complex(fftdataTest,-1)
+        call FFT_complex(fftdataTest,N,-1)
 
         ! debug output
-        print *,'  printing to file:',trim(datadirectory)//'FilterTest_after.dat'
+        print *,'    printing to file: ',trim(datadirectory)//'FilterTest_after.dat'
         open(IOUT,file=trim(datadirectory)//'FilterTest_after.dat')
+        write(IOUT,*) "# format: #i #real-part #imaginary-part"
         do i = 1,dataLength
           write(IOUT,*) i,real(fftdataTest(i)),aimag(fftdataTest(i))
         enddo
@@ -295,12 +344,13 @@
       endif
 
       ! fourier transform
-      call FFT_complex(fftdata,1)
+      call FFT_complex(fftdata,N,1)
 
       ! debug output
-      if (TEST .and. fileOutput .and. MAIN_PROCESS) then
-        print *,'  printing to file:',trim(datadirectory)//'FilterSeismo_data.dat'
+      if (DEBUG_TEST .and. fileOutput .and. MAIN_PROCESS) then
+        print *,'    printing to file: ',trim(datadirectory)//'FilterSeismo_data.dat'
         open(IOUT,file=trim(datadirectory)//'FilterSeismo_data.dat')
+        write(IOUT,*) "# format: #i #real-part #imaginary-part"
         do i = 1,dataLength
           write(IOUT,*) i,real(fftdata(i)),aimag(fftdata(i))
         enddo
@@ -317,11 +367,11 @@
       endif
 
       ! debug output
-      if (TEST .and. fileOutput .and. MAIN_PROCESS) then
-        print *,'  printing to file:',trim(datadirectory)//'FilterSeismo_datafiltered.dat'
+      if (DEBUG_TEST .and. fileOutput .and. MAIN_PROCESS) then
+        print *,'    printing to file: ',trim(datadirectory)//'FilterSeismo_datafiltered.dat'
         open(IOUT,file=trim(datadirectory)//'FilterSeismo_datafiltered.dat')
         write(IOUT,*) "# filterSeismogram"
-        write(IOUT,*) "# index realData imagData filter"
+        write(IOUT,*) "# format: index realData imagData filter"
       endif
 
       do i = 1,dataLength
@@ -352,21 +402,22 @@
         !                 butterworth*aimag(fftdata(i))/aimag(fftdata(i))*aimag(scale),kind=8)
 
         ! debug output
-        if (TEST .and. fileOutput .and. MAIN_PROCESS) then
+        if (DEBUG_TEST .and. fileOutput .and. MAIN_PROCESS) then
           write(IOUT,*) i,real(fftdata(i)),aimag(fftdata(i)),butterworth
         endif
 
         ! prepare for inverse FFT
-        fftdata(i) = fftdata(i)*dn2  !with Normalization for inverse FFT
+        fftdata(i) = fftdata(i) * dnorm  !with Normalization for inverse FFT
       enddo
 
       ! debug output
-      if (TEST .and. fileOutput .and. MAIN_PROCESS) then
+      if (DEBUG_TEST .and. fileOutput .and. MAIN_PROCESS) then
         close(IOUT)
+        print *,'    test done'
       endif
 
       ! applies inverse fourier transformation
-      call FFT_complex(fftdata,-1)
+      call FFT_complex(fftdata,N,-1)
 
       ! returns trace, as real part of the filtered data array
       seismodata(:) = real(fftdata(:),kind=WP)
@@ -394,7 +445,7 @@
       call taperSeismogram(seismo,seismoLengthRef,entries,.false.)
       call taperSeismogram(seismoRef,seismoLengthRef,entries,beVerbose)
 
-      end
+      end subroutine
 
 !-----------------------------------------------------------------------
       subroutine taperSeismogram(seismo,seismoLength,entries,verboseOutput)
@@ -430,7 +481,7 @@
       if (verboseOutput) then
         print *,'    hanning window applied:',ileft+1,iright-1,'window width:',hannwindow
       endif
-      end
+      end subroutine
 
 
 !-----------------------------------------------------------------------
@@ -459,7 +510,7 @@
       ! capture second seismogram
       call captureSeismogram(seismo2,seismoLength,seismoRef,seismoLengthRef,startingTime,entries,endtime)
 
-      end
+      end subroutine
 
 !-----------------------------------------------------------------------
       subroutine captureSeismogram(seismoData,seismoDataLength,seismoWindow,seismoWindowLength, &
@@ -509,7 +560,7 @@
 
 
 !-----------------------------------------------------------------------
-subroutine FFT_complex(data,isign)
+subroutine FFT_complex(data,N,isign)
 !-----------------------------------------------------------------------
 ! Performs a Fast Fourier Transform (FFT) on a complex data array.
 ! The input array size must be a power of 2.
@@ -518,29 +569,29 @@ subroutine FFT_complex(data,isign)
 !   data      - Complex input/output array containing the signal.
 !   isign     - Determines FFT direction: +1 for forward FFT, -1 for inverse FFT.
   implicit none
-  complex(kind=8), dimension(:), intent(inout) :: data
-  integer, intent(in) :: isign
+  integer, intent(in) :: N,isign
+  complex(kind=8), dimension(N), intent(inout) :: data
   ! local parameters
   complex(kind=8), dimension(:,:), allocatable :: matrix_data,temp
   complex(kind=8), dimension(:), allocatable :: w_factors,w_prime
   double precision, dimension(:), allocatable :: theta
-  integer :: n,row_count,col_count,j
+  integer :: nrow,ncol,j,ier
   double precision, parameter :: TWO_PI = 2.d0 * 3.1415926535897931d0
 
-  ! Get the size of input data
-  n = size(data)
-
   ! Ensure data_size is a power of 2 (necessary for FFT)
-  if (iand(n,n-1) /= 0) &
-    call stopProgram('myfour1: n must be a power of 2    ')
+  if (iand(N,N-1) /= 0) call stopProgram('FFT_complex: N must be a power of 2    ')
 
   ! Compute row and column sizes for 2D representation
-  row_count = 2**ceiling(0.5d0 * log(real(n))/0.693147d0)
-  col_count = n/row_count
+  nrow = 2**ceiling(0.5d0 * log(real(N))/0.693147d0)
+  ncol = N/nrow
 
   ! Allocate memory for matrices and auxiliary arrays
-  allocate(matrix_data(row_count,col_count),theta(row_count), &
-           w_factors(row_count),w_prime(row_count),temp(col_count,row_count))
+  allocate(matrix_data(nrow,ncol), &
+           theta(nrow), &
+           w_factors(nrow), &
+           w_prime(nrow), &
+           temp(ncol,nrow),stat=ier)
+  if (ier /= 0) stop 'Error allocating matrix data for fft'
 
   ! Reshape 1D input array into a 2D matrix format
   matrix_data = reshape(data,shape(matrix_data))
@@ -549,14 +600,14 @@ subroutine FFT_complex(data,isign)
   call myfourrow(matrix_data,isign)
 
   ! Compute phase angles for twiddle factors
-  theta = arithmetic_sequence(0.d0,dble(isign),row_count) * TWO_PI / n
+  theta = arithmetic_sequence(0.d0,dble(isign),nrow) * TWO_PI / N
 
   ! Compute FFT twiddle factors
   w_prime = cmplx(-2.0d0*sin(0.5d0*theta)**2,sin(theta),kind=8)
-  w_factors = cmplx(1.0d0,0.0d0,kind=8)
+  w_factors = cmplx(1.0d0,0.0d0)
 
   ! Apply twiddle factors to each column
-  do j = 2,col_count
+  do j = 2,ncol
     w_factors = w_factors * w_prime + w_factors
     matrix_data(:,j) = matrix_data(:,j) * w_factors
   enddo
@@ -640,8 +691,9 @@ contains
     half_size = num_columns / 2
     swap_index = half_size
     do index = 1, num_columns - 2
-      if (swap_index > index) &
+      if (swap_index > index) then
         call swap_complex_vectors(data(:, swap_index + 1), data(:, index + 1))
+      endif
 
       sub_index = half_size
       do
@@ -704,7 +756,7 @@ end subroutine
 
 
 !-----------------------------------------------------------------------
-subroutine FFT_real(data, isign, zdata)
+subroutine FFT_real(data, N, isign, zdata)
 !-----------------------------------------------------------------------
 ! Performs a real-to-complex or complex-to-real FFT using the
 ! Fast Fourier Transform (FFT) algorithm.
@@ -718,64 +770,73 @@ subroutine FFT_real(data, isign, zdata)
 !   zdata - Optional complex array to store intermediate values.
 !
 ! Dependencies:
-!   - Uses `four1` for FFT computation.
+!   - Uses `fft_complex` for FFT computation.
 !   - Uses `nn_roots` for complex exponentials.
 !
 !-----------------------------------------------------------------------
   use precisions, only: WP
   implicit none
   ! Input/Output parameters
-  real(WP), dimension(:), intent(inout) :: data
-  integer, intent(in) :: isign
-  complex(kind=8), dimension(:),intent(inout) :: zdata
+  integer, intent(in) :: N,isign
+  real(WP), dimension(N), intent(inout) :: data
+  complex(kind=8), dimension(N/2),intent(inout) :: zdata
   ! local parameters
-  integer:: n, nh, nq, ndum
-  complex(kind=8), dimension(size(data)/4) :: w
-  complex(kind=8), dimension(size(data)/4-1) :: h1, h2
+  integer:: nhalf, nquarter
+  complex(kind=8), dimension(N/4) :: w
+  complex(kind=8), dimension(N/4-1) :: h1, h2
   complex(kind=8):: z
   double precision, parameter :: c1 = 0.5d0
   double precision :: c2
   interface
-    subroutine FFT_complex(data,isign)
-      complex(kind=8), dimension(:), intent(inout) :: data
-      integer, intent(in) :: isign
+    subroutine FFT_complex(data,N,isign)
+      integer, intent(in) :: N,isign
+      complex(kind=8), dimension(N), intent(inout) :: data
     end subroutine
   end interface
 
   ! Ensure input size is a power of 2
-  n = size(data)
-  if (iand(n, n-1) /= 0) call stopProgram('FFT_real: n must be a power of 2    ')
+  if (N == 0) call stopProgram('FFT_real: invalid N is zero    ')
+  if (iand(N, N-1) /= 0) call stopProgram('FFT_real: N must be a power of 2    ')
 
   ! Define half and quarter lengths
-  nh = n / 2
-  nq = n / 4
+  nhalf = N / 2
+  nquarter = N / 4
 
-  ! Allocate or assign complex data array
-  ndum = nh
-  if (ndum /= size(zdata)) call stopProgram('FFT_real: invalid ndum')
+  if (nhalf == 0) call stopProgram('FFT_real: invalid nhalf is zero    ')
+  if (nquarter == 0) call stopProgram('FFT_real: invalid nquarter is zero    ')
+  if (nhalf /= size(zdata)) call stopProgram('FFT_real: invalid zdata size (must be N/2)    ')
+
+  ! initializes output arrays
+  if (isign == 1) then
+    ! forward FFT
+    zdata(:) = cmplx(0.d0,0.d0,kind=8)
+  else
+    ! inverse FFT
+    data(:) = 0.0_WP
+  endif
 
   ! forward FFT
-  if (isign == 1) zdata = cmplx(data(1:n-1:2), data(2:n:2), kind=8)
+  if (isign == 1) zdata = cmplx(data(1:N-1:2), data(2:N:2), kind=8)
 
   ! Perform forward or inverse FFT
   if (isign == 1) then
     c2 = -0.5d0
-    call FFT_complex(zdata, +1)
+    call FFT_complex(zdata,nhalf,+1)
   else
     c2 = 0.5d0
   endif
 
   ! Compute twiddle factors (roots of unity)
-  w = nn_roots(sign(n, isign), nq)
+  w = nn_roots(sign(N, isign), nquarter)
   w = cmplx(-aimag(w), real(w), kind=8)
 
   ! Compute the Hermitian symmetry components
-  h1 = c1 * (zdata(2:nq) + conjg(zdata(nh:nq+2:-1)))
-  h2 = c2 * (zdata(2:nq) - conjg(zdata(nh:nq+2:-1)))
+  h1 = c1 * (zdata(2:nquarter) + conjg(zdata(nhalf:nquarter+2:-1)))
+  h2 = c2 * (zdata(2:nquarter) - conjg(zdata(nhalf:nquarter+2:-1)))
 
   ! Store transformed data
-  zdata(2:nq) = h1 + w(2:nq) * h2
-  zdata(nh:nq+2:-1) = conjg(h1 - w(2:nq) * h2)
+  zdata(2:nquarter) = h1 + w(2:nquarter) * h2
+  zdata(nhalf:nquarter+2:-1) = conjg(h1 - w(2:nquarter) * h2)
 
   ! Special handling for zeroth frequency component
   z = zdata(1)
@@ -784,23 +845,23 @@ subroutine FFT_real(data, isign, zdata)
     zdata(1) = cmplx(real(z) + aimag(z), real(z) - aimag(z), kind=8)
   else
     ! inverse FFT
-    zdata(1) = cmplx(c1 * (real(z) + aimag(z)), c1 * (real(z) - aimag(z)), kind=8)
-    call FFT_complex(zdata, -1)
+    zdata(1) = c1 * cmplx(real(z) + aimag(z), real(z) - aimag(z), kind=8)
+    call FFT_complex(zdata,nhalf,-1)
   endif
 
   ! Copy data back to real array if necessary
   if (isign /= 1) then
-    data(1:n-1:2) = real(zdata,kind=WP)
-    data(2:n:2) = real(aimag(zdata),kind=WP)
+    data(1:N-1:2) = real(zdata,kind=WP)
+    data(2:N:2) = real(aimag(zdata),kind=WP)
   endif
 
 contains
 
   !-----------------------------------------------------------------------
-  function nn_roots(n, nn)
+  function nn_roots(n_in, nn_in)
   !-----------------------------------------------------------------------
   ! Computes the nn-th roots of unity (complex exponential values)
-  ! for a given integer n.
+  ! for a given integer n_in.
   !
   ! Input:
   !   n  - Base value defining the angular increment (e.g., TWOPI/n).
@@ -814,30 +875,33 @@ contains
   !-----------------------------------------------------------------------
     implicit none
     ! Input parameters
-    integer, intent(in) :: n, nn
+    integer, intent(in) :: n_in, nn_in
     ! Output array: Complex roots of unity
-    complex(kind=8), dimension(nn) :: nn_roots
+    complex(kind=8), dimension(nn_in) :: nn_roots
     ! local parameters
     integer :: k
     double precision :: theta
     double precision, parameter :: TWO_PI = 2.d0 * 3.1415926535897931d0
 
+    ! initializes
+    nn_roots(:) = cmplx(0.d0,0.d0)
+
     ! Initialize first root
     nn_roots(1) = 1.d0
 
     ! Compute angle increment
-    theta = TWO_PI / n
+    theta = TWO_PI / n_in
 
     ! Iteratively compute the roots
     k = 1
     do
-      if (k >= nn) exit
+      if (k >= nn_in) exit
 
       ! Compute the k-th root
       nn_roots(k+1) = cmplx(cos(k * theta), sin(k * theta), kind=8)
 
       ! Fill in additional values using previous calculations
-      nn_roots(k+2:min(2*k, nn)) = nn_roots(k+1) * nn_roots(2:min(k, nn-k))
+      nn_roots(k+2:min(2*k, nn_in)) = nn_roots(k+1) * nn_roots(2:min(k, nn_in-k))
 
       k = 2 * k  ! Double the index for next iteration
     enddo

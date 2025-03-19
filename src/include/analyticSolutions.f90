@@ -505,8 +505,8 @@ end module
 
         ! get spline representation
         icount = 0
-        open(88,file='OUTPUT/integrals_discretel.dat')
-        write(88,*) '#format: degree_l integralvalue'
+        open(IOUT,file='OUTPUT/integrals_discretel.dat')
+        write(IOUT,*) '#format: degree_l integralvalue'
         do_file_out = .true.
         do i = l_min,l_max
           ! starting degrees from 0 to degreeaccuracy, but array indices from 1 to length
@@ -517,21 +517,21 @@ end module
           call simpsons_integral_degree(integrand,i,0.0,PI,integralvalue,mu)
           Y(icount) = dble(integralvalue)
 
-          if (do_file_out) write(88,*) i,Y(icount)
+          if (do_file_out) write(IOUT,*) i,Y(icount)
         enddo
-        close(88)
+        close(IOUT)
 
         ! calculates spline arrays
         call cubicspline_setup()
 
         ! test
-        open(88,file='OUTPUT/integrals_nonintegerl.test.dat')
-        write(88,*) '#format: degree_l integralvalue'
+        open(IOUT,file='OUTPUT/integrals_nonintegerl.test.dat')
+        write(IOUT,*) '#format: degree_l integralvalue'
         do degreel = l_min,l_max,0.2d0
           integralvalue = cubicspline_eval(dble(degreel))
-          write(88,*) degreel,integralvalue
+          write(IOUT,*) degreel,integralvalue
         enddo
-        close(88)
+        close(IOUT)
 
         ! debug output
         open(88,file='OUTPUT/integrals_omega.dat')

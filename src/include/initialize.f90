@@ -317,9 +317,9 @@
 !                      backwardNewdisplacement(numVertices), stat=ier )
 !        if (ier /= 0) call stopProgram('error in allocating displacement arrays   ')
 !        ! initialize
-!        backwardDisplacement_old(:)=0.0_WP
-!        backwardDisplacement(:)=0.0_WP
-!        backwardNewdisplacement(:)=0.0_WP
+!        backwardDisplacement_old(:) = 0.0_WP
+!        backwardDisplacement(:) = 0.0_WP
+!        backwardNewdisplacement(:) = 0.0_WP
 !      endif
       if (MAIN_PROCESS .and. VERBOSE) then
         print *,'  meshing o.k'
@@ -466,7 +466,7 @@
 
             ! names file
             write(rankstr,'(i3.3)') rank
-            print *,'      prescribed source file:',trim(datadirectory)//'forceTermPrescribed'//rankstr//'.bin'
+            print *,'      prescribed source file: ',trim(datadirectory)//'forceTermPrescribed'//rankstr//'.bin'
             ! opens file to store data for each process
             open(sourceFileID,file=trim(datadirectory)//'forceTermPrescribed'//rankstr//'.bin', &
                access='direct',form='unformatted',recl=WP)
@@ -601,13 +601,13 @@
         if (vertex == sourceVertex .and. beVerbose .and. .not. sourceOnFile) then
           write(vertexstr,'(i8.8)') vertex
           print *,'    writing to file: ',trim(datadirectory)//'source2Prescribed.'//vertexstr//'.dat'
-          open(22,file=trim(datadirectory)//'source2Prescribed.'//vertexstr//'.dat',iostat=ier)
+          open(IOUT,file=trim(datadirectory)//'source2Prescribed.'//vertexstr//'.dat',iostat=ier)
           if (ier /= 0) &
             call stopProgram('error opening file: '//trim(datadirectory)//'source2Prescribed.'//vertexstr//'.dat   ')
           do i = 1,numofTimeSteps
-            write(22,*) seismo(1,i),forceTermPrescribed(n,i)
+            write(IOUT,*) seismo(1,i),forceTermPrescribed(n,i)
           enddo
-          close(22)
+          close(IOUT)
         endif
 
         ! filter only when there is some displacement in the trace
@@ -642,13 +642,13 @@
         ! file output
         if (vertex == sourceVertex .and. beVerbose .and. .not. sourceOnFile) then
           write(vertexstr,'(i8.8)') vertex
-          open(22,file=trim(datadirectory)//'source2Prescribed.filtered.'//vertexstr//'.dat',iostat=ier)
+          open(IOUT,file=trim(datadirectory)//'source2Prescribed.filtered.'//vertexstr//'.dat',iostat=ier)
           if (ier /= 0) &
             call stopProgram('error opening file: '//trim(datadirectory)//'source2Prescribed.filtered'//vertexstr//'.dat   ')
           do i = 1,numofTimeSteps
-            write(22,*) seismo(1,i),forceTermPrescribed(n,i)
+            write(IOUT,*) seismo(1,i),forceTermPrescribed(n,i)
           enddo
-          close(22)
+          close(IOUT)
         endif
       enddo
 
@@ -959,27 +959,27 @@
 
       ! output epicentral distances
       if (MAIN_PROCESS) then
-        open(10,file=trim(datadirectory)//'tmpEpiDistances.dat')
-        write(10,*)'# epicentral distances'
-        write(10,*)'# rounded  exactDistance (in degrees)'
+        open(IOUT,file=trim(datadirectory)//'tmpEpiDistances.dat')
+        write(IOUT,*)'# epicentral distances'
+        write(IOUT,*)'# rounded  exactDistance (in degrees)'
         if (VERBOSE) print *,'epicentral distances:'
         if (manyKernels) then
           do m = 1,numofKernels
-            rounded=int(kernelStartDistance+m-1)
+            rounded = int(kernelStartDistance+m-1)
             call greatCircleDistance(vertices(sourceVertex,:),vertices(kernelsReceivers(m,1),:),distance)
             exact = distance*180.0/PI
-            write(10,*) rounded, exact
+            write(IOUT,*) rounded, exact
             if (VERBOSE) print *,'    ',rounded,exact
           enddo
         else
           call greatCircleDistance(vertices(sourceVertex,:),vertices(receiverVertex,:),distance)
-          rounded=nint(distance)*180.0/PI
+          rounded = nint(distance)*180.0/PI
           call greatCircleDistance(vertices(sourceVertex,:),vertices(receiverVertex,:),distance)
           exact = distance*180.0/PI
-          write(10,*) rounded, exact
+          write(IOUT,*) rounded, exact
           if (VERBOSE) print *,'    ',rounded,exact
         endif
-        close(10)
+        close(IOUT)
         if (VERBOSE) print *
       endif
 
@@ -1035,11 +1035,11 @@
           if (manyKernels) then
             write(kernelstr,'(i3.3)')int(kernelStartDistance+currentKernel-1)
             datafile = trim(datadirectory)//'tmpReceiverStations'//kernelstr//'.dat'
-            open(10,file=datafile)
+            open(IIN,file=trim(datafile))
             do i = 1, numofReceivers
-              read(10,*) lat,lon,kernelsReceivers(currentKernel,i)
+              read(IIN,*) lat,lon,kernelsReceivers(currentKernel,i)
             enddo
-            close(10)
+            close(IIN)
           else
             if (VERBOSE .and. MAIN_PROCESS) print *,'importing kernels only for manyKernels supported'
             importKernelsReceivers = .false.
@@ -1047,7 +1047,7 @@
 
           ! output
           if (VERBOSE .and. MAIN_PROCESS .and. currentKernel == 1) then
-            print *,'read in receiver stations from file:', datafile
+            print *,'read in receiver stations from file: ',trim(datafile)
           endif
         else
           if (VERBOSE .and. MAIN_PROCESS) print *,'importing kernels only for manyReceivers supported'
@@ -1081,20 +1081,20 @@
           if (manyKernels) then
             write(kernelstr,'(i3.3)')int(kernelStartDistance+currentKernel-1)
             datafile = trim(datadirectory)//'tmpReceiverStations'//kernelstr//'.dat'
-            open(10,file=datafile)
+            open(IOUT,file=trim(datafile))
             do i = 1, numofReceivers
               call getSphericalCoord_Lat(kernelsReceivers(currentKernel,i),lat,lon)
-              write(10,*) lat,lon,kernelsReceivers(currentKernel,i)
+              write(IOUT,*) lat,lon,kernelsReceivers(currentKernel,i)
             enddo
-            close(10)
+            close(IOUT)
           else
             datafile = trim(datadirectory)//'tmpReceiverStations.dat'
-            open(10,file=datafile)
+            open(IOUT,file=trim(datafile))
             do i = 1, numofReceivers
               call getSphericalCoord_Lat(receivers(i),lat,lon)
-              write(10,*) lat,lon,receivers(i)
+              write(IOUT,*) lat,lon,receivers(i)
             enddo
-            close(10)
+            close(IOUT)
           endif
         endif
       endif
@@ -1145,16 +1145,17 @@
               datafile = trim(datadirectory)//'ttkernel.rot.rank'//rankstr//'.dat'
             endif
           endif
-          datafile=trim(datafile)
+          datafile = trim(datafile)
+
           ! delete if existing
-          !open(10,file=datafile,iostat=ier)
-          !if (ier == 0) close(10,status='DELETE')
+          !open(IOUT,file=datafile,iostat=ier)
+          !if (ier == 0) close(IOUT,status='DELETE')
 
           ! put two comment lines at beginning
           open(IOUT,file=trim(datafile),iostat=ier)
           if (ier /= 0) then
             ! check if really we can not create the file
-            print *,'could not open file: '//trim(datafile)
+            print *,'could not open file: ',trim(datafile)
             print *,'  try again...'
             open(IOUT,file=trim(datafile),status='unknown',iostat=ier)
             if (ier /= 0) call stopProgram('createKernelFiles() - still not possible. shutting down    ')
@@ -1303,7 +1304,7 @@
             call determineOrbitDistance(distance,iorbit)
 
             ! print epicentral distances into file
-            open(10,file=trim(datadirectory)//trim(distanceFile), &
+            open(IOUT,file=trim(datadirectory)//trim(distanceFile), &
                  status='old',position='append',iostat=ier)
             if (ier /= 0) then
               ! console output
@@ -1313,16 +1314,16 @@
                 print *
               endif
               ! open as new file
-              open(10,file=trim(datadirectory)//trim(distanceFile), &
+              open(IOUT,file=trim(datadirectory)//trim(distanceFile), &
                    status='new',iostat=ier)
               if (ier == 0) then
-                write(10,*) '# epicentral distances'
-                write(10,*) '# rounded exactDistance (in degrees)'
+                write(IOUT,*) '# epicentral distances'
+                write(IOUT,*) '# rounded exactDistance (in degrees)'
               endif
             endif
             if (ier == 0) then
-              write(10,*) int(desiredReceiverLon),distance*180.0/PI
-              close(10)
+              write(IOUT,*) int(desiredReceiverLon),distance*180.0/PI
+              close(IOUT)
             endif
           endif
         endif

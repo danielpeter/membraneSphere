@@ -13,7 +13,7 @@
 
 
 !-----------------------------------------------------------------------
-function correlation_traces(inputArray1,inputArray2)
+subroutine correlation_traces(trace1,trace2,correl,N)
 !-----------------------------------------------------------------------
 
 ! Computes the correlation of two real datasets inputArray1 and inputArray2 of length N (including any user-supplied zeropadding).
@@ -23,37 +23,86 @@ function correlation_traces(inputArray1,inputArray2)
 ! Sign convention of this routine: if inputArray1 lags inputArray2, i.e., is shifted to the right of it, then correl will show
 ! a peak at positive lags.
 
-  use precisions, only: WP
+  use precisions, only: WP,IOUT
+  use propagationStartup, only: datadirectory
   implicit none
-  real(WP), dimension(:), intent(inout) :: inputArray1,inputArray2
+  integer, intent(in):: N
+  real(WP), dimension(N), intent(in) :: trace1,trace2
+  real(WP), dimension(N), intent(out) :: correl
   ! local parameters
-  real(WP), dimension(size(inputArray1)) :: correlation_traces
+  complex(kind=8), dimension(N/2) :: fourierTransformed1,fourierTransformed2
+  double precision :: dnorm
+  integer:: nhalf,i
+  real(WP), dimension(:), allocatable :: tmp_trace1,tmp_trace2
+  logical, parameter:: DEBUG_TEST = .false.
 
-  complex(kind=8), dimension(size(inputArray1)/2) :: fourierTransformed1,fourierTransformed2
-  integer:: n,halfSize
-
-  !print *,'processing correlation...'
-  n = size(inputArray1)
-  halfSize = n/2
-
-  !print *,'checking...'
-  if (n <= 0) call stopProgram('correlation_traces needs n > 0 arrays    ')
-  if (n /= size(inputArray2)) call stopProgram('correlation_traces needs arrays with same lengths   ')
+  ! size checks
+  if (N <= 0) call stopProgram('correlation_traces needs N > 0 arrays    ')
+  if (mod(N,2) /= 0) call stopProgram('correlation_traces N must be multiple of 2   ')
   ! tests if n is a power of 2 (assuming n > 0)
-  if (iand(n,n-1) == 0) call stopProgram('correlation_traces n must be a power of 2    ')
+  if (iand(N,N-1) /= 0) call stopProgram('correlation_traces N must be a power of 2    ')
 
-  !print *,'fourier transform...'
-  call FFT_real(inputArray1,1,fourierTransformed1)
-  call FFT_real(inputArray2,1,fourierTransformed2)
+  ! initializes
+  correl(:) = 0.0_WP
+  fourierTransformed1(:) = cmplx(0.d0,0.d0)
+  fourierTransformed2(:) = cmplx(0.d0,0.d0)
 
-  fourierTransformed1(1) = cmplx(real(fourierTransformed1(1),kind=8)*real(fourierTransformed2(1),kind=8)/halfSize, &
-                                 aimag(fourierTransformed1(1))*aimag(fourierTransformed2(1))/halfSize, kind=8)
-  fourierTransformed1(2:) = fourierTransformed1(2:) * conjg(fourierTransformed2(2:))/halfSize
+  ! fourier transform arrays
+  nhalf = N/2
+  dnorm = 1.d0 / dble(nhalf) ! normalization factor
 
-  !print *,'back fourier transform...'
-  call FFT_real(correlation_traces,-1,fourierTransformed1)
-  return
-end function
+  ! debugging
+  if (DEBUG_TEST) then
+    print *,'  testing correlation traces:'
+    print *,'    size N = ',N
+    allocate(tmp_trace1(N),tmp_trace2(N))
+    ! forward
+    call FFT_real(trace1,N,+1,fourierTransformed1)
+    call FFT_real(trace2,N,+1,fourierTransformed2)
+    ! normalize for inverse FFT
+    fourierTransformed1(:) = fourierTransformed1(:) * dnorm
+    fourierTransformed2(:) = fourierTransformed2(:) * dnorm
+    ! backward
+    call FFT_real(tmp_trace1,N,-1,fourierTransformed1)
+    call FFT_real(tmp_trace2,N,-1,fourierTransformed2)
+    ! file output
+    print *,'    printing to file: ',trim(datadirectory)//'CorrelTest_trace1.dat'
+    open(IOUT,file=trim(datadirectory)//'CorrelTest_trace1.dat')
+    write(IOUT,*) "# format: #i #trace #trace-fft-reconstructed"
+    do i = 1,N
+      write(IOUT,*) i,trace1(i),tmp_trace1(i)
+    enddo
+    close(IOUT)
+    print *,'    printing to file: ',trim(datadirectory)//'CorrelTest_trace2.dat'
+    open(IOUT,file=trim(datadirectory)//'CorrelTest_trace2.dat')
+    write(IOUT,*) "# format: #i #trace #trace-fft-reconstructed"
+    do i = 1,N
+      write(IOUT,*) i,trace2(i),tmp_trace2(i)
+    enddo
+    close(IOUT)
+    deallocate(tmp_trace1,tmp_trace2)
+    ! re-initializes
+    fourierTransformed1(:) = cmplx(0.d0,0.d0)
+    fourierTransformed2(:) = cmplx(0.d0,0.d0)
+    print *,'    test done'
+  endif
+
+  ! forward FFT
+  call FFT_real(trace1,N,+1,fourierTransformed1)
+  call FFT_real(trace2,N,+1,fourierTransformed2)
+
+  ! correlation
+  fourierTransformed1(1) = cmplx(real(fourierTransformed1(1))*real(fourierTransformed2(1)), &
+                                 aimag(fourierTransformed1(1))*aimag(fourierTransformed2(1)), kind=8)
+  fourierTransformed1(2:) = fourierTransformed1(2:) * conjg(fourierTransformed2(2:))
+
+  ! normalization for inverse FFT
+  fourierTransformed1(:) = fourierTransformed1(:) * dnorm
+
+  ! inverse FFT
+  call FFT_real(correl,N,-1,fourierTransformed1)
+
+end subroutine
 
 
 !-----------------------------------------------------------------------
@@ -452,7 +501,7 @@ subroutine polynomial_interpolation(x_values, y_values, num_points, x_target, y_
       w = coeff_c(i + 1) - coeff_d(i)
       denominator = ho - hp
 
-      if (denominator == 0.0) stop "Error in polynomial interpolation: Division by zero"
+      if (denominator == 0.0) stop 'Error in polynomial interpolation: Division by zero'
 
       denominator = w / denominator
       coeff_d(i) = hp * denominator

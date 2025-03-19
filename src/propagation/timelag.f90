@@ -16,7 +16,7 @@
       real(WP):: startingTime,endingTime,amplification,analytict_lag
       character(len=128):: fileDelta,fileReference
       integer:: entries
-      logical:: output_files = .true.  ! output debug files
+      logical,parameter:: DEBUG_OUTPUT = .false.  ! output debug files
       !-----------------------------------------------------------------------
       ! parameters
       ! most parameters concerning timelag calculation are set in file Timelag_Input
@@ -29,53 +29,79 @@
       print *,'-----------------------------------------------------'
       call readInputParameters(fileDelta,fileReference,startingTime,endingTime)
 
+      ! timelag executable should be run as single process only
+      MAIN_PROCESS = .true.
+
       ! for debuging
-      fileOutput = output_files
-      beVerbose = output_files
+      fileOutput = DEBUG_OUTPUT
+      beVerbose = DEBUG_OUTPUT
 
       ! read in from startingTime
-      if (VERBOSE) print *
-      if (VERBOSE) print *,'determine file length...'
+      if (VERBOSE) then
+        print *
+        print *,'determine file length...'
+      endif
+
       call determineFileLengthTaped(fileReference,startingTime,endingTime,entries,lasttime)
       numofTimeSteps = entries
 
-      ! fft window
+      if (VERBOSE) then
+        print *
+        print *,'determine FFT parameters...'
+      endif
+
+      ! fft window size
       call determineFFTWindowsize(numofTimeSteps,WindowSIZE)
 
       ! determine filter bandwidth parameters (waveperiod and frequency)
       call determineFilterParameters()
 
       ! get time lag
-      print *
-      if (VERBOSE) print *,'calculating time lag...'
-      call getTimelagTaped(t_lag,fileDelta,fileReference,startingTime,endingTime)
+      if (VERBOSE) then
+        print *
+        print *,'calculating time lag...'
+      endif
 
+      call getTimelagTaped(t_lag,fileDelta,fileReference,startingTime,endingTime)
 
       ! time lag is the subsample position times the time step size
       ! if seismo lags seismoRef, i.e., is shifted to the right of it, then ans will
       ! show a peak at positive lags
-      print *,'  numerical timelag          :',t_lag
+      if (VERBOSE) print *
+      print *,'  numerical timelag          : ',t_lag
       !print *,'  numerical phase anomaly (s):',t_lag/(2*PI/bw_waveperiod)
+      if (VERBOSE) print *
+
       ! compare with analytical formula
       if (ANALYTICAL_CORRELATION) then
-        fileOutput = output_files
-        print *
-        if (VERBOSE) print *,'calculating analytical time lag...'
+        fileOutput = DEBUG_OUTPUT
+        if (VERBOSE) then
+          print *,'calculating analytical time lag...'
+        endif
+
         call getAnalyticalTimelagTaped(analytict_lag,fileDelta,fileReference,startingTime,endingTime)
-        print *,'  analytic timelag          :',analytict_lag
+
+        if (VERBOSE) print *
+        print *,'  analytic timelag           : ',analytict_lag
+        if (VERBOSE) print *
         !print *,'  analytic phase anomaly (s):',t_lag/(2*PI/bw_waveperiod)
       endif
 
+      ! for debugging
+      fileOutput = DEBUG_OUTPUT
+      beVerbose = DEBUG_OUTPUT
+
       ! get time lag
-      print *
-      if (VERBOSE) print *,'downhill simplex time lag...'
-      ! beVerbose = .true.
-      fileOutput = output_files
+      if (VERBOSE) then
+        print *,'downhill simplex time lag...'
+      endif
+
       call getMinimized(t_lag,amplification,fileDelta,fileReference,startingTime,endingTime)
 
-      print *,'  nonlinear timelag       :',t_lag
-      print *,'  nonlinear amplification :',amplification
-      print *
+      if (VERBOSE) print *
+      print *,'  nonlinear timelag          : ',t_lag
+      print *,'  nonlinear amplification    : ',amplification
+      if (VERBOSE) print *
 
       end program
 
@@ -103,7 +129,7 @@
       ! open input parameter file
       i = 0
       inputName = 'Timelag_Input'
-      open(10,file=trim(inputName),status='old',iostat=ier)
+      open(IIN,file=trim(inputName),status='old',iostat=ier)
       if (ier /= 0) then
         print *,'Error: opening file ',trim(inputName)
         stop 'Abort - opening input'
@@ -111,8 +137,11 @@
 
       ! parse file for parameters
       do while( ier == 0)
-        read(10,'(A128)',iostat=ier) line
+        read(IIN,'(A128)',iostat=ier) line
         if (ier /= 0) exit
+
+        ! suppress leading white spaces, if any
+        line = adjustl(line)
 
         length = len_trim(line)
         if (length == 0) then
@@ -126,11 +155,11 @@
             ! start value to begin reading lines from
             case('START')
               read(line(35:len_trim(line)),*) startingTime
-              if (Verbose) print *,'firsttime',startingTime
+              if (Verbose) print *,'firsttime        : ',startingTime
               FIRSTTIME = startingTime
             case('ENDIN')
               read(line(35:len_trim(line)),*) endingTime
-              if (Verbose) print *,'endtime',endingTime
+              if (Verbose) print *,'endtime          : ',endingTime
               LASTTIME = endingTime
 
             ! verbosity
@@ -142,34 +171,45 @@
             case('REFER')
               read(line(35:len_trim(line)),'(A128)') tmp
               fileReference = trim(tmp)
+              ! suppress leading white spaces, if any
+              fileReference = adjustl(fileReference)
               i = i+1
-              if (Verbose) print *,'reference file:',fileReference
+              if (Verbose) print *,'reference file   : ',trim(fileReference)
 
             case('PERTU')
               read(line(35:len_trim(line)),'(A128)') tmp
               fileDelta = trim(tmp)
+              ! suppress leading white spaces, if any
+              fileDelta = adjustl(fileDelta)
               i = i+1
-              if (Verbose) print *,'perturbation file:',fileDelta
+              if (Verbose) print *,'perturbation file: ',trim(fileDelta)
 
             ! file output directory
             case('DATAD')
               read(line(35:len_trim(line)),*) tmp
               datadirectory = trim(tmp)
-              if (Verbose) print *,'data output directory : ',trim(datadirectory)
+              ! suppress leading white spaces, if any
+              datadirectory = adjustl(datadirectory)
+              if (Verbose) print *,'data output      : ',trim(datadirectory)
 
             ! wave type e.g. L150
             case('CPHAS')
               if (FILTERSEISMOGRAMS) then
                 read(line(35:len_trim(line)),*) cphasetype
                 cphasetype = trim(cphasetype)
+                ! suppress leading white spaces, if any
+                cphasetype = adjustl(cphasetype)
+
                 call determinePhaseRef(cphasetype,8,cphaseRef)
-                if (Verbose) print *,'cphase    ', cphasetype, cphaseRef
+                if (Verbose) print *,'cphase         : ', cphasetype, cphaseRef
               endif
             end select
           endif
         endif
       enddo
-      close(10)
+      close(IIN)
+
+      if (Verbose) print *,'-----------------------------------------------------'
 
       ! check number of files
       if (i /= 2) then
@@ -214,7 +254,7 @@
         print *,'  file: ',trim(fileName)
       endif
 
-      open(10,file=trim(fileName),status='old',iostat=ier)
+      open(IIN,file=trim(fileName),status='old',iostat=ier)
       if (ier /= 0) then
         print *,'Error: opening file ',trim(fileName)
         stop 'Abort - determineFileLength taped'
@@ -224,21 +264,22 @@
       index = 0
       offset = 0
       do while( ier == 0 )
-        read(10,*,iostat=ier) line
+        read(IIN,*,iostat=ier) line
         index = index+1
-        line=trim(line)
+        line = trim(line)
 
         ! check for additional data in file
-        if (line(1:3) == 'dis') offset=3
-        if (line(1:3) == 'rec') offset=2
+        if (line(1:3) == 'dis') offset = 3
+        if (line(1:3) == 'rec') offset = 2
 
         ! check for line with time 0.0
-        if (line(1:3) == '0.0') ZEROLINE= index
+        if (line(1:3) == '0.0') ZEROLINE = index
 
       enddo
       FILELINES = index-1
-      if (start < 0.0) ZEROLINE= offset
-      rewind(10)
+      if (start < 0.0) ZEROLINE = offset
+
+      rewind(IIN)
 
       ! parse file for displacement values
       timediff = 0.0
@@ -246,7 +287,7 @@
       ier = 0
       do i = 1, FILELINES
         if (i >= ZEROLINE) then
-          read(10, *, iostat=ier) time,displace !,sourceterm
+          read(IIN, *, iostat=ier) time,displace !,sourceterm
           if (ier /= 0) then
             print *,'Error: reading input. last line ',i,ZEROLINE,index
             stop 'Abort - determineFileLength taped'
@@ -258,11 +299,11 @@
           endif
         else
           !read until end is reached
-          read(1, *, iostat=ier) time,displace !,sourceterm
+          read(IIN, *, iostat=ier) time,displace !,sourceterm
           endtime = time
         endif
       enddo
-      close(10)
+      close(IIN)
 
       if (beVerbose) then
         print *,'    entry read:',index

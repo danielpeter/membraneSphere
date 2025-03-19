@@ -43,9 +43,9 @@
 
       !initialize
       if (RELAXED_GRID) then
-        ending='.relaxed.dat'
+        ending = '.relaxed.dat'
       else
-        ending='.dat'
+        ending = '.dat'
       endif
 
       numVertices = 0
@@ -58,7 +58,7 @@
       !(voronoi cell centers are equal to triangle corners)
       fileName = 'data/griddata/Dtvert'//divString//ending
       if (VERBOSE) print *,'  ',trim(fileName)
-      open(10,file=trim(fileName),status='old',iostat=ier)
+      open(IIN,file=trim(fileName),status='old',iostat=ier)
       if (ier /= 0) then
         print *,'Error: could not open file ',trim(fileName)
         print *,'       Please check if the file exists...'
@@ -69,7 +69,7 @@
       numVertices = 0
       ilocal = 0
       do i = 1, MaxVertices
-        read(10,*, iostat=ier) vertices(i,1), vertices(i,2),vertices(i,3)
+        read(IIN,*, iostat=ier) vertices(i,1), vertices(i,2),vertices(i,3)
         if (ier /= 0) exit
         numVertices = numVertices +1
         ! find locations
@@ -80,42 +80,42 @@
         !endif
       enddo
       if (VERBOSE) print *,'   number of vertices: ',numVertices
-      close(10)
+      close(IIN)
       !debug
       !print *,'vertex',1,(vertices(1,k),k=1,3)
 
       !read in the corresponding cell corners
       fileName = 'data/griddata/Dvvert'//divString//ending
       if (VERBOSE) print *,'  ',trim(fileName)
-      open(20,file=trim(fileName),status='old',iostat=ier)
+      open(IIN,file=trim(fileName),status='old',iostat=ier)
       if (ier /= 0) call stopProgram( 'abort - readData File2   ')
 
       !print *,'getting voronoi cell corner vertices...'
       numCorners = 0
       do i = 1, MaxTriangles
-        read(20,*,iostat=ier) (cellCorners(i,k),k=1,3)
+        read(IIN,*,iostat=ier) (cellCorners(i,k),k=1,3)
         if (ier /= 0) exit
         numCorners = numCorners +1
       enddo
       if (VERBOSE) print *,'   number of corners: ',numCorners
-      close(20)
+      close(IIN)
       !debug
       !print *,'vertex',1,(cellCorners(1,k),k=1,3)
 
       !read in the corresponding cell neighbors indices
       fileName = 'data/griddata/Dnear'//divString//ending
       if (VERBOSE) print *,'  ',trim(fileName)
-      open(30,file=trim(fileName),status='old',iostat=ier)
+      open(IIN,file=trim(fileName),status='old',iostat=ier)
       if (ier /= 0) call stopProgram( 'abort - readData File3   ')
 
       !print *,'getting voronoi cell neighbors...'
       numNeighbors = 0
       do i = 1, MaxVertices
-        read(30,*) (cellNeighbors(i,k),k=1,6)
+        read(IIN,*) (cellNeighbors(i,k),k=1,6)
         numNeighbors = numNeighbors +1
       enddo
       if (VERBOSE) print *,'   number of neighbors: ',numNeighbors
-      close(30)
+      close(IIN)
 
       !prepare cellNeighbors info
       do i = 1, numNeighbors
@@ -131,17 +131,17 @@
       !read in the corresponding cell face indices
       fileName = 'data/griddata/Dvface'//divString//ending
       if (VERBOSE) print *,'  ',trim(fileName)
-      open(40,file=trim(fileName),status='old',iostat=ier)
+      open(IIN,file=trim(fileName),status='old',iostat=ier)
       if (ier /= 0) call stopProgram( 'abort - readData File4   ')
 
       !print *,'getting voronoi cell face indices...'
       numFaces = 0
       do i = 1, MaxVertices
-        read(40,*) (cellFace(i,k),k=1,6)
+        read(IIN,*) (cellFace(i,k),k=1,6)
         numFaces = numFaces +1
       enddo
       if (VERBOSE) print *,'   number of faces: ',numFaces
-      close(40)
+      close(IIN)
 
       !prepare cellNeighbors info
       do i = 1, numFaces
@@ -159,19 +159,19 @@
         !read in the corresponding triangle face indices
         fileName = 'data/griddata/Dtface'//divString//ending
         if (VERBOSE) print *,'  ',trim(fileName)
-        open(50,file=trim(fileName),status='old', iostat=ier)
+        open(IIN,file=trim(fileName),status='old', iostat=ier)
         if (ier /= 0) call stopProgram( 'abort - readData Dtface file    ')
 
         numTriangleFaces = 0
         do i = 1, MaxTriangles
           if (numTriangleFaces == MaxTriangles) call stopProgram( 'abort-readData triangles    ')
 
-          read(50,*,iostat=ier) (cellTriangleFace(i,k),k=1,3)
+          read(IIN,*,iostat=ier) (cellTriangleFace(i,k),k=1,3)
           if (ier /= 0) exit
           numTriangleFaces = numTriangleFaces +1
         enddo
         if (VERBOSE) print *,'   number of triangle faces: ',numTriangleFaces
-        close(50)
+        close(IIN)
       endif
 
       end subroutine

@@ -215,9 +215,9 @@
 
       ! single cell source
       !if (refVertex == sourceLocationVertex) then
-      !  widthTermSource=1.0d0
+      !  widthTermSource = 1.0d0
       !else
-      !  widthTermSource=0.0d0
+      !  widthTermSource = 0.0d0
       !endif
 
       return

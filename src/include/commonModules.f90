@@ -49,7 +49,7 @@
         real(WP) :: TimeParameterSigma              = 60.0 ! with adapt_source: L150 30.0_WP  ! L100: 30.0  , L50: 10.0 , L150: 60.0
         real(WP) :: WidthParameterMu                = 0.04 ! with adapt source: L150 0.015_WP ! L100: 2.e-2 , L50: 1.e-2, L150: 0.04
         logical,parameter :: FIXED_SOURCEPARAMETER  = .true.
-        logical,parameter:: ADAPT_SOURCE            = .false.
+        logical,parameter :: ADAPT_SOURCE           = .false.
         real(WP),parameter :: THETA_WID             = 5.0_WP ! (in degrees)
 
         ! filter parameters
@@ -78,18 +78,18 @@
         logical,parameter :: FILTERINITIALSOURCE    = .true. !.true. for inversions/kernels
         logical,parameter :: FILTERSEISMOGRAMS      = .false.
         logical,parameter :: BW_FIXFREQUENCY        = .true.
-        real(WP),parameter :: BW_HALFFREQUENCY     = 2.5e-3  ! default: 2.5e-3; Ekstrom: 2.27e-3
-        real(WP),parameter :: BW_PERCENT           = 0.0_WP
+        real(WP),parameter :: BW_HALFFREQUENCY      = 2.5e-3  ! default: 2.5e-3; Ekstrom: 2.27e-3
+        real(WP),parameter :: BW_PERCENT            = 0.0_WP
         logical,parameter :: BUTTERWORTHFILTER      = .false.
         integer,parameter :: BUTTERWORTH_POWER      = 1
-        real(WP),parameter :: ARRIVAL_THRESHOLD    = 1.0_WP
-        real(WP),parameter :: HANNWINDOW_PERCENT   = 0.1
-        real(WP),parameter :: MEMBRANECORRECTION   = 0.0
+        real(WP),parameter :: ARRIVAL_THRESHOLD     = 1.0_WP
+        real(WP),parameter :: HANNWINDOW_PERCENT    = 0.1_WP
+        real(WP),parameter :: MEMBRANECORRECTION    = 0.0_WP
         logical,parameter :: ANALYTICAL_CORRELATION = .false.
+
         ! filter the source around a new period
         logical:: new_period                        = .false.
-        real(WP):: newperiod                       = 150.919  ! (s)
-
+        real(WP):: newperiod                        = 150.919  ! (s)
 
         ! adjoint method
         ! time window of signal
@@ -99,8 +99,8 @@
         ! 3. orbit:   8000  to  13500
         ! 4. orbit:  13500 to  17000
         logical,parameter:: WINDOWEDINTEGRATION      = .false.
-        real(WP):: WINDOW_START                      = 0.0 ! in seconds
-        real(WP):: WINDOW_END                        = 4300.0 ! in seconds
+        real(WP):: WINDOW_START                      = 0.0_WP    ! in seconds
+        real(WP):: WINDOW_END                        = 4300.0_WP ! in seconds
 
 
         ! routine optimization
@@ -141,19 +141,19 @@
         !                         otherwise the antipode time is taken when calculating a new simulation time
         !                         (e.g. for many-kernels calculation)
         ! simulation overtime %: how much percent more time shall be given for the overtime
-        logical,parameter:: USEOVERTIME                 = .false.
-        real(WP),parameter:: SIMULATIONOVERTIMEPERCENT = 0.8_WP
+        logical,parameter :: USEOVERTIME                = .false.
+        real(WP),parameter :: SIMULATIONOVERTIMEPERCENT = 0.8_WP
 
         ! checkerboard map parameters
         ! instead of reading in a heterogeneous phase velocity map, it creates
         ! a checkerboard map with corresponding parameters
-        logical,parameter :: DO_CHECKERBOARD          = .false.
-        real(WP),parameter :: MAP_PERCENT_AMPLITUDE  = 2.0    !given in percent, i.e. 5% = 5.0
-        integer,parameter :: MAP_DEGREE_L            = 13 ! 9 ! 20
-        integer,parameter :: MAP_DEGREE_M            = 7 ! 5 ! 10
+        logical,parameter :: DO_CHECKERBOARD           = .false.
+        real(WP),parameter :: MAP_PERCENT_AMPLITUDE    = 2.0    !given in percent, i.e. 5% = 5.0
+        integer,parameter :: MAP_DEGREE_L              = 13 ! 9 ! 20
+        integer,parameter :: MAP_DEGREE_M              = 7 ! 5 ! 10
 
         ! simulation output
-        integer,parameter :: SIMULATION_TIMESTEPPING = 4  ! takes every fifth timestep for output
+        integer,parameter :: SIMULATION_TIMESTEPPING   = 4  ! takes every fifth timestep for output
 
         !----------------------------------------------------------------------------------------
         ! PREM values
@@ -164,27 +164,29 @@
         real(WP), parameter :: EARTHRADIUS_SQUARED = 40589641.0_WP
 
         ! rayleigh waves
-        real(WP), parameter :: PHASEVELOCITY_R35 = 3.91253_WP
-        real(WP), parameter :: PHASEVELOCITY_R37 = 3.91926_WP
-        !real(WP), parameter :: PHASEVELOCITY_R40 = 3.9284_WP  ! TW 3.9284
-        real(WP), parameter :: PHASEVELOCITY_R40 = 3.92799_WP  ! ETL 3.92799
-        real(WP), parameter :: PHASEVELOCITY_R45 = 3.94044_WP
-        real(WP), parameter :: PHASEVELOCITY_R50 = 3.95146_WP
-        real(WP), parameter :: PHASEVELOCITY_R60 = 3.97339_WP
-        real(WP), parameter :: PHASEVELOCITY_R75 = 4.01077_WP
+        ! reference phase velocities
+        real(WP), parameter :: PHASEVELOCITY_R35  = 3.91253_WP
+        real(WP), parameter :: PHASEVELOCITY_R37  = 3.91926_WP
+        !real(WP), parameter :: PHASEVELOCITY_R40  = 3.9284_WP  ! TW 3.9284
+        real(WP), parameter :: PHASEVELOCITY_R40  = 3.92799_WP  ! ETL 3.92799
+        real(WP), parameter :: PHASEVELOCITY_R45  = 3.94044_WP
+        real(WP), parameter :: PHASEVELOCITY_R50  = 3.95146_WP
+        real(WP), parameter :: PHASEVELOCITY_R60  = 3.97339_WP
+        real(WP), parameter :: PHASEVELOCITY_R75  = 4.01077_WP
         real(WP), parameter :: PHASEVELOCITY_R100 = 4.08957_WP
         real(WP), parameter :: PHASEVELOCITY_R150 = 4.30508_WP
         real(WP), parameter :: PHASEVELOCITY_R200 = 4.57676_WP
         real(WP), parameter :: PHASEVELOCITY_R250 = 4.91844_WP
         real(WP), parameter :: PHASEVELOCITY_R300 = 5.29076_WP
-        real(WP), parameter :: WAVEPERIOD_R35    = 35.0987_WP
-        real(WP), parameter :: WAVEPERIOD_R37    = 37.0734_WP
-        !real(WP), parameter :: WAVEPERIOD_R40    = 40.1970_WP  ! TW: 40.1970
-        real(WP), parameter :: WAVEPERIOD_R40    = 40.0432_WP  ! ETL: 40.0432
-        real(WP), parameter :: WAVEPERIOD_R45    = 45.0501_WP
-        real(WP), parameter :: WAVEPERIOD_R50    = 50.0271_WP
-        real(WP), parameter :: WAVEPERIOD_R60    = 60.1467_WP
-        real(WP), parameter :: WAVEPERIOD_R75    = 75.3258_WP
+        ! reference periods
+        real(WP), parameter :: WAVEPERIOD_R35     = 35.0987_WP
+        real(WP), parameter :: WAVEPERIOD_R37     = 37.0734_WP
+        !real(WP), parameter :: WAVEPERIOD_R40     = 40.1970_WP  ! TW: 40.1970
+        real(WP), parameter :: WAVEPERIOD_R40     = 40.0432_WP  ! ETL: 40.0432
+        real(WP), parameter :: WAVEPERIOD_R45     = 45.0501_WP
+        real(WP), parameter :: WAVEPERIOD_R50     = 50.0271_WP
+        real(WP), parameter :: WAVEPERIOD_R60     = 60.1467_WP
+        real(WP), parameter :: WAVEPERIOD_R75     = 75.3258_WP
         real(WP), parameter :: WAVEPERIOD_R100    = 100.3930_WP
         real(WP), parameter :: WAVEPERIOD_R150    = 151.1930_WP ! minor arc?
         !real(WP), parameter :: WAVEPERIOD_R150    = 150.0_WP ! major arc?
@@ -193,43 +195,45 @@
         real(WP), parameter :: WAVEPERIOD_R300    = 300.0_WP
 
         ! love waves
-        real(WP), parameter :: PHASEVELOCITY_L35 = 4.39987_WP
-        real(WP), parameter :: PHASEVELOCITY_L37 = 4.41795_WP
-        real(WP), parameter :: PHASEVELOCITY_L40 = 4.44109_WP
-        real(WP), parameter :: PHASEVELOCITY_L45 = 4.47005_WP
-        real(WP), parameter :: PHASEVELOCITY_L50 = 4.49336_WP
-        real(WP), parameter :: PHASEVELOCITY_L60 = 4.53031_WP
-        real(WP), parameter :: PHASEVELOCITY_L75 = 4.57474_WP
-        real(WP), parameter :: PHASEVELOCITY_L100= 4.64431_WP
+        ! reference phase velocities
+        real(WP), parameter :: PHASEVELOCITY_L35  = 4.39987_WP
+        real(WP), parameter :: PHASEVELOCITY_L37  = 4.41795_WP
+        real(WP), parameter :: PHASEVELOCITY_L40  = 4.44109_WP
+        real(WP), parameter :: PHASEVELOCITY_L45  = 4.47005_WP
+        real(WP), parameter :: PHASEVELOCITY_L50  = 4.49336_WP
+        real(WP), parameter :: PHASEVELOCITY_L60  = 4.53031_WP
+        real(WP), parameter :: PHASEVELOCITY_L75  = 4.57474_WP
+        real(WP), parameter :: PHASEVELOCITY_L100 = 4.64431_WP
         ! Trampert & Woodhouse 1995/1996
-        real(WP), parameter :: PHASEVELOCITY_L150= 4.78619_WP ! TW: 4.78619
+        real(WP), parameter :: PHASEVELOCITY_L150 = 4.78619_WP ! TW: 4.78619
         ! Ekstrom et al. 1997
-        !real(WP), parameter :: PHASEVELOCITY_L150= 4.77915_WP ! ETL: 4.77915 first arrival
-        real(WP), parameter :: PHASEVELOCITY_L200= 4.91928_WP
-        real(WP), parameter :: PHASEVELOCITY_L250= 5.07097_WP
-        real(WP), parameter :: PHASEVELOCITY_L300= 5.22906_WP
-        real(WP), parameter :: PHASEVELOCITY_L450= 5.74979_WP
-        real(WP), parameter :: PHASEVELOCITY_L600= 6.36841_WP
-        real(WP), parameter :: WAVEPERIOD_L35    = 35.0599_WP
-        real(WP), parameter :: WAVEPERIOD_L37    = 37.0585_WP
-        real(WP), parameter :: WAVEPERIOD_L40    = 40.1497_WP
-        real(WP), parameter :: WAVEPERIOD_L45    = 45.1143_WP
-        real(WP), parameter :: WAVEPERIOD_L50    = 50.1901_WP
-        real(WP), parameter :: WAVEPERIOD_L60    = 60.3145_WP
-        real(WP), parameter :: WAVEPERIOD_L75    = 75.1095_WP
-        real(WP), parameter :: WAVEPERIOD_L100   = 100.8090_WP
+        !real(WP), parameter :: PHASEVELOCITY_L150 = 4.77915_WP ! ETL: 4.77915 first arrival
+        real(WP), parameter :: PHASEVELOCITY_L200 = 4.91928_WP
+        real(WP), parameter :: PHASEVELOCITY_L250 = 5.07097_WP
+        real(WP), parameter :: PHASEVELOCITY_L300 = 5.22906_WP
+        real(WP), parameter :: PHASEVELOCITY_L450 = 5.74979_WP
+        real(WP), parameter :: PHASEVELOCITY_L600 = 6.36841_WP
+        ! reference periods
+        real(WP), parameter :: WAVEPERIOD_L35     = 35.0599_WP
+        real(WP), parameter :: WAVEPERIOD_L37     = 37.0585_WP
+        real(WP), parameter :: WAVEPERIOD_L40     = 40.1497_WP
+        real(WP), parameter :: WAVEPERIOD_L45     = 45.1143_WP
+        real(WP), parameter :: WAVEPERIOD_L50     = 50.1901_WP
+        real(WP), parameter :: WAVEPERIOD_L60     = 60.3145_WP
+        real(WP), parameter :: WAVEPERIOD_L75     = 75.1095_WP
+        real(WP), parameter :: WAVEPERIOD_L100    = 100.8090_WP
         ! Trampert & Woodhouse 1995/1996
-        real(WP), parameter :: WAVEPERIOD_L150   = 153.462_WP ! TW: 153.462
+        real(WP), parameter :: WAVEPERIOD_L150    = 153.462_WP ! TW: 153.462
         ! Ekstrom et al. 1997
-        !real(WP), parameter :: WAVEPERIOD_L150   = 150.9190_WP ! ETL: 150.9190
+        !real(WP), parameter :: WAVEPERIOD_L150    = 150.9190_WP ! ETL: 150.9190
         real(WP), parameter :: WAVEPERIOD_L200    = 200.0_WP
         real(WP), parameter :: WAVEPERIOD_L250    = 250.0_WP
         real(WP), parameter :: WAVEPERIOD_L300    = 300.0_WP
 
         ! useful parameters
         real(WP), parameter :: PI                 = 3.1415926535897931_WP
-        real(WP), parameter :: RAD2DEGREE         = 180.0_WP/PI
-        real(WP), parameter :: DEGREE2RAD         = PI/180.0_WP
+        real(WP), parameter :: RAD2DEGREE         = 180.0_WP / PI
+        real(WP), parameter :: DEGREE2RAD         = PI / 180.0_WP
 
         ! file I/O
         integer, parameter :: IIN = 40
@@ -305,13 +309,14 @@
         implicit none
         integer:: subdivisions,MaxTriangles,MaxVertices
         integer,allocatable, dimension(:,:):: cellFace,cellNeighbors,cellTriangleFace
-        integer:: numFaces,numNeighbors,numTriangleFaces,numCorners,numVertices, &
-                 numDomainVertices
+        integer:: numFaces,numNeighbors,numTriangleFaces,numCorners,numVertices,numDomainVertices
+
         real(WP), allocatable, dimension(:):: cellAreas
         real(WP), allocatable, dimension(:,:):: vertices,cellEdgesLength, &
                                                 cellCenterDistances,cellCorners,cellFractions
         real(WP):: interpolation_distances(3),interpolation_triangleLengths(3)
         integer:: interpolation_corners(3),interpolation_triangleIndex
+        real(WP):: averageCellDistance
       end module cells
 
 !-----------------------------------------------------------------------
@@ -319,7 +324,7 @@
 !-----------------------------------------------------------------------
       ! propagationStartup module
       ! used for initialization startup process
-        use precisions, only: WP,IOUT,PI,EARTHRADIUS, &
+        use precisions, only: WP,IIN,IOUT,PI,EARTHRADIUS, &
           SIMULATIONOVERTIMEPERCENT,USEOVERTIME,WINDOWEDINTEGRATION, &
           FILTERINITIALSOURCE,PRESCRIBEDSOURCE, &
           FILTERSEISMOGRAMS, &
@@ -327,10 +332,16 @@
         implicit none
         logical:: Phaseshift_Program = .false.
         logical:: HetPhaseshift_Program = .false.
-        logical:: HETEROGENEOUS,DELTA,SECONDDELTA,MOVEDELTA
-        logical:: SIMULATIONOUTPUT
-        logical:: manyReceivers,manyKernels
-        logical:: importKernelsReceivers,referenceRun
+        logical:: HETEROGENEOUS = .false.
+        logical:: DELTA = .false.
+        logical:: SECONDDELTA = .false.
+        logical:: MOVEDELTA = .false.
+        logical:: SIMULATIONOUTPUT = .false.
+        logical:: manyReceivers = .false.
+        logical:: manyKernels = .false.
+        logical:: importKernelsReceivers = .false.
+        logical:: referenceRun = .false.
+
         integer:: startVertex,endVertex,firsttimestep,lasttimestep, &
                  numofTimeSteps,midpointVertex
         integer:: sourceVertex,receiverVertex,deltaVertex,originSourceVertex, &
@@ -338,22 +349,26 @@
         integer:: numofReceivers,numofKernels,currentKernel
         integer,allocatable,dimension(:):: receivers
         integer,allocatable,dimension(:,:):: kernelsReceivers
-        character(len=8):: DELTAfunction,cphasetype
-        character(len=128):: datadirectory
+        character(len=8):: DELTAfunction = ""
+        character(len=8):: cphasetype = ""
+        character(len=128):: datadirectory = ""
         real(WP):: FIRSTTIME,LASTTIME,DELTARADIUS
         real(WP):: sourceLat,sourceLon,receiverLat,receiverLon,cphaseRef, &
                    desiredSourceLat,desiredSourceLon,muSquare,muTwo
         real(WP):: deltaLat,deltaLon,deltaPerturbation,deltaMoveIncrement, &
                    desiredReceiverLat,desiredReceiverLon
-        real(WP):: cphase2,dt,dt2,averageCellDistance
+
+        real(WP):: dt = 0.0_WP
+        real(WP):: dt2,cphase2
+
         real(WP):: kernelStartDistance,kernelEndDistance,distanceQuit
         real(WP):: benchAllStart,benchAllEnd,benchstart,benchend
         real(WP),allocatable,dimension(:,:):: seismogramReceiver, &
-                                             receiversSeismogram, &
-                                             receiversSeismogramRef
-        real(WP),allocatable,dimension(:,:,:)::kernelsReceiversSeismogram, &
-                                              kernelsReceiversSeismogramRef
-        real(WP),allocatable,dimension(:,:)::forceTermPrescribed
+                                              receiversSeismogram, &
+                                              receiversSeismogramRef
+        real(WP),allocatable,dimension(:,:,:):: kernelsReceiversSeismogram, &
+                                                kernelsReceiversSeismogramRef
+        real(WP),allocatable,dimension(:,:):: forceTermPrescribed
         logical:: sourceOnFile = .false.
         integer:: sourceFileID = 201
         integer:: SH_lmx,SH_ncoef
@@ -381,8 +396,8 @@
       ! used for MPI parallelization
         use mpi
         implicit none
-        logical:: PARALLELSEISMO
-        logical:: MAIN_PROCESS = .false.
+        logical:: PARALLELSEISMO = .false.
+        logical:: MAIN_PROCESS   = .false.
         integer:: nprocesses,rank,tag,MPI_CUSTOM
         integer:: status(MPI_STATUS_SIZE)
       end module
@@ -405,11 +420,11 @@
         use precisions, only: WP,PI
         implicit none
         integer:: boundariesMaxRange
-        integer,allocatable,dimension(:)::domainVertices
-        integer,allocatable,dimension(:)::vertexDomain
-        integer,allocatable,dimension(:,:,:)::boundaries
-        integer,allocatable,dimension(:,:)::domainNeighbors
-        real(WP),allocatable,dimension(:)::sendDisp,receiveDisp
+        integer,allocatable,dimension(:):: domainVertices
+        integer,allocatable,dimension(:):: vertexDomain
+        integer,allocatable,dimension(:,:,:):: boundaries
+        integer,allocatable,dimension(:,:):: domainNeighbors
+        real(WP),allocatable,dimension(:):: sendDisp,receiveDisp
       end
 
 !-----------------------------------------------------------------------

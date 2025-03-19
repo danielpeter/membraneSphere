@@ -486,6 +486,8 @@
 
       if (PARALLELSEISMO) then
         ! each process prints its own output to the current directory
+        if (MAIN_PROCESS .and. VERBOSE) print *,'    printing parallel simulation seismos'
+
         ! displacement at receiver
         if (manyReceivers) then
           print *,'    printing to receiver files: '//filename(1:len_trim(filename)-4)
@@ -532,6 +534,8 @@
         endif
       else
         ! each process prints its own output to the current directory
+        if (MAIN_PROCESS .and. VERBOSE) print *,'    printing distributed simulation seismos'
+
         ! displacement at receiver
         if (manyReceivers) then
           print *,'    printing to receiver files: ',filename(1:len_trim(filename)-4)
@@ -595,17 +599,17 @@
         write(timestr,'(i5.5)') index
 
         if (.not. FORMAT_VTK) then
-          open(10,file=trim(datadirectory)//'simulation.'//timestr//'.dat')
+          open(IOUT,file=trim(datadirectory)//'simulation.'//timestr//'.dat')
           do n = 1, numVertices
             ! #format: x, y, z, displacement  ( in Cartesian coordinates )
             !write(10,'(4f18.6)') (vertices(n,k),k=1,3),newdisplacement(n)
 
             ! #format: lon, lat, displacement  ( in spherical coordinates and degrees )
             call getSphericalCoordinates(vertices(n,:),lat,lon)
-            write(10,*) lon,lat,newdisplacement(n)
+            write(IOUT,*) lon,lat,newdisplacement(n)
 
           enddo
-          close(10)
+          close(IOUT)
           print *,'    file written: ',trim(datadirectory)//'simulation.'//timestr//'.dat'
         else
           ! vtk file

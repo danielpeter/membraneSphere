@@ -50,6 +50,9 @@ module minimize_trace
       amplification = x(2)
       if (amplification < 0.0) amplification = 0.0
 
+      !debug
+      !print *,'debug: costfunction: t_lag/amp = ',t_lag,amplification
+
       ! create shifted seismogram
       ! (move seismoHom, homogeneous trace, to seismoHet, the heterogeneous one)
       call sumSeismogram(t_lag,amplification,seismoHom,seismoHet,seismoShift,trace_length)
@@ -244,15 +247,15 @@ end module
       real(WP),allocatable,dimension(:,:):: seismo1,seismo2
 
       !initialize
-      seismo(:,:)=0.0_WP
-      seismoRef(:,:)=0.0_WP
+      seismo(:,:) = 0.0_WP
+      seismoRef(:,:) = 0.0_WP
 
       ! read in from startingTime
       call readSeismo(seismoRef,WindowSIZE,fileReference,startingTime,timedelta,entries,lastseismotime)
       call readSeismo(seismo,WindowSIZE,fileDelta,startingTime,timedelta,entries,lastseismotime)
 
       allocate(seismo1(2,entries),seismo2(2,entries),stat=ier)
-      if (ier /= 0) stop "error allocating seismo1/2"
+      if (ier /= 0) stop 'Error allocating seismo1/2'
 
       seismo1(:,:) = seismoRef(:,1:entries)
       seismo2(:,:) = seismo(:,1:entries)
@@ -288,15 +291,15 @@ end module
       real(WP),allocatable,dimension(:,:):: seismo1,seismo2
 
       !initialize
-      seismo(:,:)=0.0_WP
-      seismoRef(:,:)=0.0_WP
+      seismo(:,:) = 0.0_WP
+      seismoRef(:,:) = 0.0_WP
 
       ! read in from startingTime
       call readSeismoTaped(seismoRef,WindowSIZE,fileReference,startingTime,endingTime,timedelta,entries,lastseismotime)
       call readSeismoTaped(seismo,WindowSIZE,fileDelta,startingTime,endingTime,timedelta,entries,lastseismotime)
 
       allocate(seismo1(2,entries),seismo2(2,entries),stat=ier)
-      if (ier /= 0) stop "error allocating seismo1/2"
+      if (ier /= 0) stop 'Error allocating seismo1/2'
 
       seismo1(:,:) = seismoRef(:,1:entries)
       seismo2(:,:) = seismo(:,1:entries)
@@ -320,7 +323,8 @@ end module
 !       startingTime                     - window start time of fourier transformation for correlation
 !
 ! returns: t_lag timelag in seconds
-      use verbosity; use propagationStartup; use filterType
+      use propagationStartup
+      use verbosity; use filterType
       implicit none
       integer,intent(in):: station
       real(WP),intent(in):: startingTime
@@ -331,23 +335,23 @@ end module
       real(WP),allocatable,dimension(:,:):: seismo1,seismo2
 
       !initialize
-      seismo(:,:)=0.0_WP
-      seismoRef(:,:)=0.0_WP
+      seismo(:,:) = 0.0_WP
+      seismoRef(:,:) = 0.0_WP
 
       ! read in from startingTime
       index = 0
       do i = 1,numofTimeSteps
         if (index < WindowSIZE) then
           if (manyKernels) then
-            time=kernelsReceiversSeismogram(currentKernel,numofReceivers+1,i)
-            displace=kernelsReceiversSeismogram(currentKernel,station,i)
-            timeRef=kernelsReceiversSeismogramRef(currentKernel,numofReceivers+1,i)
-            displaceRef=kernelsReceiversSeismogramRef(currentKernel,station,i)
+            time = kernelsReceiversSeismogram(currentKernel,numofReceivers+1,i)
+            displace = kernelsReceiversSeismogram(currentKernel,station,i)
+            timeRef = kernelsReceiversSeismogramRef(currentKernel,numofReceivers+1,i)
+            displaceRef = kernelsReceiversSeismogramRef(currentKernel,station,i)
           else
             time = receiversSeismogram(size(receivers)+1,i)
-            displace=receiversSeismogram(station,i)
+            displace = receiversSeismogram(station,i)
             timeRef = receiversSeismogramRef(size(receivers)+1,i)
-            displaceRef=receiversSeismogramRef(station,i)
+            displaceRef = receiversSeismogramRef(station,i)
           endif
 
           if (time - startingTime > 0.0_WP) then ! starts with times from 'start time' on
@@ -366,7 +370,7 @@ end module
       enddo
 
       allocate(seismo1(2,index),seismo2(2,index),stat=ier)
-      if (ier /= 0) stop "error allocating seismo1/2"
+      if (ier /= 0) stop 'Error allocating seismo1/2'
 
       seismo1(:,:) = seismoRef(:,1:index)
       seismo2(:,:) = seismo(:,1:index)
@@ -393,23 +397,21 @@ end module
 !       Filterseismograms                        - use filter before determining time lag
 ! returns: t_lag timelag in seconds ( uses dt )
       use verbosity;use filterType
-      use propagationStartup
+      use propagationStartup, only: WP,datadirectory,dt
       implicit none
       real(WP),intent(out):: t_lag
       integer,intent(in):: seismoLength
       real(WP),intent(in):: seismo1(2,seismoLength),seismo2(2,seismoLength)
       real(WP),intent(in):: timedelta
       ! local parameters
-      integer:: i
+      integer:: i,ier
       integer:: xcorrlength,zeropad
       real(WP):: seismo(2,WindowSIZE),seismoRef(2,WindowSIZE)
       real(WP):: sub
       real(WP):: timedeltaWindow,td
       real(WP),allocatable,dimension(:):: seismoWindow,seismoRefWindow,crosscorrelation
-      !real(WP):: crosscorrelation(WindowSIZE),seismoWindow(WindowSIZE),seismoRefWindow(WindowSIZE)
 
       real(WP),external:: getMaximum
-      real(WP),external:: correlation_traces
 
       logical,parameter:: NORMALIZE         = .false.
       logical,parameter:: STRETCH           = .false.
@@ -418,27 +420,35 @@ end module
 
       ! console
       if (beVerbose) then
+        print *,'  getting timelag seismos by cross-correlation...'
+        print *
         print *,'  perturbed seismogram:'
-        print *,'    dt:',timedelta
-        print *,'    first entry:',seismo1(1,1),seismo1(2,1)
-        print *,'    last entry:',seismo1(1,seismoLength),seismo1(2,seismoLength)
-        print *,'    entry read:',seismoLength
+        print *,'    first entry: ',seismo1(1,1),seismo1(2,1)
+        print *,'    last entry : ',seismo1(1,seismoLength),seismo1(2,seismoLength)
+        print *,'    entry read : ',seismoLength
         print *,'  reference seismogram:'
-        print *,'    first entry:',seismo2(1,1),seismo2(2,1)
-        print *,'    last entry:',seismo2(1,seismoLength),seismo2(2,seismoLength)
-        print *,'    entry read:',seismoLength
+        print *,'    first entry: ',seismo2(1,1),seismo2(2,1)
+        print *,'    last entry : ',seismo2(1,seismoLength),seismo2(2,seismoLength)
+        print *,'    entry read : ',seismoLength
+        print *,'  time step: dt = ',timedelta
+        print *
       endif
+
+      ! set dt if not determined yet
+      if (dt == 0.0) dt = timedelta
 
       ! tapering ends
       if (TAPER) then
+        if (beVerbose) print *,'    taper ends'
         call taperSeismogram(seismo1,seismoLength,seismoLength,beVerbose)
         call taperSeismogram(seismo2,seismoLength,seismoLength,beVerbose)
       endif
 
       ! debug output
       if (fileOutput) then
-        print *,'  printing to file:',trim(datadirectory)//'Timelag_read.dat'
+        print *,'  printing to file: ',trim(datadirectory)//'Timelag_read.dat'
         open(IOUT,file=trim(datadirectory)//'Timelag_read.dat')
+        write(IOUT,*) "# format: #time #trace-perturbed #trace-reference"
         do i = 1,seismoLength
           write(IOUT,*) seismo1(1,i),seismo1(2,i),seismo2(2,i)
         enddo
@@ -446,8 +456,8 @@ end module
       endif
 
       ! copy arrays
-      seismo(:,:)=0.0_WP
-      seismoRef(:,:)=0.0_WP
+      seismo(:,:) = 0.0_WP
+      seismoRef(:,:) = 0.0_WP
       do i = 1,seismoLength
         seismo(:,i) = seismo1(:,i)
         seismoRef(:,i) = seismo2(:,i)
@@ -455,12 +465,13 @@ end module
 
       ! filtering necessary
       if (FILTERSEISMOGRAMS) then
-        if (dt == 0.0) dt = timedelta
+        if (beVerbose) print *,'    filter seismograms'
         call dofilterSeismogram(seismo,WindowSIZE)
         call dofilterSeismogram(seismoRef,WindowSIZE)
 
         ! apply hanning window  to smooth seismograms ends
         if (TAPER_FILTERED) then
+          if (beVerbose) print *,'    taper seismogram ends'
           call taperSeismogram(seismo,WindowSIZE,WindowSIZE,beVerbose)
           call taperSeismogram(seismoRef,WindowSIZE,WindowSIZE,beVerbose)
         endif
@@ -468,70 +479,84 @@ end module
 
       ! length of cross-correlation array
       !initialize
-      xcorrlength = WindowSIZE !or:   xcorrlength = WindowSIZE+zeropad
-      zeropad = WindowSIZE - seismoLength
+      xcorrlength = WindowSIZE             ! WindowSize is power of 2 for FFT
+      zeropad = WindowSIZE - seismoLength  ! zero padding
+
+      ! increases array lengths to have a minimum of twice the actual seismo length
       if (zeropad < seismoLength) then
-        xcorrlength = 2* WindowSIZE
+        xcorrlength = 2 * WindowSIZE
         zeropad = xcorrlength - seismoLength
       endif
-      allocate(seismoWindow(xcorrlength),seismoRefWindow(xcorrlength), crosscorrelation(xcorrlength))
+
+      allocate(seismoWindow(xcorrlength), &
+               seismoRefWindow(xcorrlength), &
+               crosscorrelation(xcorrlength),stat=ier)
+      if (ier /= 0) stop 'Error allocating correlation array'
+      seismoWindow(:) = 0.0_WP
+      seismoRefWindow(:) = 0.0_WP
+      crosscorrelation(:) = 0.0_WP
 
       ! fills in the values into the window arrays
-      seismoWindow(:)=0.0_WP
-      seismoRefWindow(:)=0.0_WP
       if (STRETCH) then
         ! interpolated into window size
         td = (seismo1(1,seismoLength)-seismo1(1,1))/(seismoLength-1.0)
         timedeltaWindow = (seismo1(1,seismoLength)-seismo1(1,1))/(WindowSIZE-1.0)
-        print *,'  stretched timedelta:',timedeltaWindow,WindowSIZE
+        print *,'    stretched timedelta:',timedeltaWindow,WindowSIZE
         call resample(seismo1(2,1:seismoLength),seismoLength,td,seismoWindow,WindowSIZE, &
                    timedeltaWindow )
         call resample(seismo2(2,1:seismoLength),seismoLength,td,seismoRefWindow,WindowSIZE, &
                    timedeltaWindow)
       else
         ! window zeros are added
-        if (WindowSIZE < seismoLength) stop "error windowsize/seismoLength"
+        if (WindowSIZE < seismoLength) stop 'Error windowsize/seismoLength'
         seismoWindow(1:WindowSIZE) = seismo(2,1:WindowSIZE)
         seismoRefWindow(1:WindowSIZE) = seismoRef(2,1:WindowSIZE)
       endif
 
       ! normalize seismograms
       if (NORMALIZE) then
-        print *,'  normalize traces'
+        print *,'    normalize traces'
         call normalizeArray(seismoWindow,xcorrlength)
         call normalizeArray(seismoRefWindow,xcorrlength)
       endif
 
       ! debug output
       if (fileOutput) then
-        print *,'  printing to file:',trim(datadirectory)//'Timelag_window.dat'
-        open(10,file=trim(datadirectory)//'Timelag_window.dat')
-        write(10,*) "#format: time trace referencetrace"
+        print *,'  printing to file: ',trim(datadirectory)//'Timelag_window.dat'
+        open(IOUT,file=trim(datadirectory)//'Timelag_window.dat')
+        write(IOUT,*) "# format: #time #windowed-trace #windowed-reference-trace"
         do i = 1,xcorrlength
           if (STRETCH) then
-            write(10,*) (i-1)*timedeltaWindow+seismo2(1,1),seismoWindow(i),seismoRefWindow(i)
+            write(IOUT,*) (i-1)*timedeltaWindow+seismo2(1,1),seismoWindow(i),seismoRefWindow(i)
           else
-            write(10,*) (i-1)*timedelta+seismo2(1,1),seismoWindow(i),seismoRefWindow(i)
+            write(IOUT,*) (i-1)*timedelta+seismo2(1,1),seismoWindow(i),seismoRefWindow(i)
           endif
         enddo
-        close(10)
+        close(IOUT)
       endif
 
       ! gets cross-correlation
-      crosscorrelation = correlation_traces(seismoWindow,seismoRefWindow)
+      call correlation_traces(seismoWindow,seismoRefWindow,crosscorrelation,xcorrlength)
 
       ! alternative
       !call time_correl(seismoWindow,seismoRefWindow,crosscorrelation,WindowSIZE)
 
       ! debug output
       if (fileOutput) then
-        print *,'  printing to file:',trim(datadirectory)//'Timelag_correlation.dat'
-        open(11, file=trim(datadirectory)//'Timelag_correlation.dat')
-        write(11,*) '#correlation'
+        print *,'  printing to file: ',trim(datadirectory)//'Timelag_correlation.dat'
+        open(IOUT, file=trim(datadirectory)//'Timelag_correlation.dat')
+        write(IOUT,*) '# correlation'
+        write(IOUT,*) "# format: #i #cross-correlation"
         do i = 1,xcorrlength
-          write(11,*) i,crosscorrelation(i)
+          write(IOUT,*) i,crosscorrelation(i)
         enddo
-        close(11)
+        close(IOUT)
+      endif
+
+      if (beVerbose) then
+        print *
+        print *,'  correlation array length = ',xcorrlength
+        print *
       endif
 
       ! calculate the subsample precision maximum position
@@ -549,12 +574,11 @@ end module
       if (abs(sub) > zeropad) then
         print *,'Error: correlation returns lag:',sub
         print *,'       which is bigger than the buffer zone:',zeropad
-        stop "error correlation"
+        stop 'Error correlation'
       endif
 
       !only be verbose once
       if (beVerbose) then
-        print *
         beVerbose = .false.
         fileOutput = .false.
       endif
@@ -795,7 +819,7 @@ end module
 
       ! console output debug
       if (beVerbose) then
-        maxestimate=max-0.25*(pointleft-pointright)*getMaximum
+        maxestimate = max-0.25*(pointleft-pointright)*getMaximum
         print *,'    subsample position:',getMaximum
         print *,'        index:',indexmax
         print *,'        estimated maximum:',maxestimate
@@ -839,9 +863,8 @@ end module
 
       ! open seismogram file
       if (beVerbose) then
-        print *
-        print *,'  file :',trim(fileName)
-        print *,'  start:',start
+        print *,'  file : ',trim(fileName)
+        print *,'  start: ',start
       endif
 
       open(IIN, file=trim(fileName),status='old',iostat=ier)
@@ -859,19 +882,19 @@ end module
         line = trim(line)
 
         ! check for additional data in file
-        if (line(1:3) == 'dis') offset=3
-        if (line(1:3) == 'rec') offset=2
+        if (line(1:3) == 'dis') offset = 3
+        if (line(1:3) == 'rec') offset = 2
 
         ! check for line with time 0.0
-        if (line(1:3) == '0.0') ZEROLINE= index
+        if (line(1:3) == '0.0') ZEROLINE = index
 
       enddo
       FILELINES = index-1
       if (start < 0.0) ZEROLINE= offset
       if (beVerbose) then
-        print *,'    file lines:',FILELINES
-        print *,'    zero line:',ZEROLINE
-        print *,'    offset:',offset
+        print *,'    file lines      : ',FILELINES
+        print *,'    zero line       : ',ZEROLINE
+        print *,'    offset          : ',offset
       endif
       rewind(IIN)
 
@@ -919,11 +942,12 @@ end module
       close(IIN)
 
       if (beVerbose) then
-        print *,'    timestep dt:',timediff
-        print *,'    first entry:',seismo(1,1),seismo(2,1)
-        print *,'    last entry:',seismo(1,index),seismo(2,index)
-        print *,'    entry read:',index
-        print *,'    last time readin:',seismo(1,index),'file:',endtime
+        print *,'    timestep dt     : ',timediff
+        print *,'    first entry     : ',seismo(1,1),seismo(2,1)
+        print *,'    last entry      : ',seismo(1,index),seismo(2,index)
+        print *,'    entry read      : ',index
+        print *,'    last time       : read/file = ',seismo(1,index),'/',endtime
+        print *
       endif
 
       ! number of file entries read in
@@ -968,12 +992,11 @@ end module
 
       ! open seismogram file
       if (beVerbose) then
-        print *
-        print *,'  file :',trim(fileName)
-        print *,'  start:',start
+        print *,'  file : ',trim(fileName)
+        print *,'  start: ',start
       endif
 
-      open(10, file=trim(fileName),status='old',iostat=ier)
+      open(IIN, file=trim(fileName),status='old',iostat=ier)
       if (ier /= 0) then
         print *,'Error: opening file ',trim(fileName)
         call stopProgram( 'abort - readSeismo   ')
@@ -983,26 +1006,29 @@ end module
       index = 0
       offset = 0
       do while( ier == 0 )
-        read(10,*,iostat=ier) line
+        read(IIN,*,iostat=ier) line
         index = index+1
-        line=trim(line)
+
+        ! suppress leading white spaces, if any
+        line = adjustl(line)
+        line = trim(line)
 
         ! check for additional data in file
-        if (line(1:3) == 'dis') offset=3
-        if (line(1:3) == 'rec') offset=2
+        if (line(1:3) == 'dis') offset = 3
+        if (line(1:3) == 'rec') offset = 2
 
         ! check for line with time 0.0
-        if (line(1:3) == '0.0') ZEROLINE= index
+        if (line(1:3) == '0.0') ZEROLINE = index
 
       enddo
       FILELINES = index-1
       if (start < 0.0) ZEROLINE= offset
       if (beVerbose) then
-        print *,'    file lines:',FILELINES
-        print *,'    zero line:',ZEROLINE
-        print *,'    offset:',offset
+        print *,'    file lines      : ',FILELINES
+        print *,'    zero line       : ',ZEROLINE
+        print *,'    offset          : ',offset
       endif
-      rewind(1)
+      rewind(IIN)
 
       ! parse file for displacement values
       timediff = 0.0
@@ -1010,7 +1036,7 @@ end module
       ier = 0
       do i = 1, FILELINES
         if (i >= ZEROLINE .and. index < size) then
-          read(10, *, iostat=ier) time,displace !,sourceterm
+          read(IIN, *, iostat=ier) time,displace !,sourceterm
           if (ier /= 0) then
             print *,'Error: reading input. last line ',i,ZEROLINE,index
             call stopProgram( 'abort - readSeismo   ')
@@ -1033,11 +1059,11 @@ end module
           !read until end is reached
           if (index >= size) then
             !read values
-            read(10, *, iostat=ier) time,displace !,sourceterm
+            read(IIN, *, iostat=ier) time,displace !,sourceterm
             endtime = time
           else
             !read a text line
-            read(10, *, iostat=ier) line
+            read(IIN, *, iostat=ier) line
             if (ier /= 0) then
               !print *,'error reading input. last line ',i
               exit
@@ -1045,14 +1071,15 @@ end module
           endif
         endif
       enddo
-      close(10)
+      close(IIN)
 
       if (beVerbose) then
-        print *,'    timestep dt:',timediff
-        print *,'    first entry:',seismo(1,1),seismo(2,1)
-        print *,'    last entry:',seismo(1,index),seismo(2,index)
-        print *,'    entry read:',index
-        print *,'    last time readin:',seismo(1,index),'file:',endtime
+        print *,'    timestep dt     : ',timediff
+        print *,'    first entry     : ',seismo(1,1),seismo(2,1)
+        print *,'    last entry      : ',seismo(1,index),seismo(2,index)
+        print *,'    entry read      : ',index
+        print *,'    last time       : read/file = ',seismo(1,index),'/',endtime
+        print *
       endif
 
       ! number of file entries read in
@@ -1407,7 +1434,7 @@ end module
       integral = real(simpsons_integral_vecFunc(myspline_func, X(i1), X(i2)),kind=WP)
 
       !debug
-      !  val1=0.0
+      !  val1 = 0.0
       !  do i=i1,i2
       !    val1 = val1 + Y(i)*timedelta
       !  enddo
@@ -1455,7 +1482,7 @@ end module
       call readSeismo(seismo,WindowSIZE,fileDelta,startingTime,timedelta,entries,lastseismotime)
 
       allocate(seismo1(2,entries),seismo2(2,entries),stat=ier)
-      if (ier /= 0) stop "error allocating seismo1/2"
+      if (ier /= 0) stop 'Error allocating seismo1/2'
 
       seismo1(:,:) = seismoRef(:,1:entries)
       seismo2(:,:) = seismo(:,1:entries)
@@ -1496,7 +1523,7 @@ end module
       call readSeismoTaped(seismo,WindowSIZE,fileDelta,startingTime,endingTime,timedelta,entries,lastseismotime)
 
       allocate(seismo1(2,entries),seismo2(2,entries),stat=ier)
-      if (ier /= 0) stop "error allocating seismo1/2"
+      if (ier /= 0) stop 'Error allocating seismo1/2'
 
       seismo1(:,:) = seismoRef(:,1:entries)
       seismo2(:,:) = seismo(:,1:entries)
@@ -1551,7 +1578,7 @@ end module
 
       ! debug output
       if (fileOutput) then
-        print *,'  printing to file:',trim(datadirectory)//'TimelagAnalytic_read.dat'
+        print *,'  printing to file: ',trim(datadirectory)//'TimelagAnalytic_read.dat'
         open(IOUT,file=trim(datadirectory)//'TimelagAnalytic_read.dat')
         do i = 1,seismoLength
           write(IOUT,*) seismo(1,i),seismo(2,i),seismoRef(2,i)
@@ -1572,7 +1599,7 @@ end module
 
         ! debug output
         if (fileOutput) then
-          print *,'  printing to file:',trim(datadirectory)//'TimelagAnalytic_filter.dat'
+          print *,'  printing to file: ',trim(datadirectory)//'TimelagAnalytic_filter.dat'
           open(IOUT,file=trim(datadirectory)//'TimelagAnalytic_filter.dat')
           do i = 1,seismoLength
             write(IOUT,*) seismo(1,i),seismo(2,i),seismoRef(2,i)
@@ -1587,7 +1614,7 @@ end module
 
       ! debug output
       if (fileOutput) then
-        print *,'  printing to file:',trim(datadirectory)//'TimelagAnalytic_perturbed.dat'
+        print *,'  printing to file: ',trim(datadirectory)//'TimelagAnalytic_perturbed.dat'
         open(IOUT,file=trim(datadirectory)//'TimelagAnalytic_perturbed.dat')
         do i = 1,seismoLength
           write(IOUT,*) seismo(1,i),seismoPerturbed(i)
@@ -1601,7 +1628,7 @@ end module
 
       ! debug output
       if (fileOutput) then
-        print *,'  printing to file:',trim(datadirectory)//'TimelagAnalytic_first.dat'
+        print *,'  printing to file: ',trim(datadirectory)//'TimelagAnalytic_first.dat'
         open(IOUT,file=trim(datadirectory)//'TimelagAnalytic_first.dat')
         do i = 1,seismoLength
           write(IOUT,*) seismo(1,i),seismo1(i)
@@ -1615,7 +1642,7 @@ end module
 
       ! debug output
       if (fileOutput) then
-        print *,'  printing to file:',trim(datadirectory)//'TimelagAnalytic_second.dat'
+        print *,'  printing to file: ',trim(datadirectory)//'TimelagAnalytic_second.dat'
         open(IOUT,file=trim(datadirectory)//'TimelagAnalytic_second.dat')
         do i = 1,seismoLength
           write(IOUT,*) seismo(1,i),seismo2(i)
@@ -1666,15 +1693,15 @@ end module
       integer:: seismoLength
 
       !initialize
-      seismo(:,:)=0.0_WP
-      seismoRef(:,:)=0.0_WP
+      seismo(:,:) = 0.0_WP
+      seismoRef(:,:) = 0.0_WP
 
       ! read in from startingTime
       call readSeismoTaped(seismoRef,WindowSIZE,fileReference,startingTime,endingTime,timedelta,entries,lastseismotime)
       call readSeismoTaped(seismo,WindowSIZE,fileDelta,startingTime,endingTime,timedelta,entries,lastseismotime)
 
       allocate(seismo1(2,entries),seismo2(2,entries),stat=ier)
-      if (ier /= 0) stop "error allocating seismo1/2"
+      if (ier /= 0) stop 'Error allocating seismo1,seismo2'
 
       ! sets convention:
       ! seismo1 is the heterogeneous trace
@@ -1682,6 +1709,7 @@ end module
       seismoLength = entries
       seismo1(:,:) = seismo(:,1:entries)
       seismo2(:,:) = seismoRef(:,1:entries)
+
       call getTimelagSimplex(t_lag,amplification,seismo1,seismo2,seismoLength)
 
       deallocate(seismo1,seismo2)
@@ -1712,62 +1740,70 @@ end module
       real(WP),intent(in):: seismo1(2,seismoLength),seismo2(2,seismoLength)
       ! local parameters
       integer:: i
-      real(WP):: timedelta
       real(WP):: seismoWindow(WindowSIZE),seismoRefWindow(WindowSIZE)
       real(WP),allocatable,dimension(:):: seismoShift
 
       logical,parameter:: NORMALIZE         = .false.
       logical,parameter:: STRETCH           = .false.
-      logical,parameter:: TAPER             = .true.
+      logical,parameter:: TAPER             = .false.
       logical,parameter:: TAPER_FILTERED    = .false.
 
       ! console
       if (beVerbose) then
+        print *,'  getting timelag seismos by downhill simplex minimization...'
+        print *
         print *,'  perturbed seismogram:'
-        print *,'    dt:',timedelta
-        print *,'    first entry:',seismo1(1,1),seismo1(2,1)
-        print *,'    last entry:',seismo1(1,seismoLength),seismo1(2,seismoLength)
-        print *,'    entry read:',seismoLength
+        print *,'    first entry: ',seismo1(1,1),seismo1(2,1)
+        print *,'    last entry : ',seismo1(1,seismoLength),seismo1(2,seismoLength)
+        print *,'    entry read : ',seismoLength
         print *,'  reference seismogram:'
-        print *,'    first entry:',seismo2(1,1),seismo2(2,1)
-        print *,'    last entry:',seismo2(1,seismoLength),seismo2(2,seismoLength)
-        print *,'    entry read:',seismoLength
+        print *,'    first entry: ',seismo2(1,1),seismo2(2,1)
+        print *,'    last entry : ',seismo2(1,seismoLength),seismo2(2,seismoLength)
+        print *,'    entry read : ',seismoLength
+        print *,'  time step: dt = ',dt
+        print *
       endif
+
+      ! checks if dt is set
+      if (dt == 0.0) call stopProgram('Invalid dt in getTimelagSimplex()    ')
 
       ! tapering ends
       if (TAPER) then
+        if (beVerbose) print *,'  taper ends'
         call taperSeismogram(seismo1,seismoLength,seismoLength,beVerbose)
         call taperSeismogram(seismo2,seismoLength,seismoLength,beVerbose)
       endif
 
       ! debug output
       if (fileOutput) then
-        print *,'  printing to file:',trim(datadirectory)//'TimelagSimplex_read.dat'
-        open(10,file=trim(datadirectory)//'TimelagSimplex_read.dat')
+        print *,'  printing to file: ',trim(datadirectory)//'TimelagSimplex_read.dat'
+        open(IOUT,file=trim(datadirectory)//'TimelagSimplex_read.dat')
+        write(IOUT,*) "# format: #time #trace-perturbed #trace-reference"
         do i = 1,seismoLength
-          write(10,*) seismo1(1,i),seismo1(2,i),seismo2(2,i)
+          write(IOUT,*) seismo1(1,i),seismo1(2,i),seismo2(2,i)
         enddo
-        close(10)
+        close(IOUT)
       endif
 
       ! filtering necessary
       if (FILTERSEISMOGRAMS) then
-        if (dt == 0.0) dt = timedelta
+        if (beVerbose) print *,'  filter seismograms'
         call dofilterSeismogram(seismo1,seismoLength)
         call dofilterSeismogram(seismo2,seismoLength)
 
-        ! apply hanning window  to smooth seismograms ends
+        ! apply hanning window to smooth seismograms ends
         if (TAPER_FILTERED) then
+          if (beVerbose) print *,'  taper seismogram ends'
           call taperSeismogram(seismo1,seismoLength,seismoLength,beVerbose)
           call taperSeismogram(seismo2,seismoLength,seismoLength,beVerbose)
         endif
       endif
 
       !initialize
-      seismoWindow(:)=0.0_WP
-      seismoRefWindow(:)=0.0_WP
+      seismoWindow(:) = 0.0_WP
+      seismoRefWindow(:) = 0.0_WP
       ! window zeros are added
-      if (WindowSIZE < seismoLength) stop "error windowsize/seismoLength"
+      if (WindowSIZE < seismoLength) stop 'Error windowsize/seismoLength'
       seismoWindow(1:seismoLength) = seismo1(2,1:seismoLength)
       seismoRefWindow(1:seismoLength) = seismo2(2,1:seismoLength)
 
@@ -1780,34 +1816,37 @@ end module
 
       ! debug output
       if (fileOutput) then
-        print *,'  printing to file:',trim(datadirectory)//'TimelagSimplex_window.dat'
-        open(10,file=trim(datadirectory)//'TimelagSimplex_window.dat')
+        print *,'  printing to file: ',trim(datadirectory)//'TimelagSimplex_window.dat'
+        open(IOUT,file=trim(datadirectory)//'TimelagSimplex_window.dat')
+        write(IOUT,*) "# format: #time #windowed-trace #windowed-reference-trace"
         do i = 1,seismoLength
-          write(10,*) seismo2(1,i),seismo1(2,i),seismo2(2,i)
+          write(IOUT,*) seismo2(1,i),seismo1(2,i),seismo2(2,i)
         enddo
-        close(10)
+        close(IOUT)
       endif
 
       ! get minimized function (by numerical recipes)
       call minimizeTraces(t_lag,amplification,seismo1,seismo2,seismoLength)
 
       if (fileOutput) then
-        print *,'  printing to file:',trim(datadirectory)//'TimelagSimplex_shift.dat'
+        print *,'  printing to file: ',trim(datadirectory)//'TimelagSimplex_shift.dat'
         allocate(seismoShift(seismoLength))
         call sumSeismogram(t_lag,amplification,seismo2,seismo1,seismoShift,seismoLength)
-        open(10,file=trim(datadirectory)//'TimelagSimplex_shift.dat')
+        open(IOUT,file=trim(datadirectory)//'TimelagSimplex_shift.dat')
+        write(IOUT,*) '# simplex shift'
+        write(IOUT,*) "# format: #time #seismo-shift"
         do i = 1,seismoLength
-          write(10,*) seismo1(1,i),seismoShift(i)
+          write(IOUT,*) seismo1(1,i),seismoShift(i)
         enddo
-        close(10)
+        close(IOUT)
       endif
 
       !only be verbose once
       if (beVerbose) then
-        print *
         beVerbose = .false.
         fileOutput = .false.
       endif
+
       end subroutine
 
 !-----------------------------------------------------------------------
@@ -1839,8 +1878,8 @@ end module
         subroutine minimize_downhill_simplex(p, y, ftol, func, iter)
           integer, intent(out) :: iter
           real, intent(in) :: ftol
-          real, dimension(:), intent(inout) :: y
-          real, dimension(:,:), intent(inout) :: p
+          real, dimension(3), intent(inout) :: y
+          real, dimension(3,2), intent(inout) :: p
           interface
             function func(x)
               implicit none
@@ -1850,6 +1889,7 @@ end module
           end interface
         end subroutine
       end interface
+      logical,parameter:: DEBUG = .false.
 
       ! set for costfunction
       if (trace_length /= seismoLength) then
@@ -1877,16 +1917,15 @@ end module
       ! downhill simplex algorithm
       call minimize_downhill_simplex(p,y,ftol,costfunction,iter)
 
-!      if (beVerbose) then
-!        print *,'  minimize by downhill simplex:','iterations',iter
-!        do i=1,3
-!          print *,'    array ',i
-!          print *,'    rms                 :',y(i)
-!          print *,'    t_lag/amplification :',p(i,1),p(i,2)
-!        enddo
-!        print *
-!        call myflush(6)
-!      endif
+      if (DEBUG) then
+        print *,'debug: minimize by downhill simplex: iterations = ',iter
+        do i = 1,3
+          print *,'    array ',i
+          print *,'    rms                 :',y(i)
+          print *,'    t_lag/amplification :',p(i,1),p(i,2)
+        enddo
+        print *
+      endif
 
       ! set our two parameters:
       ! time shift ( positiv for seismo1 later arriving than seismo2)
@@ -1916,12 +1955,20 @@ end module
         double precision,parameter:: EPS = 0.01
         integer:: i
 
+        ! initializes
+        seismoOut(:) = 0.0_WP
+
         ! set spline arrays
         do i = 1,length
            xa(i) = seismo(1,i) + arrival
            ya(i) = seismo(2,i) * amplification
         enddo
+
         dta = dt
+
+        ! check
+        if (dta == 0.0) call stopProgram('Invalid dt in sumSeismogram()    ')
+
         yp1 = (ya(2) - ya(1)) / dta
         ypn = (ya(length) - ya(length-1)) / dta
 
@@ -1960,8 +2007,8 @@ subroutine minimize_downhill_simplex(p, y, ftol, func, iter)
   ! Input/Output parameters
   integer, intent(out) :: iter
   real, intent(in) :: ftol
-  real, dimension(:), intent(inout) :: y
-  real, dimension(:,:), intent(inout) :: p
+  real, dimension(3), intent(inout) :: y
+  real, dimension(3,2), intent(inout) :: p
   ! function interface
   interface
     function func(x)
@@ -2017,6 +2064,9 @@ CONTAINS
       ! Convergence test: fractional range of function values
       rtol = 2.0 * abs(y(ihi) - y(ilo)) / (abs(y(ihi)) + abs(y(ilo)) + TINY)
 
+      !debug
+      !print *,'debug: minimize_func: iter = ',iter,' rtol/ftol = ',rtol,ftol,' yhi/ylo = ',y(ihi),y(ilo),ihi,ilo
+
       ! If convergence criterion met, exit
       if (rtol < ftol) then
         call swap_single(y(1), y(ilo))
@@ -2048,6 +2098,7 @@ CONTAINS
           do i = 1, ndim+1
             if (i /= ilo) y(i) = func(p(i,:))
           enddo
+
           iter = iter + ndim
           psum(:) = sum(p(:,:), dim=1)
         endif

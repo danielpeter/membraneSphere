@@ -323,8 +323,8 @@
       endif
 
       !init
-      !sendDisp(:)=0.0_WP
-      !receiveDisp(:)=0.0_WP
+      !sendDisp(:) = 0.0_WP
+      !receiveDisp(:) = 0.0_WP
 
       !get boundary information from all neighbors
       do n = 1, nprocesses - 1
@@ -606,18 +606,18 @@
 !      !  do l=1340,1350
 !      !    print *,'  m#',newdisplacement(l)
 !      !  enddo
-!      !open(11,file='syncNew0.dat')
-!      !  write(11,*) newdisplacement
-!      !  close(11)
+!      !  open(IOUT,file='syncNew0.dat')
+!      !  write(IOUT,*) newdisplacement
+!      !  close(IOUT)
 !      !else
 !      !  print *
 !      !  print *,'new secondary',rank
 !      !  do l=1340,1350
 !      !    print *,'  #',newdisplacement(l)
 !      !  enddo
-!      !  open(12,file='syncNew1.dat')
-!      !  write(12,*) newdisplacement
-!      ! close(12)
+!      !  open(IOUT,file='syncNew1.dat')
+!      !  write(IOUT,*) newdisplacement
+!      !  close(IOUT)
 !      !endif
 !
 !      end subroutine
@@ -1088,8 +1088,8 @@
       endif
 
       !init
-      sendDisp(:)=0.0_WP
-      receiveDisp(:)=0.0_WP
+      sendDisp(:) = 0.0_WP
+      receiveDisp(:) = 0.0_WP
 
       !get boundary information from all neighbors
       do n = 1, nprocesses - 1
@@ -1252,7 +1252,7 @@
       if (nprocesses == 1) return
 
       !init
-      sendDisp(:)=0.0_WP
+      sendDisp(:) = 0.0_WP
 
       ! only receive from secondary processes
       if (MAIN_PROCESS) then
@@ -1267,7 +1267,7 @@
           recRange = countVertices
 
           ! get info from secondary
-          receiveDisp(:)=0.0_WP
+          receiveDisp(:) = 0.0_WP
           tag = n
           call MPI_Recv(receiveDisp,recRange,MPI_CUSTOM,n,tag,MPI_COMM_WORLD,status,ier)
           if (ier /= 0) then

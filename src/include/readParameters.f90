@@ -38,6 +38,9 @@
         read(IIN,'(a150)', iostat=ier) line
         if (ier /= 0) exit
 
+        ! suppress leading white spaces, if any
+        line = adjustl(line)
+
         length = len_trim(line)
         if (length == 0) then
           continue
@@ -60,7 +63,9 @@
               if (VERBOSE) print *,'lasttimestep',LASTTIME
             case('CPHAS')
               read(line(35:len_trim(line)),*) cphasetype
-              cphasetype=trim(cphasetype)
+              cphasetype = trim(cphasetype)
+              ! suppress leading white spaces, if any
+              cphasetype = adjustl(cphasetype)
               call determinePhaseRef(cphasetype,8,cphaseRef)
               if (VERBOSE) print *,'cphase    ', cphasetype, cphaseRef
             case('SOURC')
@@ -85,7 +90,7 @@
               read(line(35:len_trim(line)),*) importKernelsReceivers
               if (VERBOSE .and. manyKernels) print *,'    importing receivers', importKernelsReceivers
             case('DELTA')
-              read(line(35:len_trim(line)),*)DELTA
+              read(line(35:len_trim(line)),*) DELTA
               if (VERBOSE) print *,'delta', DELTA
             case('MOVED')
               read(line(35:len_trim(line)),*) MOVEDELTA
@@ -116,7 +121,7 @@
               read(line(35:len_trim(line)),*) deltaMoveIncrement
               if (VERBOSE .and. DELTA) print *,'  delta move increment',deltaMoveIncrement
             case('SECON')
-              read(line(35:len_trim(line)),*)SECONDDELTA
+              read(line(35:len_trim(line)),*) SECONDDELTA
               if (VERBOSE .and. DELTA) print *,'  second delta:',SECONDDELTA
             case('HETER')
               read(line(35:len_trim(line)),*) HETEROGENEOUS
@@ -124,6 +129,8 @@
             case('BLKFI')
               read(line(35:len_trim(line)),*) line
               phaseBlockFile = trim(line)
+              ! suppress leading white spaces, if any
+              phaseBlockFile = adjustl(phaseBlockFile)
               if (DO_CHECKERBOARD) then
                 if (VERBOSE .and. HETEROGENEOUS) &
                   print *,'   checkerboard - L',MAP_DEGREE_L,'M',MAP_DEGREE_M
@@ -145,16 +152,22 @@
             case('BLKVE')
               read(line(35:len_trim(line)),*) tmp
               tmp = trim(tmp)
+              ! suppress leading white spaces, if any
+              tmp = adjustl(tmp)
               call determinePhaseRef(tmp,128,phaseBlockVelocityReference)
               if (VERBOSE .and. HETEROGENEOUS) print *,'  phaseBlock VelocityReference',phaseBlockVelocityReference
             case('INV_D')
               read(line(35:len_trim(line)),*) line
               heterogeneousDataFile = trim(line)
+              ! suppress leading white spaces, if any
+              heterogeneousDataFile = adjustl(heterogeneousDataFile)
               if (VERBOSE .and. (HetPhaseshift_Program .or. Adjoint_InversionProgram)) &
                 print *,'  Data input: ',trim(heterogeneousDataFile)
             case('INV_O')
               read(line(35:len_trim(line)),*) line
               heterogeneousOutput = trim(line)
+              ! suppress leading white spaces, if any
+              heterogeneousOutput = adjustl(heterogeneousOutput)
               if (VERBOSE .and. (HetPhaseshift_Program .or. Adjoint_InversionProgram)) &
                 print *,'  Output files: ',trim(heterogeneousOutput)
             case('INV_V')
@@ -175,14 +188,18 @@
             case('DATAD')
               read(line(35:len_trim(line)),*) tmp
               datadirectory = trim(tmp)
+              ! suppress leading white spaces, if any
+              datadirectory = adjustl(datadirectory)
               if (VERBOSE) print *,'data output directory : ',trim(datadirectory)
             case('ADJOI')
               read(line(35:len_trim(line)),*) tmp
               adjointKernelName = trim(tmp)
+              ! suppress leading white spaces, if any
+              adjointKernelName = adjustl(adjointKernelName)
               if (VERBOSE .and. Adjoint_Program) &
                 print *,'adjoint kernel name : ',trim(adjointKernelName)
             case('PARAL')
-              read(line(35:len_trim(line)),*)PARALLELSEISMO
+              read(line(35:len_trim(line)),*) PARALLELSEISMO
               if (VERBOSE) print *,'parallelize single simulation',PARALLELSEISMO
             end select
           endif

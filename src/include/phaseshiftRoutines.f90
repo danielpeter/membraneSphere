@@ -86,9 +86,9 @@
       if (MAIN_PROCESS) benchstart = MPI_WTIME()
 
       ! reset displacements
-      displacement_old(:)=0.0_WP
-      displacement(:)=0.0_WP
-      newdisplacement(:)=0.0_WP
+      displacement_old(:) = 0.0_WP
+      displacement(:) = 0.0_WP
+      newdisplacement(:) = 0.0_WP
 
       ! precalculate the phase velocities for all grid points
       call constructPhaseVelocitySquare()
@@ -374,7 +374,7 @@
               real(correctedLon),real(correctedLat),kernel,kernelAnalytic, &
               recvVertex,t_lag,t_lagAnalytic,vperturbation,recvLat,recvLon
           if (ier /= 0) then
-            print *,'Error: writing to file:',ier
+            print *,'Error: writing to file ',ier
             call stopProgram( 'abort - calculatePhaseshifts   ')
           endif
 

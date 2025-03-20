@@ -23,7 +23,7 @@ subroutine correlation_traces(trace1,trace2,correl,N)
 ! Sign convention of this routine: if inputArray1 lags inputArray2, i.e., is shifted to the right of it, then correl will show
 ! a peak at positive lags.
 
-  use precisions, only: WP,IOUT
+  use constants, only: WP,IOUT
   use propagationStartup, only: datadirectory
   implicit none
   integer, intent(in):: N

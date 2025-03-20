@@ -96,8 +96,9 @@
       subroutine initializeParameters()
 !-----------------------------------------------------------------------
 ! initializes program parallelization
-      use propagationStartup;use parallel;use filterType;use verbosity
-      use loop; use phaseBlockData; use deltaSecondLocation; use adjointVariables;use cells
+      use propagationStartup; use parallel; use filterType; use verbosity
+      use loop; use phaseBlockData; use deltaSecondLocation; use adjointVariables;
+      use cells; use precisions
       implicit none
 
       ! initialize grid level
@@ -541,9 +542,10 @@
       subroutine filterSource()
 !-----------------------------------------------------------------------
 ! filter initial source
-      use propagationStartup;use parallel;use cells;use phaseVelocityMap;use displacements
-      use traveltime; use griddomain;use phaseBlockData;use loop;use deltaSecondLocation
-      use filterType;use verbosity; use adjointVariables
+      use precisions
+      use propagationStartup; use parallel; use cells; use phaseVelocityMap; use displacements
+      use traveltime; use griddomain; use phaseBlockData; use loop; use deltaSecondLocation
+      use filterType; use verbosity; use adjointVariables
       implicit none
       ! local parameters
       integer:: vertex,timestep,index,i,n,ier,jrec
@@ -1459,6 +1461,7 @@
 ! sets parameters sigma and mu which govern the Gaussian source characteristics
 !
 ! returns: muSquare,muTwo,TimeParameterSigma,WidthParameterMu
+      use precisions
       use propagationStartup; use parallel
       use cells, only: subdivisions
       use filterType; use verbosity

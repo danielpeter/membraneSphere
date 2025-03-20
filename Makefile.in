@@ -3,15 +3,30 @@
 # membraneSphere
 #
 #######################################
+# @configure_input@
 
-## gfortran optimization 
+
+FFLAGS = @FCFLAGS@ @FCFLAGS_f90@
+LDFLAGS = @LDFLAGS@
+F90 = @MPIFC@
+CFLAGS = @CFLAGS@
+CC = @CC@
+
+
+#######################################
+
+##
+## (optional) manual settings
+##
+
+## gfortran optimization
 #FFLAGS = -O3    # -Jobj/ -I/opt/mpisrc/include/ -ffree-line-length-none
-FFLAGS = -O0 -std=f2008 -g -ggdb -fbacktrace -fbounds-check -frange-check -Wall -Wno-conversion -Werror -Jobj/
-LDFLAGS =
-F90 = mpif90
-F77 = mpif77 #gfortran
-CFLAGS =
-CC = gcc
+#FFLAGS = -O0 -std=f2008 -g -ggdb -fbacktrace -fbounds-check -frange-check -Wall -Wno-conversion -Werror -Jobj/
+#LDFLAGS =
+#F90 = mpif90
+#F77 = mpif77 #gfortran
+#CFLAGS =
+#CC = gcc
 
 ## intel fortran optimization 
 ##(optional: -assume byterecl: open direct-access file assumes by default 4 byte unit, 
@@ -58,21 +73,25 @@ CC = gcc
 
 
 #######################################
-##
-## directories
-##
+#
+# directories
+#
 #######################################
 
 ## compilation directories
-O = ./obj
-E = ./bin
+# B : build directory
+B = @top_builddir@
+# O : objects directory
+O = $B/obj
+# E : executables directory
+E = $B/bin
 # S_TOP : source file root directory
-S_TOP = .
+S_TOP = @top_srcdir@
 
 #######################################
-##
-## targets
-##
+#
+# targets
+#
 #######################################
 
 # code subdirectories

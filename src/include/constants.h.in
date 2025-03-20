@@ -1,0 +1,53 @@
+!=====================================================================
+!
+!       m e m b r a n e S p h e r e
+!       --------------------------------------------------
+!
+!      Daniel Peter
+!      (c) 2025
+!
+!      Free for non-commercial academic research ONLY.
+!      This program is distributed WITHOUT ANY WARRANTY whatsoever.
+!
+!=====================================================================
+
+! @configure_input@
+
+!
+!--- user can modify parameters below
+!
+
+!
+! working precision (single or double precision depending on the machine, i.e., 4 or 8 bytes)
+!
+  integer, parameter :: WP = @WP@
+
+!!-----------------------------------------------------------
+!!
+!! I/O output
+!!
+!!-----------------------------------------------------------
+
+! file I/O
+! note: careful with these unit numbers, we mostly use units in the 40-50 range.
+!       Cray Fortran e.g. reserves 0,5,6 (standard error,input,output units) and 100,101,102 (input,output,error unit)
+  integer, parameter :: IIN = 40
+  integer, parameter :: IOUT = 41
+
+!!-----------------------------------------------------------
+!!
+!! useful parameters
+!!
+!!-----------------------------------------------------------
+  real(WP), parameter :: PI                 = 3.1415926535897931_WP
+  real(WP), parameter :: RAD2DEGREE         = 180.0_WP / PI
+  real(WP), parameter :: DEGREE2RAD         = PI / 180.0_WP
+
+!!-----------------------------------------------------------
+!!
+!! PREM values
+!!
+!!-----------------------------------------------------------
+! radius measured in km
+  real(WP), parameter :: EARTHRADIUS         = 6371.0_WP
+  real(WP), parameter :: EARTHRADIUS_SQUARED = 40589641.0_WP

@@ -13,15 +13,23 @@
 !
 ! modules needed by e.g. program phaseshift
 
-      ! working precision & parameters
+! working precision & parameters
+
+      !------------------------------------------------------------------------------------------
+      module constants
+      !------------------------------------------------------------------------------------------
+        implicit none
+        ! defines working precision (WP) in bytes: real = 4,double precision = 8
+        include "constants.h"
+      end module constants
+
       ! these values are not set in 'Parameter_Input'
       !------------------------------------------------------------------------------------------
       module precisions
       !------------------------------------------------------------------------------------------
         ! user can modify these settings
+        use constants
         implicit none
-        ! working precision in bytes: real = 4,double precision = 8
-        integer, parameter :: WP                   = 4
 
         ! source parameters
         ! fixed_sourceparameter: use fixed source parameters, important when a higher grid level
@@ -88,8 +96,8 @@
         logical,parameter :: ANALYTICAL_CORRELATION = .false.
 
         ! filter the source around a new period
-        logical:: new_period                        = .false.
-        real(WP):: newperiod                        = 150.919  ! (s)
+        logical :: new_period                       = .false.
+        real(WP) :: newperiod                       = 150.919  ! (s)
 
         ! adjoint method
         ! time window of signal
@@ -98,9 +106,9 @@
         ! 2. orbit:   4000  to   8000
         ! 3. orbit:   8000  to  13500
         ! 4. orbit:  13500 to  17000
-        logical,parameter:: WINDOWEDINTEGRATION      = .false.
-        real(WP):: WINDOW_START                      = 0.0_WP    ! in seconds
-        real(WP):: WINDOW_END                        = 4300.0_WP ! in seconds
+        logical,parameter :: WINDOWEDINTEGRATION     = .false.
+        real(WP) :: WINDOW_START                     = 0.0_WP    ! in seconds
+        real(WP) :: WINDOW_END                       = 4300.0_WP ! in seconds
 
 
         ! routine optimization
@@ -109,7 +117,7 @@
         ! prescribedsource: precalculates source values and stores in an array for faster
         !                              computation of finite-difference iteration
         ! relaxed_grid: takes cell infos from grid files ***.relaxed.dat
-        logical,parameter::PRECALCULATED_CELLS       = .true.
+        logical,parameter:: PRECALCULATED_CELLS      = .true.
         logical:: PRESCRIBEDSOURCE                   = .true.
         logical,parameter:: RELAXED_GRID             = .false.
         logical,parameter:: CORRECT_RATIO            = .false.
@@ -156,14 +164,12 @@
         integer,parameter :: SIMULATION_TIMESTEPPING   = 4  ! takes every fifth timestep for output
 
         !----------------------------------------------------------------------------------------
-        ! PREM values
-        ! radius measured in km; phase velocities measured in km/s
+        ! Surface waves
+        ! phase velocities measured in km/s
         ! high periods 450/600: determined with spline representation for wave period
         ! (see: Kernels/BORN/find_kernels.f)
-        real(WP), parameter :: EARTHRADIUS         = 6371.0_WP
-        real(WP), parameter :: EARTHRADIUS_SQUARED = 40589641.0_WP
 
-        ! rayleigh waves
+        ! Rayleigh waves
         ! reference phase velocities
         real(WP), parameter :: PHASEVELOCITY_R35  = 3.91253_WP
         real(WP), parameter :: PHASEVELOCITY_R37  = 3.91926_WP
@@ -194,7 +200,7 @@
         real(WP), parameter :: WAVEPERIOD_R250    = 250.0_WP
         real(WP), parameter :: WAVEPERIOD_R300    = 300.0_WP
 
-        ! love waves
+        ! Love waves
         ! reference phase velocities
         real(WP), parameter :: PHASEVELOCITY_L35  = 4.39987_WP
         real(WP), parameter :: PHASEVELOCITY_L37  = 4.41795_WP
@@ -229,15 +235,6 @@
         real(WP), parameter :: WAVEPERIOD_L200    = 200.0_WP
         real(WP), parameter :: WAVEPERIOD_L250    = 250.0_WP
         real(WP), parameter :: WAVEPERIOD_L300    = 300.0_WP
-
-        ! useful parameters
-        real(WP), parameter :: PI                 = 3.1415926535897931_WP
-        real(WP), parameter :: RAD2DEGREE         = 180.0_WP / PI
-        real(WP), parameter :: DEGREE2RAD         = PI / 180.0_WP
-
-        ! file I/O
-        integer, parameter :: IIN = 40
-        integer, parameter :: IOUT = 41
       end module precisions
 
 !-----------------------------------------------------------------------
@@ -245,7 +242,8 @@
 !-----------------------------------------------------------------------
       ! phaseVelocityMap module
       ! used for phase velocity maps
-        use precisions, only: WP,IIN,IOUT, &
+        use constants, only: WP,IIN,IOUT
+        use precisions, only: &
           PRECALCULATED_CELLS, &
           WINDOW_START,WINDOW_END, &
           MAP_DEGREE_L,MAP_DEGREE_M,MAP_PERCENT_AMPLITUDE
@@ -269,7 +267,8 @@
 !-----------------------------------------------------------------------
       ! adjoint module
       ! used for adjoint routines
-        use precisions, only: WP,PRECALCULATED_CELLS,DO_CHECKERBOARD,MAP_DEGREE_L,MAP_DEGREE_M
+        use constants, only: WP
+        use precisions, only: PRECALCULATED_CELLS,DO_CHECKERBOARD,MAP_DEGREE_L,MAP_DEGREE_M
         implicit none
         ! adjoint parameters
         ! onthefly: instead of integration at the end, after each time step
@@ -304,8 +303,8 @@
 !-----------------------------------------------------------------------
       ! cells module
       ! used for precalculated values of cell areas etc.
-        use precisions, only: WP,EARTHRADIUS,EARTHRADIUS_SQUARED,PI,DEGREE2RAD,IIN, &
-          CORRECT_RATIO,RELAXED_GRID,Station_Correction
+        use constants, only: WP,EARTHRADIUS,EARTHRADIUS_SQUARED,PI,DEGREE2RAD,IIN
+        use precisions, only: CORRECT_RATIO,RELAXED_GRID,Station_Correction
         implicit none
         integer:: subdivisions,MaxTriangles,MaxVertices
         integer,allocatable, dimension(:,:):: cellFace,cellNeighbors,cellTriangleFace
@@ -324,8 +323,8 @@
 !-----------------------------------------------------------------------
       ! propagationStartup module
       ! used for initialization startup process
-        use precisions, only: WP,IIN,IOUT,PI,EARTHRADIUS, &
-          SIMULATIONOVERTIMEPERCENT,USEOVERTIME,WINDOWEDINTEGRATION, &
+        use constants, only: WP,IIN,IOUT,PI,EARTHRADIUS
+        use precisions, only: SIMULATIONOVERTIMEPERCENT,USEOVERTIME,WINDOWEDINTEGRATION, &
           FILTERINITIALSOURCE,PRESCRIBEDSOURCE, &
           FILTERSEISMOGRAMS, &
           Station_Correction,timeParameterSigma
@@ -382,7 +381,7 @@
       module deltaSecondLocation
 !-----------------------------------------------------------------------
       ! additional delta location
-        use precisions, only: WP
+        use constants, only: WP
         implicit none
         integer:: deltaSecondVertex
         real(WP):: deltaSecondLat,deltaSecondLon
@@ -406,7 +405,7 @@
       module displacements
 !-----------------------------------------------------------------------
       ! displacement arrays
-        use precisions, only: WP
+        use constants, only: WP
         implicit none
         real(WP),allocatable,dimension(:):: displacement
         real(WP),allocatable,dimension(:):: displacement_old
@@ -417,7 +416,7 @@
       module griddomain
 !-----------------------------------------------------------------------
       ! grid domain array
-        use precisions, only: WP,PI
+        use constants, only: WP,PI
         implicit none
         integer:: boundariesMaxRange
         integer,allocatable,dimension(:):: domainVertices
@@ -440,7 +439,8 @@
       module phaseBlockData
 !-----------------------------------------------------------------------
       ! phase module
-        use precisions, only: WP,IIN,compatible_refgridXrefgrid
+        use constants, only: WP,IIN
+        use precisions, only: compatible_refgridXrefgrid
         implicit none
         integer:: numBlocks
         real(WP), allocatable, dimension(:):: phaseBlock
@@ -454,7 +454,7 @@
       module traveltime
 !-----------------------------------------------------------------------
       ! traveltime common parameters
-        use precisions, only: WP
+        use constants, only: WP
         implicit none
         real(WP):: t_lag,arrivalTime,vertexCellArea,t_lagAnalytic,seismo_timestep
         real(WP):: phasevelocity,kernel,kernelAnalytic
@@ -463,7 +463,7 @@
 !-----------------------------------------------------------------------
       module filterType
 !-----------------------------------------------------------------------
-        use precisions
+        use constants, only: WP
         implicit none
         ! window size for fft
         integer:: WindowSIZE

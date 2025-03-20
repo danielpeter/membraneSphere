@@ -212,6 +212,7 @@
 ! determines the phase shift between reference and scattered seismograms
 !
 ! returns: new phaseshift array entry
+      use precisions
       use cells; use loop; use phaseVelocityMap; use traveltime
       use filterType; use verbosity
       use parallel;use propagationStartup

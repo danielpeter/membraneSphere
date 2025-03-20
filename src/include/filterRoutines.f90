@@ -125,6 +125,7 @@
 !
 ! returns: filtered seismo
       use verbosity; use filterType; use propagationStartup; use parallel
+      use precisions
       implicit none
       integer,intent(in):: seismoLength
       real(WP),intent(inout):: seismo(2,seismoLength)
@@ -273,7 +274,7 @@
 !
 ! returns: filtered seismodata
       use verbosity; use filterType
-      use parallel; use propagationStartup
+      use parallel; use propagationStartup; use precisions
       implicit none
       integer,intent(in):: dataLength,bandwidth,power,centerIndex
       real(WP),dimension(dataLength),intent(inout):: seismodata
@@ -458,7 +459,7 @@
 !  entries                     - non-zero entries of seismograms
 !  verbose                    - be verbose
 ! returns: tapered seismo
-      use filterType
+      use precisions; use filterType
       implicit none
       integer,intent(in):: seismoLength,entries
       real(WP),intent(inout):: seismo(2,seismoLength)

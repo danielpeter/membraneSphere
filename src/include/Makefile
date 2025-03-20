@@ -52,9 +52,6 @@ include_OBJECTS = \
 $O/%.module.o: src/include/%.f90
 	$(F90) $(FFLAGS) -c -o $@ $<
 
-$O/%.o: src/include/%.f
-	$(F77) $(FFLAGS) -c -o $@ $<
-
 $O/%.o: src/include/%.f90 $O/commonModules.module.o
 	$(F90) $(FFLAGS) -c -o $@ $<
 

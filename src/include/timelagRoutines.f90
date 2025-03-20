@@ -396,8 +396,9 @@ end module
 ! remember:
 !       Filterseismograms                        - use filter before determining time lag
 ! returns: t_lag timelag in seconds ( uses dt )
-      use verbosity;use filterType
-      use propagationStartup, only: WP,datadirectory,dt
+      use precisions
+      use verbosity; use filterType
+      use propagationStartup, only: datadirectory,dt
       implicit none
       real(WP),intent(out):: t_lag
       integer,intent(in):: seismoLength
@@ -842,7 +843,7 @@ end module
 !     timediff      - time step dt
 !     entries       - (optional) number of entries
 ! returns: seismo array and dt
-      use verbosity;use precisions
+      use verbosity; use precisions
       implicit none
       integer,intent(in):: size
       character(len=128),intent(in):: fileName
@@ -971,7 +972,7 @@ end module
 !     timediff              - time step dt
 !     entries       - (optional) number of entries
 ! returns: seismo array and dt
-      use verbosity;use precisions
+      use verbosity; use precisions
       implicit none
       integer,intent(in):: size
       character(len=128),intent(in):: fileName
@@ -1175,7 +1176,8 @@ end module
 !       timedelta                - time step
 !
 ! returns: arrivalTime (module traveltime) and startTime
-      use traveltime;use verbosity;use propagationStartup; use filterType
+      use precisions
+      use traveltime; use verbosity; use propagationStartup; use filterType
       implicit none
       integer,intent(in):: seismoLength
       real(WP),intent(in):: seismo(2,seismoLength)
@@ -1549,9 +1551,9 @@ end module
 ! remember:
 !       FILTERSEISMOGRAMS                        - use filter before determining time lag
 ! returns: t_lag timelag in seconds ( uses dt )
+      use precisions
       use verbosity, only: beVerbose,fileOutput
       use propagationStartup, only: datadirectory
-      use precisions
       implicit none
       real(WP),intent(out):: t_lag
       integer,intent(in):: seismoLength
@@ -1732,6 +1734,7 @@ end module
 ! seismo2 is the homogeneous trace
 !
 ! returns: t_lag (timelag in seconds), amplification (factor to scale homogeneous seismogram with)
+      use precisions
       use verbosity; use filterType
       use propagationStartup, only: datadirectory,dt
       implicit none

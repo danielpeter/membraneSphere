@@ -1364,7 +1364,7 @@
       use cells, only: vertices,numVertices
       use parallel, only: MAIN_PROCESS
       use displacements, only: newdisplacement
-      use propagationStartup, only: datadirectory
+      use propagationStartup, only: datadirectory,IOUT
       implicit none
       integer,intent(in):: timestep
       real(WP),intent(in):: time

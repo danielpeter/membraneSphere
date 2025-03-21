@@ -32,7 +32,7 @@ propagation_OBJECTS = \
 OBJS_COMMON = \
 	$O/adjointRoutines.o \
 	$O/cellfunctions.o \
-	$O/correlationRoutines.module.o \
+	$O/correlationRoutines.o \
 	$O/commonModules.module.o \
 	$O/filterRoutines.o \
 	$O/forcingTerms.o \

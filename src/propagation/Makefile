@@ -1,7 +1,6 @@
-##
-## compilation directory
-##
-S := ${S_TOP}/src/propagation
+################################################################
+# Makefile
+DIR = propagation
 
 ################################################################
 ##
@@ -114,12 +113,18 @@ $E/heterogeneousPhaseshift: $(OBJS_HETSHIFT)
 ##
 ################################################################
 
+##
+## compilation directory
+##
+S := ${S_TOP}/src/propagation
+$(propagation_OBJECTS): S := ${S_TOP}/src/propagation
+
 #.SUFFIXES: $(SUFFIXES) .f90
 
 ##
 ## rule for each .o file below
 ##
 
-$O/%.o: src/propagation/%.f90 $O/commonModules.module.o
+$O/%.o: $S/%.f90 $O/commonModules.module.o
 	$(F90) $(FFLAGS) -c -o $@ $<
 

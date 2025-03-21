@@ -1,7 +1,6 @@
-##
-## compilation directory
-##
-S := ${S_TOP}/src/include
+################################################################
+# Makefile
+DIR = include
 
 ################################################################
 
@@ -43,19 +42,26 @@ include_OBJECTS = \
 ##
 ################################################################
 
+##
+## compilation directory
+##
+S := ${S_TOP}/src/include
+$(include_OBJECTS): S = ${S_TOP}/src/include
+
+
 #.SUFFIXES: $(SUFFIXES) .f90
 
 ##
 ## rule for each .o file below
 ##
 
-$O/%.module.o: src/include/%.f90
+$O/%.module.o: $S/%.f90
 	$(F90) $(FFLAGS) -c -o $@ $<
 
-$O/%.o: src/include/%.f90 $O/commonModules.module.o
+$O/%.o: $S/%.f90 $O/commonModules.module.o
 	$(F90) $(FFLAGS) -c -o $@ $<
 
-$O/%.o: src/include/%.c
+$O/%.o: $S/%.c
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 

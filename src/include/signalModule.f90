@@ -39,12 +39,11 @@
           implicit none
           integer:: i,signalnumber
           ! console output
-          print *,'stopping process:',rank,' by signal:',signalnumber
+          print *,'stopping process: rank ',myrank,' by signal:',signalnumber
           print *,'    last data inverted:',dataLoopIndex
           print *
           ! wait until all processes reached this point
-          !call MPI_Barrier( MPI_COMM_WORLD, ier )
-          !if (ier /= 0) call stopProgram('terminate MPI_Barrier failed    ')
+          !call syncProcesses()
 
           ! stop program
           !call stopProgram("terminate     ")

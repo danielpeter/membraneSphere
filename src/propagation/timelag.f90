@@ -325,8 +325,7 @@
       implicit none
       character(len=128),intent(in):: textline
       ! local parameters
-      integer:: endindex,ier
-      logical:: flag
+      integer:: endindex
 
       ! console output
       endindex = index(textline,"  ")
@@ -337,12 +336,7 @@
       flush(6)
 
       ! stop MPI
-      call MPI_Initialized(flag,ier)
-      if (flag .eqv. .true. .and. ier == 0) then
-        ! note: MPI_ABORT does not return, it makes the program exit with an error code of 30
-        call MPI_Abort(MPI_COMM_WORLD, 30, ier )
-        call MPI_FINALIZE(ier)
-      endif
+      call syncAbortMPI()
 
       ! stop process
       stop 'Abort - program '

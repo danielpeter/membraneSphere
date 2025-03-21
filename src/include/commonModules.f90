@@ -397,8 +397,9 @@
         implicit none
         logical:: PARALLELSEISMO = .false.
         logical:: MAIN_PROCESS   = .false.
-        integer:: nprocesses,rank,tag,MPI_CUSTOM
-        integer:: status(MPI_STATUS_SIZE)
+        integer:: nprocesses
+        integer:: myrank
+        integer:: MPI_CUSTOM
       end module
 
 !-----------------------------------------------------------------------

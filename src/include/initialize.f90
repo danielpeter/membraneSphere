@@ -19,6 +19,7 @@
       use traveltime; use griddomain;use phaseBlockData;use loop;use deltaSecondLocation
       use filterType;use verbosity
       implicit none
+      real(WP), external:: syncWtime
 
       ! process parallelization by MPI
       call initializeMPI()
@@ -40,7 +41,7 @@
         print *,'initialization o.k.'
 
         ! benchmark
-        benchAllEnd = MPI_WTIME()
+        benchAllEnd = syncWtime()
         print *,'initialization running time: ',int((benchAllEnd-benchAllStart)/60.0),'min ', &
                           mod((benchAllEnd-benchAllStart),60.0),'sec'
         print *
@@ -52,43 +53,32 @@
       subroutine initializeMPI()
 !-----------------------------------------------------------------------
 ! initializes program parallelization
-      use propagationStartup;use parallel
+      use propagationStartup; use parallel
       implicit none
       ! local parameters
-      integer:: ier
+      real(WP), external:: syncWtime
 
       ! parallelization
-      call MPI_Init(ier)
-      if (ier /= 0) then
-        print *,'error starting MPI program.'
-        ! note: MPI_ABORT does not return, it makes the program exit with an error code of 30
-        call MPI_ABORT(MPI_COMM_WORLD,30,ier)
-      endif
+      call syncInitMPI()
 
       ! get number of processors
-      call MPI_COMM_SIZE(MPI_COMM_WORLD,nprocesses,ier)
-      if (ier /= 0) stop "MPI_COMM_SIZE failed"
+      call syncGetNumberProcesses(nprocesses)
 
       ! determine idproc, the processor's id
-      call MPI_COMM_RANK(MPI_COMM_WORLD,rank,ier)
-      if (ier /= 0) stop "MPI_COMM_RANK failed"
+      call syncGetRank(myrank)
 
       ! determine main process
-      if (rank == 0) then
+      if (myrank == 0) then
         MAIN_PROCESS = .true.
       else
         MAIN_PROCESS = .false.
       endif
 
       ! determine representation
-      if (WP == 4) then
-        MPI_CUSTOM = MPI_REAL
-      else
-        MPI_CUSTOM = MPI_DOUBLE_PRECISION
-      endif
+      call syncDetermineMPICustom(WP,MPI_CUSTOM)
 
       ! benchmark
-      if (MAIN_PROCESS) benchAllStart = MPI_WTIME()
+      if (MAIN_PROCESS) benchAllStart = syncWtime()
 
       end
 
@@ -128,7 +118,7 @@
         call readParameters()
       endif
       ! synchronize with processes
-      call syncParameters(rank,nprocesses)
+      call syncParameters(myrank,nprocesses)
 
       ! adjoint method initialization
       if (Adjoint_Program) then
@@ -205,7 +195,7 @@
       ! local parameters
       real(WP):: lat,lon,distance
       real(WP):: vectorA(3),vectorB(3)
-      integer:: ier,i
+      integer:: i
 
       ! allocate grid arrays
       call allocateMesh()
@@ -216,8 +206,7 @@
       call syncInitialData()
 
       ! wait until all processes reached this point
-      call MPI_Barrier( MPI_COMM_WORLD, ier )
-      if (ier /= 0) call stopProgram('initializeMesh() - MPI_Barrier failed    ')
+      call syncProcesses()
 
       ! find source & receiver vertex
       desiredSourceLat = sourceLat
@@ -450,7 +439,7 @@
             ! allocates memory
             allocate(forceTermPrescribed(numDomainVertices,numofTimeSteps),stat=ier)
             if (ier /= 0) then
-              print *,'    cannot allocate prescribedForce array: ',rank
+              print *,'    cannot allocate prescribedForce array: ',myrank
               ! change prescribed flag if necessary
               if (FILTERINITIALSOURCE) then
                 if (MAIN_PROCESS .and. VERBOSE) print *,'    using file to store source array.'
@@ -463,14 +452,14 @@
               endif
             endif
           endif
-          call syncFlag(rank,nprocesses,sourceOnFile)
+          call syncFlag(myrank,nprocesses,sourceOnFile)
 
           ! storage on file
           if (sourceOnFile) then
             if (allocated(forceTermPrescribed)) deallocate(forceTermPrescribed)
 
             ! names file
-            write(rankstr,'(i3.3)') rank
+            write(rankstr,'(i3.3)') myrank
             print *,'      prescribed source file: ',trim(datadirectory)//'forceTermPrescribed'//rankstr//'.bin'
             ! opens file to store data for each process
             open(sourceFileID,file=trim(datadirectory)//'forceTermPrescribed'//rankstr//'.bin', &
@@ -484,7 +473,7 @@
 
         !init (critical: processes may stop here)
         if (.not. sourceOnFile) then
-          !print *,'    intializing prescribedForce array: rank',rank
+          !print *,'    intializing prescribedForce array: rank',myrank
           forceTermPrescribed(:,:) = 0.0_WP
         else
           forcetrace(:) = 0.0_WP
@@ -620,7 +609,7 @@
         min = minval(seismo(2,:))
         max = maxval(seismo(2,:))
         if ( (abs(max)+abs(min)) > 1e-4) then
-          !print *,'    filter',rank,vertex,max,min
+          !print *,'    filter',myrank,vertex,max,min
           call dofilterSeismogram(seismo,numofTimeSteps)
         endif
 
@@ -697,7 +686,7 @@
         endif
 
         ! synchronize between main and secondary processes
-        !print *,rank,'synchronizing phase map...'
+        !print *,'rank ',myrank,'synchronizing phase map...'
         call syncPhaseMap()
 
         if (rotate_frame) then
@@ -773,7 +762,7 @@
       endif
 
       ! next process gets higher delta latitude
-      deltaLat = deltaLat+rank*deltaMoveIncrement
+      deltaLat = deltaLat+myrank*deltaMoveIncrement
 
       ! get nearest vertex for new delta location
       call findVertex(deltaLat,deltaLon,deltaVertex)
@@ -1544,8 +1533,7 @@
       implicit none
       character(len=*),intent(in):: textline
       ! local parameters
-      integer:: endindex,ier
-      logical:: flag
+      integer:: endindex
 
       ! console output
       endindex = index(textline,"  ")
@@ -1556,14 +1544,10 @@
       flush(6)
 
       ! stop MPI
-      call MPI_Initialized(flag,ier)
-      if (flag .eqv. .true. .and. ier == 0) then
-        ! note: MPI_ABORT does not return, it makes the program exit with an error code of 30
-        call MPI_Abort(MPI_COMM_WORLD, 30, ier )
-        call MPI_FINALIZE(ier)
-      endif
+      call syncAbortMPI()
 
       ! stop process
       stop 'Abort - program '
-      end
+
+      end subroutine
 

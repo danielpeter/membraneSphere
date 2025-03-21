@@ -69,7 +69,7 @@
     call openDatafile(dataUnit,newdataUnit,datacount)
 
     ! store data in array
-    call syncDataArray(dataUnit,datacount)
+    call storeHeterogeneousDataArray(dataUnit,datacount)
 
     ! handle events
     call processDatafile(newdataUnit,datacount)
@@ -110,7 +110,7 @@
     print *,'      ',trim(heterogeneousDataFile)
     open(dataUnit,file=trim(heterogeneousDataFile),status="old",iostat=ier)
     if (ier /= 0) then
-      print *,'Error: process ',rank,' could not open data file: ',trim(heterogeneousDataFile)
+      print *,'Error: process ',myrank,' could not open data file: ',trim(heterogeneousDataFile)
       call stopProgram( "data file not found     ")
     endif
 
@@ -242,108 +242,80 @@
 
   end subroutine
 
+!-----------------------------------------------------------------------
+subroutine storeHeterogeneousDataArray(dataUnit,datacount)
+!-----------------------------------------------------------------------
+! stores the data in an array
+  use parallel; use phaseBlockData; use heterogeneousArrays
+  implicit none
+  integer,intent(in):: dataUnit
+  integer,intent(inout):: datacount
+  ! local parameters
+  integer:: i,ier,length
+  character:: commentline*47,wave_type*1
+  real:: period,v0
+  real:: eplo,epla,stla,stlo,datum,error
 
-  !-----------------------------------------------------------------------
-  subroutine syncDataArray(dataUnit,datacount)
-  !-----------------------------------------------------------------------
-  ! stores the data in an array
-    use parallel; use phaseBlockData; use heterogeneousArrays
-    implicit none
-    integer,intent(in):: dataUnit,datacount
-    ! local parameters
-    integer:: i,ier,length
-    character:: commentline*47,wave_type*1
-    real:: period,v0
-    real:: eplo,epla,stla,stlo,datum,error
+  ! info
+  if (MAIN_PROCESS) then
+    print *,'  data count: ',datacount
+  endif
 
-    ! info
-    if (MAIN_PROCESS) then
-      print *,'  data count:',datacount
-    endif
+  ! wait until all processes reached this point
+  call syncProcesses()
 
-    ! wait until all processes reached this point
-    call MPI_Barrier( MPI_COMM_WORLD, ier )
-    if (ier /= 0) call stopProgram('abort syncDataArray - MPI_Barrier failed    ')
+  ! synchronize datacount from main process to all other processes
+  call syncBroadcastSinglei(datacount)
+  !or
+  !call syncSingleInteger(datacount)
 
-    ! synchronize datacount with processes
-    if (MAIN_PROCESS) then
-      do i = 1,nprocesses-1
-        call MPI_Send(datacount,1,MPI_INTEGER,i,i,MPI_COMM_WORLD,ier)
-        if (ier /= 0) then
-          print *,'Error: datacount',rank,ier
-          call stopProgram("syncDataArray()")
-        endif
-      enddo
-    else
-      call MPI_Recv(datacount,1,MPI_INTEGER,0,rank,MPI_COMM_WORLD,status,ier)
-      if (ier /= 0) then
-        print *,'Error: datacount',rank,ier
-        call stopProgram("syncDataArray()")
-      endif
-    endif
+  ! allocate array
+  allocate(dataStore(6,datacount),stat=ier)
+  if (ier /= 0) call stopProgram('error allocating data - storeHeterogeneousDataArray()    ')
 
-    ! allocate array
-    allocate(dataStore(6,datacount),stat=ier)
-    if (ier /= 0) call stopProgram('error allocating data - syncDataArray()')
+  ! process data file
+  if (MAIN_PROCESS) then
+    ! reset to first data entry
+    rewind(dataUnit)
+    read(dataUnit,*) wave_type,period,v0
+    read(dataUnit,'(a47)') commentline
 
-    ! process data file
-    if (MAIN_PROCESS) then
-      ! reset to first data entry
-      rewind(dataUnit)
-      read(dataUnit,*) wave_type,period,v0
-      read(dataUnit,'(a47)') commentline
+    ! read data
+    print *,'reading in data array...'
+    print *,'    number of data entries: ',datacount
+    do i = 1,datacount
+      read(dataUnit,*,iostat=ier) epla,eplo,stla,stlo,datum,error
+      if (ier /= 0) call stopProgram('error reading data - storeHeterogeneousDataArray()    ')
 
-      ! read data
-      print *,'reading in data array...'
-      print *,'    number of data entries:',datacount
-      do i = 1,datacount
-        read(dataUnit,*,iostat=ier) epla,eplo,stla,stlo,datum,error
-        if (ier /= 0) call stopProgram('error reading data - syncDataArray()')
+      ! store in data array
+      dataStore(1,i) = epla
+      dataStore(2,i) = eplo
+      dataStore(3,i) = stla
+      dataStore(4,i) = stlo
+      dataStore(5,i) = datum
+      dataStore(6,i) = error
+    enddo
 
-        ! store in data array
-        dataStore(1,i) = epla
-        dataStore(2,i) = eplo
-        dataStore(3,i) = stla
-        dataStore(4,i) = stlo
-        dataStore(5,i) = datum
-        dataStore(6,i) = error
-      enddo
+    ! close file
+    close(dataUnit)
+  endif
 
-      ! close file
-      close(dataUnit)
-    endif
+  ! synchronize dataStore array with processes
+  length = 6*datacount
+  call syncBroadcastRealArray(dataStore,length)
+  !or
+  !call syncRealArray(dataStore,length)
 
-    ! synchronize datacount with processes
-    length = 6*datacount
-    if (MAIN_PROCESS) then
-      print *,'    synchronize data ',8*length/1024./1024.,' MB'
-      call myflush(6)
-      do i = 1,nprocesses-1
-        call MPI_Send(dataStore(:,:),length,MPI_REAL,i,i,MPI_COMM_WORLD,ier)
-        if (ier /= 0) then
-          print *,'Error: datastore',rank,ier
-          call stopProgram("syncDataArray()")
-        endif
-      enddo
-    else
-      call MPI_Recv(dataStore(:,:),length,MPI_REAL,0,rank,MPI_COMM_WORLD,status,ier)
-      if (ier /= 0) then
-        print *,'Error: datastore',rank,ier
-        call stopProgram("syncDataArray()")
-      endif
-    endif
+  ! TEST console output
+  if (MAIN_PROCESS) then
+    print *,'    first datum extract: ',(dataStore(i,1),i=1,6)
+    call myflush(6)
+  endif
 
-    ! TEST console output
-    if (MAIN_PROCESS) then
-      print *,'    first datum extract:',(dataStore(i,1),i=1,6)
-      call myflush(6)
-    endif
+  ! wait until all processes reached this point
+  call syncProcesses()
 
-    ! wait until all processes reached this point
-    call MPI_Barrier( MPI_COMM_WORLD, ier )
-    if (ier /= 0) call stopProgram('abort syncDataArray - MPI_Barrier failed    ')
-
-  end subroutine
+end subroutine
 
   !-----------------------------------------------------------------------
   subroutine processDatafile(newdataUnit,datacount)
@@ -354,11 +326,13 @@
     implicit none
     integer,intent(in):: newdataUnit,datacount
     ! local parameters
-    integer:: j,ier,dataLoopIndex
-    real:: benchmarkLoopStart,benchmarkLoopEnd,epidelta
+    integer:: j,dataLoopIndex
+    real(WP):: benchmarkLoopStart,benchmarkLoopEnd
+    real:: epidelta
     real:: eplo,epla,stla,stlo,datum,error
     real:: time_shift
     logical, external:: doCalc
+    real(WP), external:: syncWtime
 
     ! prepare phasevelocities for time iterations
     call constructPhaseVelocities()
@@ -395,7 +369,7 @@
 
         ! benchmark
         if (MAIN_PROCESS .and. mod(j,500) < nprocesses) then
-          benchmarkLoopStart = MPI_WTIME()
+          benchmarkLoopStart = syncWtime()
         endif
 
         ! prepare source/receiver locations for simulation
@@ -422,7 +396,7 @@
           print *,'      distance source-receiver:',epidelta
           print *,'      time shift:',time_shift
           ! benchmark for this run
-          benchmarkLoopEnd = MPI_WTIME()
+          benchmarkLoopEnd = syncWtime()
           print *,'      benchmark seconds:',benchmarkLoopEnd-benchmarkLoopStart
           ! flush to console output (i/o unit nr. 6 or on SGI system nr. 101)
           call myflush(6)
@@ -434,8 +408,7 @@
     enddo
 
     ! wait until all processes reached this point
-    call MPI_Barrier( MPI_COMM_WORLD, ier )
-    if (ier /= 0) call stopProgram('abort - final MPI_Barrier failed    ')
+    call syncProcesses()
 
     ! close new data file
     if (MAIN_PROCESS) then
@@ -521,7 +494,7 @@
     ! distribute following calculation over all processes
     if (.not. PARALLELSEISMO) then
       ! main process: j=1,9,17,...; rank 1: j=2,10,...; rank 2: j=3,11,...
-      if (mod((index-rank+2*nprocesses-1),nprocesses) == 0) then
+      if (mod((index-myrank+2*nprocesses-1),nprocesses) == 0) then
         doCalc = .true.
       else
         doCalc = .false.
@@ -637,7 +610,7 @@
     integer,intent(in):: jrecord,datacount,newdataUnit
     real,intent(in):: shift,epla,eplo,stla,stlo,error
     ! local parameters
-    integer:: restprocesses,i,ier
+    integer:: restprocesses,i
     real:: epla_proc,eplo_proc,stla_proc,stlo_proc,shift_proc,error_proc
 
     ! single processor/single simulation job
@@ -662,75 +635,16 @@
 
       ! main receives
       do i = 1,restprocesses
-        ! get data
         !print *,'getting from',i
-        call MPI_Recv(shift_proc,1,MPI_REAL,i,i,MPI_COMM_WORLD,status,ier)
-        if (ier /= 0) then
-          print *,'Error: shift',rank,ier
-          call stopProgram("outputDataline    ")
-        endif
-        call MPI_Recv(epla_proc,1,MPI_REAL,i,i,MPI_COMM_WORLD,status,ier)
-        if (ier /= 0) then
-          print *,'Error: shift',rank,ier
-          call stopProgram("outputDataline    ")
-        endif
-        call MPI_Recv(eplo_proc,1,MPI_REAL,i,i,MPI_COMM_WORLD,status,ier)
-        if (ier /= 0) then
-          print *,'Error: shift',rank,ier
-          call stopProgram("outputDataline    ")
-        endif
-        call MPI_Recv(stla_proc,1,MPI_REAL,i,i,MPI_COMM_WORLD,status,ier)
-        if (ier /= 0) then
-          print *,'Error: shift',rank,ier
-          call stopProgram("outputDataline    ")
-        endif
-        call MPI_Recv(stlo_proc,1,MPI_REAL,i,i,MPI_COMM_WORLD,status,ier)
-        if (ier /= 0) then
-          print *,'Error: shift',rank,ier
-          call stopProgram("outputDataline    ")
-        endif
-        call MPI_Recv(error_proc,1,MPI_REAL,i,i,MPI_COMM_WORLD,status,ier)
-        if (ier /= 0) then
-          print *,'Error: shift',rank,ier
-          call stopProgram("outputDataline    ")
-        endif
+        ! get data
+        call syncRecvDataFromProc(i,shift_proc,epla_proc,eplo_proc,stla_proc,stlo_proc,error_proc)
 
         ! print to file
-        call printDataLine(newdataUnit,epla_proc,eplo_proc,stla_proc,stlo_proc, &
-                          shift_proc,error_proc)
+        call printDataLine(newdataUnit,epla_proc,eplo_proc,stla_proc,stlo_proc,shift_proc,error_proc)
       enddo
     else
       ! secondary process sends information
-      call MPI_Send(shift,1,MPI_REAL,0,rank,MPI_COMM_WORLD,ier)
-      if (ier /= 0) then
-        print *,'Error: shift',rank,ier
-        call stopProgram("outputDataline    ")
-      endif
-      call MPI_Send(epla,1,MPI_REAL,0,rank,MPI_COMM_WORLD,ier)
-      if (ier /= 0) then
-        print *,'Error: shift',rank,ier
-        call stopProgram("outputDataline    ")
-      endif
-      call MPI_Send(eplo,1,MPI_REAL,0,rank,MPI_COMM_WORLD,ier)
-      if (ier /= 0) then
-        print *,'Error: shift',rank,ier
-        call stopProgram("outputDataline    ")
-      endif
-      call MPI_Send(stla,1,MPI_REAL,0,rank,MPI_COMM_WORLD,ier)
-      if (ier /= 0) then
-        print *,'Error: shift',rank,ier
-        call stopProgram("outputDataline    ")
-      endif
-      call MPI_Send(stlo,1,MPI_REAL,0,rank,MPI_COMM_WORLD,ier)
-      if (ier /= 0) then
-        print *,'Error: shift',rank,ier
-        call stopProgram("outputDataline    ")
-      endif
-      call MPI_Send(error,1,MPI_REAL,0,rank,MPI_COMM_WORLD,ier)
-      if (ier /= 0) then
-        print *,'Error: shift',rank,ier
-        call stopProgram("outputDataline    ")
-      endif
+      call syncSendDataFromProc(myrank,shift,epla,eplo,stla,stlo,error)
     endif
   end subroutine
 
@@ -780,11 +694,11 @@
     use parallel; use propagationStartup; use heterogeneousArrays
     implicit none
     ! local parameters
-    integer:: ier
+    real(WP), external:: syncWtime
 
     ! benchmark
     if (MAIN_PROCESS) then
-      benchAllEnd = MPI_WTIME()
+      benchAllEnd = syncWtime()
       print *,'statistics:'
       print *,'  datum min/max:',shift_min,shift_max
       print *
@@ -794,12 +708,7 @@
       print *
     endif
 
-    ! wait until all processes reached this point
-    call MPI_Barrier( MPI_COMM_WORLD, ier )
-    if (ier /= 0) call stopProgram('abort - final MPI_Barrier failed    ')
-
     ! end parallelization
-    call MPI_FINALIZE(ier)
-    if (ier /= 0) call stopProgram('abort - finalize failed    ')
+    call syncFinalizeMPI()
 
   end subroutine

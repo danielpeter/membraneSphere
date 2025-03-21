@@ -495,7 +495,7 @@
           do i = 1,size(receivers)
             ! get right seismogram
             domain = getDomain(receivers(i))
-            if (rank == domain) then
+            if (myrank == domain) then
               write(recstr,'(i3.2)') int(i)
               ! get actual vertex position
               call getSphericalCoord_Lat(receivers(i),reclat,reclon)

@@ -32,6 +32,7 @@
       integer:: i,ier
       logical:: looping
       real(WP), external:: discreteLaplacian,precalc_discreteLaplacian
+      real(WP), external:: syncWtime
 
       !-----------------------------------------------------------------------
       ! parameters
@@ -81,7 +82,7 @@
       looping = .true.
       do while( looping )
         ! benchmark
-        if (MAIN_PROCESS) benchstart = MPI_WTIME()
+        if (MAIN_PROCESS) benchstart = syncWtime()
 
         ! forward simulation of membrane waves
         call forwardIteration()
@@ -106,19 +107,14 @@
 
         ! benchmark output
         if (MAIN_PROCESS .and. VERBOSE) then
-          benchend = MPI_WTIME()
+          benchend = syncWtime()
           print *
           print *,'benchmark seconds:',benchend-benchstart
           print *
         endif
       enddo !delta location
 
-      ! wait until all processes reached this point
-      call MPI_Barrier( MPI_COMM_WORLD, ier )
-      if (ier /= 0) call stopProgram('abort - final MPI_Barrier failed    ')
-
       ! end parallelization
-      call MPI_FINALIZE(ier)
-      if (ier /= 0) call stopProgram('abort - finalize failed    ')
+      call syncFinalizeMPI()
 
       end program

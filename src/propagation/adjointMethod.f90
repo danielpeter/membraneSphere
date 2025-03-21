@@ -30,8 +30,9 @@
       use loop; use phaseBlockData; use griddomain; use adjointVariables;use verbosity
       implicit none
       ! local parameters
-      integer:: kernel,ier
+      integer:: kernel
       real(WP):: window_start_org,window_end_org
+      real(WP), external:: syncWtime
 
       !-----------------------------------------------------------------------
       ! parameters
@@ -51,8 +52,7 @@
       call initialize()
 
       ! wait until all processes reached this point
-      call MPI_Barrier( MPI_COMM_WORLD, ier )
-      if (ier /= 0) call stopProgram('abort - MPI_Barrier kernels failed    ')
+      call syncProcesses()
 
       ! prepare for simulation
       if (MAIN_PROCESS .and. VERBOSE) then
@@ -62,7 +62,7 @@
       endif
 
       ! benchmark
-      if (MAIN_PROCESS) benchstart = MPI_WTIME()
+      if (MAIN_PROCESS) benchstart = syncWtime()
 
       ! determine how many kernels
       if (kernelIteration) then
@@ -112,7 +112,7 @@
 
         ! benchmark output
         if (MAIN_PROCESS .and. VERBOSE) then
-          benchend = MPI_WTIME()
+          benchend = syncWtime()
           print *,'    benchmark seconds:',benchend-benchstart
           print *
         endif
@@ -131,22 +131,20 @@
         call backwardIteration()
 
         ! wait until all processes reached this point
-        !call MPI_Barrier( MPI_COMM_WORLD, ier )
-        !if (ier /= 0) call stopProgram('abort - MPI_Barrier iterations failed    ')
+        !call syncProcesses()
 
         ! compute kernel
         if (.not. ADJOINT_ONTHEFLY) call frechetKernel()
 
         ! wait until all processes reached this point
-        !call MPI_Barrier( MPI_COMM_WORLD, ier )
-        !if (ier /= 0) call stopProgram('abort - MPI_Barrier kernels failed    ')
+        !call syncProcesses()
 
         ! output to kernel file
         call storeAdjointKernel()
 
         ! benchmark
         if (MAIN_PROCESS .and. VERBOSE) then
-          benchAllEnd = MPI_WTIME()
+          benchAllEnd = syncWtime()
           print *
           print *,'running time: ',int((benchAllEnd-benchAllStart)/60.0),'min ', &
                   mod((benchAllEnd-benchAllStart),60.0),'sec'
@@ -157,13 +155,8 @@
 
       if (MAIN_PROCESS) print *,'done.'
 
-      ! wait until all processes reached this point
-      call MPI_Barrier( MPI_COMM_WORLD, ier )
-      if (ier /= 0) call stopProgram('abort - final MPI_Barrier failed    ')
-
       ! end parallelization
-      call MPI_FINALIZE(ier)
-      if (ier /= 0) call stopProgram('abort - finalize failed    ')
+      call syncFinalizeMPI()
 
       end program
 

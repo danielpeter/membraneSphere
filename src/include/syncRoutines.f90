@@ -21,6 +21,7 @@
       integer,intent(in):: rankid,nproc
       ! local parameters
       integer:: n,ier
+      integer:: status(MPI_STATUS_SIZE)
 
       ! check
       if (nproc < 2) return
@@ -75,7 +76,7 @@
           call MPI_Recv(LASTTIME,1,MPI_CUSTOM,0,rankid,MPI_COMM_WORLD,status,ier)
           call MPI_Recv(cphaseRef,1,MPI_CUSTOM,0,rankid,MPI_COMM_WORLD,status,ier)
           call MPI_Recv(HETEROGENEOUS,1,MPI_LOGICAL,0,rankid,MPI_COMM_WORLD,status,ier)
-          call MPI_Recv(DELTA,1,MPI_LOGICAL,0,rank,MPI_COMM_WORLD,status,ier)
+          call MPI_Recv(DELTA,1,MPI_LOGICAL,0,rankid,MPI_COMM_WORLD,status,ier)
           call MPI_Recv(DELTARADIUS,1,MPI_CUSTOM,0,rankid,MPI_COMM_WORLD,status,ier)
           call MPI_Recv(deltaLat,1,MPI_CUSTOM,0,rankid,MPI_COMM_WORLD,status,ier)
           call MPI_Recv(deltaLon,1,MPI_CUSTOM,0,rankid,MPI_COMM_WORLD,status,ier)
@@ -119,6 +120,8 @@
       implicit none
       ! local parameters
       integer:: n,length,ier
+      integer:: tag
+      integer:: status(MPI_STATUS_SIZE)
 
       ! read vertices values from files
       if (MAIN_PROCESS) then
@@ -188,12 +191,12 @@
       else
         ! receive from main process
         ! vertices
-        !print *,'secondary ',rank,' trying to receive vert. from main process'
+        !print *,'secondary ',myrank,' trying to receive vert. from main process'
         length = MaxVertices*3
-        tag = rank
+        tag = myrank
         call MPI_RECV(vertices,length,MPI_CUSTOM,0,tag,MPI_COMM_WORLD,status,ier)
         if (ier /= 0) then
-              print *,'Error: syncInitial - vertices',rank,' error',ier
+              print *,'Error: syncInitial - vertices',myrank,' error',ier
               call stopProgram( 'abort - syncInitialData    ')
         endif
         ! numVertices
@@ -250,18 +253,19 @@
 
 
 !!-----------------------------------------------------------------------
-!      subroutine syncDisplacement( myrank, numberofprocesses )
+!      subroutine syncDisplacement()
 !!-----------------------------------------------------------------------
 !! synchronizes displacement and displacement_old arrays with
 !! its secondary processes
 !      use displacements;use propagationStartup
 !      use verbosity; use parallel; use cells
 !      implicit none
-!      integer,intent(in):: myrank,numberofprocesses
 !      ! local parameters
 !      integer:: length,n,ier
+!      integer:: tag
+!      integer:: status(MPI_STATUS_SIZE)
 !
-!      if (rank == 0) then
+!      if (myrank == 0) then
 !        ! send to secondary processes
 !        do n = 1, nprocesses-1
 !          ! displacement
@@ -277,16 +281,16 @@
 !        ! receive from main process
 !        ! displacement
 !        length = numVertices
-!        tag = rank
+!        tag = myrank
 !        call MPI_RECV(displacement(1:numVertices),length,MPI_CUSTOM,0,tag,MPI_COMM_WORLD,status,ier)
 !        ! displacement_old
 !        length = numVertices
-!        tag = rank
+!        tag = myrank
 !        call MPI_RECV(displacement_old(1:numVertices),length,MPI_CUSTOM,0,tag,MPI_COMM_WORLD,status,ier)
 !      endif
 !
 !      !debug
-!      !  if (rank == 0) then
+!      !  if (myrank == 0) then
 !      !    print *
 !      !    print *,'main process'
 !      !    do n=1340,1350
@@ -294,7 +298,7 @@
 !      !    enddo
 !      !  else
 !      !    print *
-!      !    print *,'secondary',rank
+!      !    print *,'secondary',myrank
 !      !    do n=1340,1350
 !      !      print *,'  #',displacement(n)
 !      !    enddo
@@ -310,6 +314,7 @@
       implicit none
       ! local parameters
       integer:: dest,source,sendRange,recRange,n,k,neighbor,ier
+      integer:: status(MPI_STATUS_SIZE)
 
       ! check if many processes
       if (nprocesses == 1) return
@@ -329,39 +334,38 @@
       !get boundary information from all neighbors
       do n = 1, nprocesses - 1
         ! only talk to other processes/neighbors
-        neighbor = domainNeighbors(rank,n)
-        if (neighbor /= -1 .and. neighbor /= rank) then
+        neighbor = domainNeighbors(myrank,n)
+        if (neighbor /= -1 .and. neighbor /= myrank) then
           !fill send info (over a fixed range of values)
           do k = 1,sendRange
-            if (boundaries(rank,neighbor,k) > 0) then
-              sendDisp(k) = newdisplacement(boundaries(rank,neighbor,k))
+            if (boundaries(myrank,neighbor,k) > 0) then
+              sendDisp(k) = newdisplacement(boundaries(myrank,neighbor,k))
             endif
           enddo
 
           ! talk to neighbor process  (destination to send and source to receive from are the same process)
           dest = neighbor
           source = neighbor
-          call MPI_SendRecv(sendDisp,sendRange,MPI_CUSTOM,dest,rank,receiveDisp,recRange,MPI_CUSTOM,source, &
+          call MPI_SendRecv(sendDisp,sendRange,MPI_CUSTOM,dest,myrank,receiveDisp,recRange,MPI_CUSTOM,source, &
                            source,MPI_COMM_WORLD, status, ier)
           if (ier /= 0) then
-              print *,'syncNewdisplacement - p',rank,' error',ier
+              print *,'syncNewdisplacement - p',myrank,' error',ier
           endif
           !these are the vertices we received
           do k = 1,recRange
             ! check if entry is a valid vertex index in the neighbors boundary array
-            if (boundaries(source,rank,k) > 0) then
+            if (boundaries(source,myrank,k) > 0) then
               ! add as new displacement value for this vertex
-              newdisplacement(boundaries(source,rank,k))=receiveDisp(k)
+              newdisplacement(boundaries(source,myrank,k))=receiveDisp(k)
             endif
           enddo
         endif
       enddo
 
       !debug
-      !  print *,'      sync done, barrier to wait.',rank
+      !  print *,'      sync done, barrier to wait.',myrank
       !  ! wait until all processes reached this point
-      !  call MPI_Barrier( MPI_COMM_WORLD, ier )
-      !  if (ier /= 0) call stopProgram('abort - MPI_Barrier kernels failed    ')
+      !  call syncProcesses()
 
       end subroutine
 
@@ -376,10 +380,10 @@
       integer,intent(in):: rank,nprocesses
       ! local parameters
       integer:: ier,n
-      integer:: status(MPI_STATUS_SIZE)
       integer:: startLocationVertex, endLocationVertex,recStartVertex,recEndVertex
       double precision, allocatable, dimension(:) :: tmpSend,tmpReceiv
       integer:: dest,source,range,vertexpart,sendRange,recRange,rangeMax
+      integer:: status(MPI_STATUS_SIZE)
 
       !these are the vertices which are calculated by this process
       !startLocationVertex = rank*range+1
@@ -465,12 +469,13 @@
 !      integer,intent(in):: rank,nprocesses
 !      ! local parameters
 !      integer:: ier,n
-!      integer:: status(MPI_STATUS_SIZE)
 !      integer:: startLocationVertex, endLocationVertex
 !      !double precision:: tmp(numVertices/nprocesses)
 !      double precision:: tmpSend(numVertices/nprocesses)
 !      double precision:: tmpReceiv(numVertices/nprocesses)
 !      integer:: sendcount, sendtag, sendtype,dest, source,recvtag,comm,recvtype, recvcount,range
+!!     integer:: tag
+!      integer:: status(MPI_STATUS_SIZE)
 !
 !      range = numVertices/nprocesses
 !      if (range < 1) call stopProgram( 'abort-syncNewdisplacement short range    ')
@@ -630,26 +635,27 @@
       implicit none
       ! local parameters
       integer:: length,n,first,lastsent,i,ier
+      integer:: tag
+      integer:: status(MPI_STATUS_SIZE)
       real(WP), allocatable, dimension(:):: tmpExchange
-      integer,parameter::SLICE = 1000000 ! assuming MPI has a limited buffer size
+      integer, parameter:: SLICE = 1000000 ! assuming MPI has a limited buffer size
 
       ! debug check arrays
       !  ! arrays
       !  if (.not. allocated(cellAreas)) then
-      !    print *,'Error: cellAreas not allocated',rank
+      !    print *,'Error: cellAreas not allocated',myrank
       !    call stopProgram("array not allocated    ")
       !  endif
       !  if (.not. allocated(cellEdgesLength)) then
-      !    print *,'Error: cellEdgesLength not allocated',rank
+      !    print *,'Error: cellEdgesLength not allocated',myrank
       !    call stopProgram("array not allocated    ")
       !  endif
       !  if (.not. allocated(cellCenterDistances)) then
-      !    print *,'Error: cellCenterDistances not allocated',rank
+      !    print *,'Error: cellCenterDistances not allocated',myrank
       !    call stopProgram("array not allocated    ")
       !  endif
       !  ! barrier
-      !  call MPI_Barrier(MPI_COMM_WORLD,ier)
-      !  if (ier /= 0) call stopProgram('syncRoutines - MPI_Barrier kernels failed    ')
+      !  call syncProcesses()
 
       if (MAIN_PROCESS) then
         !read in values
@@ -713,7 +719,7 @@
        enddo
       else
         ! receive from main process
-        tag = rank
+        tag = myrank
         length = numVertices
         ! split into chunks to avoid shared memory allocation problems of MPI
         if (length > SLICE) then
@@ -774,20 +780,21 @@
       implicit none
       ! local parameters
       integer:: length,n,ier
+      integer:: tag
+      integer:: status(MPI_STATUS_SIZE)
 
-      if (rank == 0) then
+      if (myrank == 0) then
         ! send to secondary processes
         do n = 1, nprocesses-1
           ! vertices
           length = numVertices
           tag = n
-
           call MPI_Send(phaseMap,length,MPI_CUSTOM,n,tag,MPI_COMM_WORLD,ier)
        enddo
       else
         ! receive from main process
         length = numVertices
-        tag = rank
+        tag = myrank
         call MPI_RECV(phaseMap,length,MPI_CUSTOM,0,tag,MPI_COMM_WORLD,status,ier)
       endif
       end subroutine
@@ -801,6 +808,8 @@
       implicit none
       ! local parameters
       integer:: length,n,m,ier
+      integer:: tag
+      integer:: status(MPI_STATUS_SIZE)
 
       if (MAIN_PROCESS) then
         ! send to secondary processes
@@ -823,13 +832,13 @@
           do m = 1,numofKernels
             ! receive from main process
             length = size(kernelsReceiversSeismogramRef(m,:,:))
-            tag = rank
+            tag = myrank
             call MPI_Recv(kernelsReceiversSeismogramRef(m,:,:),length,MPI_CUSTOM,0,tag,MPI_COMM_WORLD,status,ier)
           enddo
         else
           ! receive from main process
-          length=size(receiversSeismogramRef)
-          tag = rank
+          length = size(receiversSeismogramRef)
+          tag = myrank
           call MPI_Recv(receiversSeismogramRef,length,MPI_CUSTOM,0,tag,MPI_COMM_WORLD,status,ier)
         endif
       endif
@@ -844,16 +853,17 @@
       logical,intent(in):: doReference
       ! local parameters
       integer:: i,countVertices,recRange,sendRange,n,m,ier
-      real(WP),allocatable,dimension(:,:)::tmpExchange
-!      real(WP),allocatable,dimension(:,:,:)::tmpManyExchange
-
+      integer:: tag
+      integer:: status(MPI_STATUS_SIZE)
+      real(WP), allocatable, dimension(:,:):: tmpExchange
+      !real(WP), allocatable, dimension(:,:,:):: tmpManyExchange
 
       ! check if many processes
       if (nprocesses == 1) return
 
       if (MAIN_PROCESS) then
         ! debug
-        !print *,'collectReceiversSeismogram() -main process',nprocesses,rank,MAIN_PROCESS,numofReceivers,doReference
+        !print *,'collectReceiversSeismogram() -main process',nprocesses,myrank,MAIN_PROCESS,numofReceivers,doReference
 
         ! get from the other processes
         do n = 1, nprocesses-1
@@ -905,7 +915,7 @@
 
               call MPI_Recv(tmpExchange,size(tmpExchange),MPI_CUSTOM,n,tag,MPI_COMM_WORLD,status,ier)
               if (ier /= 0) then
-                print *,'Error: collectReceiversSeismogram - ',rank,n,ier
+                print *,'Error: collectReceiversSeismogram - ',myrank,n,ier
                 call stopProgram('collectReceiversSeismogram() - error mpi-recv   ')
               endif
 
@@ -928,7 +938,7 @@
           else
             call MPI_Recv(tmpExchange,size(tmpExchange),MPI_CUSTOM,n,tag,MPI_COMM_WORLD,status,ier)
             if (ier /= 0) then
-              print *,'Error: collectReceiversSeismogram - ',rank,n,ier
+              print *,'Error: collectReceiversSeismogram - ',myrank,n,ier
               call stopProgram('collectReceiversSeismogram() - error mpi-recv   ')
             endif
           endif
@@ -963,7 +973,7 @@
         enddo
       else
         ! debug
-        !print *,'collectReceiversSeismogram() - secondary',nprocesses,rank,MAIN_PROCESS,numofReceivers,doReference
+        !print *,'collectReceiversSeismogram() - secondary',nprocesses,myrank,MAIN_PROCESS,numofReceivers,doReference
 
         !vertex range
         countVertices = 0
@@ -972,7 +982,7 @@
           continue
         else
           do i = 1,numofReceivers
-            if (vertexDomain(receivers(i)) == rank) then
+            if (vertexDomain(receivers(i)) == myrank) then
               countVertices = countVertices+1
             endif
           enddo
@@ -987,7 +997,7 @@
         else
           allocate(tmpExchange(sendRange,numofTimeSteps),stat=ier)
           if (ier /= 0) then
-            print *,'Error: secondary sends receivers seismograms:',rank,numofKernels,sendRange,numofTimeSteps
+            print *,'Error: secondary sends receivers seismograms:',myrank,numofKernels,sendRange,numofTimeSteps
             call stopProgram('collectReceiversSeismogram() - error allocating send array    ')
           endif
         endif
@@ -1007,7 +1017,7 @@
             continue
           else
             ! fill in only seismogram from receivers in this process domain
-            if (vertexDomain(receivers(i)) == rank) then
+            if (vertexDomain(receivers(i)) == myrank) then
               countVertices = countVertices+1
               if (doReference) then
                 tmpExchange(countVertices,:)=receiversSeismogramRef(i,:)
@@ -1019,13 +1029,13 @@
         enddo
 
         ! send to main process
-        tag = rank
+        tag = myrank
         if (manyKernels) then
           !call MPI_Send(tmpManyExchange,size(tmpManyExchange),MPI_CUSTOM,0,tag,MPI_COMM_WORLD,ier)
           do m = 1,numofKernels
             countVertices = 0
             do i = 1,numofReceivers
-              if (vertexDomain(kernelsReceivers(m,i)) == rank) then
+              if (vertexDomain(kernelsReceivers(m,i)) == myrank) then
                 countVertices = countVertices+1
               endif
             enddo
@@ -1033,14 +1043,14 @@
 
             allocate(tmpExchange(sendRange,numofTimeSteps),stat=ier)
             if (ier /= 0) then
-              print *,'Error: secondary sends receivers seismograms:',rank,m,numofKernels,sendRange,numofTimeSteps
+              print *,'Error: secondary sends receivers seismograms:',myrank,m,numofKernels,sendRange,numofTimeSteps
               call stopProgram('collectReceiversSeismogram() - error allocating send array    ')
             endif
 
             ! fill in only seismogram from receivers in this process domain
             countVertices = 0
             do i = 1,numofReceivers
-              if (vertexDomain(kernelsReceivers(m,i)) == rank) then
+              if (vertexDomain(kernelsReceivers(m,i)) == myrank) then
                 countVertices = countVertices + 1
                 if (doReference) then
                   tmpExchange(countVertices,:)=kernelsReceiversSeismogramRef(m,i,:)
@@ -1052,7 +1062,7 @@
             ! send
             call MPI_Send(tmpExchange,size(tmpExchange),MPI_CUSTOM,0,tag,MPI_COMM_WORLD,ier)
             if (ier /= 0) then
-              print *,'collectReceiversSeismogram - ',rank,n,ier
+              print *,'collectReceiversSeismogram - ',myrank,n,ier
             endif
 
             deallocate( tmpExchange )
@@ -1060,7 +1070,7 @@
         else
           call MPI_Send(tmpExchange,size(tmpExchange),MPI_CUSTOM,0,tag,MPI_COMM_WORLD,ier)
           if (ier /= 0) then
-            print *,'collectReceiversSeismogram - ',rank,n,ier
+            print *,'collectReceiversSeismogram - ',myrank,n,ier
           endif
         endif ! manykernels
       endif ! MAIN_PROCESS
@@ -1075,6 +1085,7 @@
       implicit none
       ! local parameters
       integer:: dest,source,sendRange,recRange,n,k,neighbor,ier
+      integer:: status(MPI_STATUS_SIZE)
 
       ! check if many processes
       if (nprocesses == 1) return
@@ -1094,12 +1105,12 @@
       !get boundary information from all neighbors
       do n = 1, nprocesses - 1
         ! only talk to other processes/neighbors
-        neighbor = domainNeighbors(rank,n)
-        if (neighbor /= -1 .and. neighbor /= rank) then
+        neighbor = domainNeighbors(myrank,n)
+        if (neighbor /= -1 .and. neighbor /= myrank) then
           !fill send info (over a fixed range of values)
           do k = 1,sendRange
-            if (boundaries(rank,neighbor,k) > 0) then
-              sendDisp(k) = backwardNewdisplacement(boundaries(rank,neighbor,k))
+            if (boundaries(myrank,neighbor,k) > 0) then
+              sendDisp(k) = backwardNewdisplacement(boundaries(myrank,neighbor,k))
             endif
           enddo
 
@@ -1107,17 +1118,17 @@
           dest = neighbor
           source = neighbor
           call MPI_SendRecv( sendDisp,sendRange, MPI_CUSTOM, &
-                             dest,rank,receiveDisp,recRange,MPI_CUSTOM,source, &
+                             dest,myrank,receiveDisp,recRange,MPI_CUSTOM,source, &
                              source,MPI_COMM_WORLD, status, ier)
           if (ier /= 0) then
-              print *,'syncbackwardNewdisplacement - p',rank,' error',ier
+              print *,'syncbackwardNewdisplacement - p',myrank,' error',ier
           endif
           !these are the vertices we received
           do k = 1,recRange
             ! check if entry is a valid vertex index in the neighbors boundary array
-            if (boundaries(source,rank,k) > 0) then
+            if (boundaries(source,myrank,k) > 0) then
               ! add as new displacement value for this vertex
-              backwardNewdisplacement(boundaries(source,rank,k))=receiveDisp(k)
+              backwardNewdisplacement(boundaries(source,myrank,k))=receiveDisp(k)
             endif
           enddo
         endif
@@ -1133,19 +1144,21 @@
       implicit none
       ! local parameters
       integer:: domain,i,length,ier
-      integer, external::getDomain
+      integer:: tag
+      integer:: status(MPI_STATUS_SIZE)
+      integer, external:: getDomain
 
       ! check if different grid domains exist
       if (nprocesses < 2) return
 
       ! get right seismogram at receiver station
       domain = getDomain(receiverVertex)
-      if (domain == rank) then
+      if (domain == myrank) then
         do i = 0,nprocesses-1
           if (i /= domain) then
             ! send seismogram
             length = size(seismogramReceiver(:,:))
-            tag = rank
+            tag = myrank
             call MPI_Send(seismogramReceiver,length,MPI_CUSTOM,i,tag,MPI_COMM_WORLD,ier)
           endif
         enddo
@@ -1169,7 +1182,9 @@
       implicit none
       ! local parameters
       integer:: sendRange,recRange,n,i,countVertices,ier
-      real(WP),allocatable,dimension(:)::tmpExchange
+      integer:: tag
+      integer:: status(MPI_STATUS_SIZE)
+      real(WP), allocatable, dimension(:):: tmpExchange
 
       ! check if many processes
       if (nprocesses < 2) return
@@ -1197,7 +1212,7 @@
           tag = n
           call MPI_Recv(tmpExchange,recRange,MPI_CUSTOM,n,tag,MPI_COMM_WORLD,status,ier)
           if (ier /= 0) then
-              print *,'Error: collectAdjointKernel - ',rank,n,ier
+              print *,'Error: collectAdjointKernel - ',myrank,n,ier
               call stopProgram('collectAdjointKernel() - error mpi-recv   ')
           endif
 
@@ -1229,10 +1244,10 @@
         enddo
 
         ! send to main process
-        tag = rank
+        tag = myrank
         call MPI_Send(tmpExchange,sendRange,MPI_CUSTOM,0,tag,MPI_COMM_WORLD,ier)
         if (ier /= 0) then
-            print *,'error collectAdjointKernel - ',rank,n,ier
+            print *,'error collectAdjointKernel - ',myrank,n,ier
         endif
       endif
       end subroutine
@@ -1247,6 +1262,8 @@
       implicit none
       ! local parameters
       integer:: sendRange,recRange,n,i,countVertices,ier
+      integer:: tag
+      integer:: status(MPI_STATUS_SIZE)
 
       ! check if many processes
       if (nprocesses == 1) return
@@ -1271,7 +1288,7 @@
           tag = n
           call MPI_Recv(receiveDisp,recRange,MPI_CUSTOM,n,tag,MPI_COMM_WORLD,status,ier)
           if (ier /= 0) then
-              print *,'collectFullNewdisplacement - ',rank,n,ier
+              print *,'collectFullNewdisplacement - ',myrank,n,ier
           endif
           !these are the vertices we received
           countVertices = 0
@@ -1291,10 +1308,10 @@
         enddo
 
         ! send to main process
-        tag = rank
+        tag = myrank
         call MPI_Send(sendDisp,sendRange,MPI_CUSTOM,0,tag,MPI_COMM_WORLD,ier)
         if (ier /= 0) then
-            print *,'collectFullNewdisplacement - ',rank,n,ier
+            print *,'collectFullNewdisplacement - ',myrank,n,ier
         endif
       endif
       end subroutine
@@ -1307,6 +1324,8 @@
       implicit none
       ! local parameters
       integer:: n,length,ier
+      integer:: tag
+      integer:: status(MPI_STATUS_SIZE)
 
       ! read vertices values from files
       if (MAIN_PROCESS) then
@@ -1341,26 +1360,26 @@
         ! receive from main process
         ! distances
         length = 3
-        tag = rank
+        tag = myrank
         call MPI_RECV(interpolation_distances,length,MPI_CUSTOM,0,tag,MPI_COMM_WORLD,status,ier)
         if (ier /= 0) then
-              print *,'Error: syncInterpolation - distances',rank,' error',ier
+              print *,'Error: syncInterpolation - distances',myrank,' error',ier
               call stopProgram( 'abort - syncInterpolation    ')
         endif
         ! side lengths
         length = 3
-        tag = rank
+        tag = myrank
         call MPI_RECV(interpolation_triangleLengths,length,MPI_CUSTOM,0,tag,MPI_COMM_WORLD,status,ier)
         if (ier /= 0) then
-              print *,'Error: syncInterpolation - lengths',rank,' error',ier
+              print *,'Error: syncInterpolation - lengths',myrank,' error',ier
               call stopProgram( 'abort - syncInterpolation    ')
         endif
         ! corner indices
         length = 3
-        tag = rank
+        tag = myrank
         call MPI_RECV(interpolation_corners,length,MPI_INTEGER,0,tag,MPI_COMM_WORLD,status,ier)
         if (ier /= 0) then
-              print *,'Error: syncInterpolation - corners',rank,' error',ier
+              print *,'Error: syncInterpolation - corners',myrank,' error',ier
               call stopProgram( 'abort - syncInterpolation    ')
         endif
       endif
@@ -1424,7 +1443,8 @@
       integer,intent(inout):: nfree
       integer,intent(inout):: hitcount(nfree)
       ! local parameters
-      integer:: ier,i,k,status(MPI_STATUS_SIZE)
+      integer:: ier,i,k
+      integer:: status(MPI_STATUS_SIZE)
       integer:: hitcount_proc(nfree)
 
       ! nothing to do for single processor job
@@ -1490,17 +1510,321 @@
 
 
 !-----------------------------------------------------------------------
-      subroutine syncProcesses()
+!
+! MPI wrapper functions
+!
+!-----------------------------------------------------------------------
+
+!-----------------------------------------------------------------------
+  subroutine syncInitMPI()
+!-----------------------------------------------------------------------
+! initializes MPI
+  use mpi
+  implicit none
+  ! local parameters
+  integer:: ier
+
+  call MPI_Init(ier)
+  if (ier /= 0) then
+    print *,'Error: starting MPI program.'
+    ! note: MPI_ABORT does not return, it makes the program exit with an error code of 30
+    call MPI_ABORT(MPI_COMM_WORLD,30,ier)
+  endif
+
+  end subroutine
+
+!-----------------------------------------------------------------------
+  subroutine syncGetNumberProcesses(nprocesses)
+!-----------------------------------------------------------------------
+  use mpi
+  implicit none
+  integer, intent(inout) :: nprocesses
+  ! local parameters
+  integer:: ier
+
+  call MPI_COMM_SIZE(MPI_COMM_WORLD,nprocesses,ier)
+  if (ier /= 0) stop 'Error MPI_COMM_SIZE() routine failed'
+
+  end subroutine
+
+!-----------------------------------------------------------------------
+  subroutine syncGetRank(rank)
+!-----------------------------------------------------------------------
+  use mpi
+  implicit none
+  integer, intent(inout) :: rank
+  ! local parameters
+  integer:: ier
+
+  call MPI_COMM_RANK(MPI_COMM_WORLD,rank,ier)
+  if (ier /= 0) stop 'Error MPI_COMM_RANK() routine failed'
+
+  end subroutine
+
+!-----------------------------------------------------------------------
+  subroutine syncDetermineMPICustom(WP,MPI_CUSTOM)
+!-----------------------------------------------------------------------
+  use mpi
+  implicit none
+  integer, intent(in) :: WP ! working precision
+  integer, intent(inout) :: MPI_CUSTOM
+
+  if (WP == 4) then
+    MPI_CUSTOM = MPI_REAL
+  else
+    MPI_CUSTOM = MPI_DOUBLE_PRECISION
+  endif
+
+  end subroutine
+
+
+!-----------------------------------------------------------------------
+  subroutine syncProcesses()
 !-----------------------------------------------------------------------
 ! syncs a (logical) flag between all processes,
 ! assumes that the flag by default is .false.
-      use mpi
-      implicit none
-      ! local parameters
-      integer:: ier
+  use mpi
+  implicit none
+  ! local parameters
+  integer:: ier
 
-      ! wait until all processes reached this point
-      call MPI_Barrier( MPI_COMM_WORLD, ier )
+  ! wait until all processes reached this point
+  call MPI_Barrier( MPI_COMM_WORLD, ier )
+  if (ier /= 0) stop 'Error synchronize MPI processes'
 
-      end subroutine
+  end subroutine
+
+
+!-----------------------------------------------------------------------
+  subroutine syncFinalizeMPI()
+!-----------------------------------------------------------------------
+  use mpi
+  implicit none
+  ! local parameters
+  integer:: ier
+
+  ! wait until all processes reached this point
+  call MPI_BARRIER( MPI_COMM_WORLD, ier )
+  if (ier /= 0) stop 'Error synchronize MPI processes'
+
+  ! stop all the MPI processes, and exit
+  call MPI_FINALIZE(ier)
+  if (ier /= 0) stop 'Error finalizing MPI'
+
+  end subroutine
+
+!-----------------------------------------------------------------------
+  subroutine syncAbortMPI()
+!-----------------------------------------------------------------------
+  use mpi
+  implicit none
+  ! local parameters
+  integer:: ier
+  logical:: flag
+
+  ! check if MPI was initialized
+  call MPI_INITIALIZED(flag,ier)
+
+  if (flag .eqv. .true. .and. ier == 0) then
+    ! note: MPI_ABORT does not return, it makes the program exit with an error code of 30
+    call MPI_ABORT(MPI_COMM_WORLD, 30, ier )
+    call MPI_FINALIZE(ier)
+  endif
+
+  end subroutine
+
+!-----------------------------------------------------------------------
+  function syncWtime()
+!-----------------------------------------------------------------------
+  use constants, only: WP
+  use mpi
+  implicit none
+  real(WP):: syncWtime
+  ! local parameters
+  double precision:: time
+
+  time = MPI_WTIME()
+
+  ! return in WP precision
+  syncWtime = real(time,kind=WP)
+
+  end function
+
+
+
+!-----------------------------------------------------------------------
+  subroutine syncSingleInteger(ivalue)
+!-----------------------------------------------------------------------
+  use mpi; use parallel
+  implicit none
+  integer, intent(inout) :: ivalue
+  ! local parameters
+  integer:: i,ier
+  integer:: status(MPI_STATUS_SIZE)
+
+  if (MAIN_PROCESS) then
+    do i = 1,nprocesses-1
+      call MPI_Send(ivalue,1,MPI_INTEGER,i,i,MPI_COMM_WORLD,ier)
+      if (ier /= 0) then
+        print *,'Error: datacount',myrank,ier
+        call stopProgram("MPI_send failed in syncSingleInteger()    ")
+      endif
+    enddo
+  else
+    call MPI_Recv(ivalue,1,MPI_INTEGER,0,myrank,MPI_COMM_WORLD,status,ier)
+    if (ier /= 0) then
+      print *,'Error: datacount',myrank,ier
+      call stopProgram("MPI_recv failed in syncSingleInteger()    ")
+    endif
+  endif
+
+  end subroutine
+
+!-----------------------------------------------------------------------
+  subroutine syncBroadcastSinglei(ivalue)
+!-----------------------------------------------------------------------
+  use mpi
+  implicit none
+  integer, intent(inout) :: ivalue
+  ! local parameters
+  integer :: ier
+
+  call MPI_BCAST(ivalue,1,MPI_INTEGER,0,MPI_COMM_WORLD,ier)
+
+  end subroutine
+
+
+!-----------------------------------------------------------------------
+  subroutine syncRealArray(buffer,size)
+!-----------------------------------------------------------------------
+  use mpi; use parallel
+  implicit none
+  integer, intent(in) :: size
+  real, dimension(size), intent(inout) :: buffer
+  ! local parameters
+  integer:: i,ier
+  integer:: status(MPI_STATUS_SIZE)
+
+  if (MAIN_PROCESS) then
+    !print *,'    synchronize data array: ',8*size/1024./1024.,' MB'
+    do i = 1,nprocesses-1
+      call MPI_Send(buffer,size,MPI_REAL,i,i,MPI_COMM_WORLD,ier)
+      if (ier /= 0) then
+        print *,'Error: datastore',myrank,ier
+        call stopProgram("Error MPI_send in syncHeterogeneousDataArray()    ")
+      endif
+    enddo
+  else
+    call MPI_Recv(buffer,size,MPI_REAL,0,myrank,MPI_COMM_WORLD,status,ier)
+    if (ier /= 0) then
+      print *,'Error: datastore',myrank,ier
+      call stopProgram("Error MPI_recv in syncHeterogeneousDataArray()    ")
+    endif
+  endif
+
+  end subroutine
+
+!-----------------------------------------------------------------------
+  subroutine syncBroadcastRealArray(buffer,size)
+!-----------------------------------------------------------------------
+  use mpi
+  implicit none
+  integer, intent(in) :: size
+  real, dimension(size), intent(inout) :: buffer
+  ! local parameters
+  integer :: ier
+
+  ! checks if anything to do
+  if (size == 0) return
+
+  call MPI_BCAST(buffer,size,MPI_REAL,0,MPI_COMM_WORLD,ier)
+
+  end subroutine
+
+!-----------------------------------------------------------------------
+  subroutine syncSendDataFromProc(rank,shift,epla,eplo,stla,stlo,error)
+!-----------------------------------------------------------------------
+  use mpi
+  implicit none
+  integer, intent(in) :: rank
+  real, intent(in) :: shift,epla,eplo,stla,stlo,error
+  ! local parameters
+  integer :: ier
+
+  call MPI_Send(shift,1,MPI_REAL,0,rank,MPI_COMM_WORLD,ier)
+  if (ier /= 0) then
+    print *,'Error: shift',rank,ier
+    call stopProgram("Error 1 in syncSendDataFromProc()    ")
+  endif
+  call MPI_Send(epla,1,MPI_REAL,0,rank,MPI_COMM_WORLD,ier)
+  if (ier /= 0) then
+    print *,'Error: shift',rank,ier
+    call stopProgram("Error 2 in syncSendDataFromProc()    ")
+  endif
+  call MPI_Send(eplo,1,MPI_REAL,0,rank,MPI_COMM_WORLD,ier)
+  if (ier /= 0) then
+    print *,'Error: shift',rank,ier
+    call stopProgram("Error 3 in syncSendDataFromProc()    ")
+  endif
+  call MPI_Send(stla,1,MPI_REAL,0,rank,MPI_COMM_WORLD,ier)
+  if (ier /= 0) then
+    print *,'Error: shift',rank,ier
+    call stopProgram("Error 4 in syncSendDataFromProc()    ")
+  endif
+  call MPI_Send(stlo,1,MPI_REAL,0,rank,MPI_COMM_WORLD,ier)
+  if (ier /= 0) then
+    print *,'Error: shift',rank,ier
+    call stopProgram("Error 5 in syncSendDataFromProc()    ")
+  endif
+  call MPI_Send(error,1,MPI_REAL,0,rank,MPI_COMM_WORLD,ier)
+  if (ier /= 0) then
+    print *,'Error: shift',rank,ier
+    call stopProgram("Error 6 in syncSendDataFromProc()    ")
+  endif
+
+  end subroutine
+
+!-----------------------------------------------------------------------
+  subroutine syncRecvDataFromProc(rank,shift,epla,eplo,stla,stlo,error)
+!-----------------------------------------------------------------------
+  use mpi
+  implicit none
+  integer, intent(in) :: rank
+  real, intent(inout) :: shift,epla,eplo,stla,stlo,error
+  ! local parameters
+  integer :: ier
+  integer:: status(MPI_STATUS_SIZE)
+
+  call MPI_Recv(shift,1,MPI_REAL,rank,rank,MPI_COMM_WORLD,status,ier)
+  if (ier /= 0) then
+    print *,'Error: shift',rank,ier
+    call stopProgram("Error 1 in syncRecvDataFromProc()    ")
+  endif
+  call MPI_Recv(epla,1,MPI_REAL,rank,rank,MPI_COMM_WORLD,status,ier)
+  if (ier /= 0) then
+    print *,'Error: shift',rank,ier
+    call stopProgram("Error 2 in syncRecvDataFromProc()    ")
+  endif
+  call MPI_Recv(eplo,1,MPI_REAL,rank,rank,MPI_COMM_WORLD,status,ier)
+  if (ier /= 0) then
+    print *,'Error: shift',rank,ier
+    call stopProgram("Error 3 in syncRecvDataFromProc()    ")
+  endif
+  call MPI_Recv(stla,1,MPI_REAL,rank,rank,MPI_COMM_WORLD,status,ier)
+  if (ier /= 0) then
+    print *,'Error: shift',rank,ier
+    call stopProgram("Error 4 in syncRecvDataFromProc()    ")
+  endif
+  call MPI_Recv(stlo,1,MPI_REAL,rank,rank,MPI_COMM_WORLD,status,ier)
+  if (ier /= 0) then
+    print *,'Error: shift',rank,ier
+    call stopProgram("Error 5 in syncRecvDataFromProc()    ")
+  endif
+  call MPI_Recv(error,1,MPI_REAL,rank,rank,MPI_COMM_WORLD,status,ier)
+  if (ier /= 0) then
+    print *,'Error: shift',rank,ier
+    call stopProgram("Error 6 in syncRecvDataFromProc()    ")
+  endif
+
+  end subroutine
 

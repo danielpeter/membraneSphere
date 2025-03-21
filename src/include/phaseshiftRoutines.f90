@@ -49,7 +49,7 @@
       use propagationStartup; use parallel; use displacements; use verbosity
       implicit none
       ! local parameters
-      integer:: ier
+      real(WP), external:: syncWtime
 
       ! make first a reference run without scatterer, then all others with scatterer
       ! assume that all processes have access to the same data directory
@@ -73,8 +73,7 @@
             DELTA = .true.
 
             ! wait for reference simulation
-            call MPI_Barrier( MPI_COMM_WORLD, ier )
-            if (ier /= 0) call stopProgram( "abort - program phaseshift MPI_Barrier failed    ")
+            call syncProcesses()
 
             ! synchronize reference seismograms
             call syncReceiversRef()
@@ -83,7 +82,7 @@
       endif !parallelseismo
 
       ! benchmark
-      if (MAIN_PROCESS) benchstart = MPI_WTIME()
+      if (MAIN_PROCESS) benchstart = syncWtime()
 
       ! reset displacements
       displacement_old(:) = 0.0_WP
@@ -109,16 +108,17 @@
       logical,intent(inout):: looping
       ! local parameters
       logical:: available
-      integer:: m,ier
+      integer:: m
       real(WP):: timerStart,timerEnd
       character(len=128):: datafile
+      real(WP), external:: syncWtime
 
       ! print seismogram to file
       if (.not. manyReceivers) call printSeismogram()
 
       ! benchmark output
       if (MAIN_PROCESS .and. VERBOSE) then
-        benchend = MPI_WTIME()
+        benchend = syncWtime()
         print *
         print *,'benchmark seconds:',benchend-benchstart
         print *
@@ -134,13 +134,13 @@
           inquire(file=trim(datafile),exist=available)
           if (.not. available) then
             ! wait and poll until it exists
-            timerStart = MPI_WTIME()
+            timerStart = syncWtime()
             do while(.not. available )
               inquire(file=trim(datafile),exist=available)
-              timerEnd = MPI_WTIME()
+              timerEnd = syncWtime()
               if (abs(timerEnd - timerStart) > 120.0) then
                 print *,'Error: did not find reference seismogram:',trim(datafile)
-                print *,'       time out of process',rank
+                print *,'       time out of process',myrank
                 print *,'shutting down...'
                 call stopProgram( 'abort - processSolutions()   ')
               endif
@@ -177,7 +177,7 @@
         if (PARALLELSEISMO) then
           if (manyReceivers) then
             ! update reference seismograms of main process
-            !print *,'collecting reference seismograms...',rank,referenceRun
+            !print *,'collecting reference seismograms...',myrank,referenceRun
             call collectReceiversSeismogram(referenceRun)
           endif
 
@@ -191,8 +191,7 @@
             DELTA = .true.
 
             ! let all processes pass to simulate scattered seismograms
-            call MPI_Barrier( MPI_COMM_WORLD, ier )
-            if (ier /= 0) call stopProgram( "abort - processSolutions() MPI_Barrier failed    ")
+            call syncProcesses()
 
             ! synchronize reference seismograms
             call syncReceiversRef()
@@ -230,7 +229,7 @@
         if (manyReceivers) then
           ! update the receivers seismograms of the main process (receivers
           ! may lie in the other domains as well)
-          !print *,'collecting receivers seismograms...',rank,referenceRun
+          !print *,'collecting receivers seismograms...',myrank,referenceRun
           call collectReceiversSeismogram(referenceRun)
         endif
 
@@ -436,7 +435,7 @@
 
       ! open output - files for kernel values
       if (manyKernels) then
-        write(rankstr,'(i3.3)') rank
+        write(rankstr,'(i3.3)') myrank
         write(kernelstr,'(i3.3)') int(kernelStartDistance+currentKernel-1)
 
         ttkernelfile = trim(datadirectory)//'ttkernel'//kernelstr//'.rank'//rankstr//'.dat'
@@ -453,7 +452,7 @@
           call stopProgram( 'abort - prepareForKernel     ')
         endif
       else
-        write(rankstr,'(i3.3)') rank
+        write(rankstr,'(i3.3)') myrank
 
         ttkernelfile = trim(datadirectory)//'ttkernel.rank'//rankstr//'.dat'
         open(80,file=trim(ttkernelfile),position='APPEND',iostat=ier)

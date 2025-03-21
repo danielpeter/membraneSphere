@@ -130,7 +130,7 @@
           storeAsFile = .true.
         endif
         ! ensures that flag is equal for all processes
-        call syncFlag(rank, nprocesses,storeAsFile)
+        call syncFlag(myrank, nprocesses,storeAsFile)
       endif
 
       ! storage of adjoint wavefields
@@ -204,7 +204,7 @@
 
         ! output to file for each process
         write(timestepstr,'(i8.7)')timestep
-        write(rankstr,'(i3.3)') rank
+        write(rankstr,'(i3.3)') myrank
         open(IOUT,file=trim(datadirectory)//'wavefield_'//timestepstr//'.rank'//rankstr//'.dat', &
              access='direct',recl=WP,iostat=ier)
         if (ier /= 0) call stopProgram('could not open file: wavefield_'//timestepstr//'.rank'//rankstr//'.dat ....     ')
@@ -259,7 +259,7 @@
       if (storeAsFile) then
         ! output to file for each process
         write(timestepstr,'(i8.7)')timestep
-        write(rankstr,'(i3.3)') rank
+        write(rankstr,'(i3.3)') myrank
         open(IOUT,file=trim(datadirectory)//'wavefieldAdj_'//timestepstr//'.rank'//rankstr//'.dat', &
               access='direct',recl=WP,iostat=ier)
         if (ier /= 0) call stopProgram('could not open file wavefieldAdj_'//timestepstr//'.rank'//rankstr//'.dat ....     ')
@@ -515,13 +515,14 @@
       use adjointVariables
       implicit none
       ! local parameters
+      integer:: n,timestep,vertex,index,ier
       real(WP):: u_t,u_tplus1,u_tminus1,forcing,D2,time
       real(WP), external:: forceAdjointSource,discreteLaplacian,precalc_discreteLaplacian
       real(WP), external:: precalc_backdiscreteLaplacian
-      integer:: n,timestep,vertex,index,ier
+      real(WP), external:: syncWtime
 
       ! benchmark
-      if (MAIN_PROCESS .and. VERBOSE) benchstart = MPI_WTIME()
+      if (MAIN_PROCESS .and. VERBOSE) benchstart = syncWtime()
 
       if (ADJOINT_ONTHEFLY) then
         ! simultaneous backward displacement (same calculation as forward one but reversed) initial start
@@ -644,7 +645,7 @@
 
       ! benchmark output
       if (MAIN_PROCESS .and. VERBOSE) then
-        benchend = MPI_WTIME()
+        benchend = syncWtime()
         print *,'  benchmark seconds:',benchend-benchstart
         print *
       endif
@@ -1054,8 +1055,7 @@
       endif
 
       ! wait until all processes reached this point
-      call MPI_Barrier( MPI_COMM_WORLD, ier )
-      if (ier /= 0) call stopProgram('abort - final MPI_Barrier failed    ')
+      call syncProcesses()
 
       end subroutine
 
@@ -1073,7 +1073,7 @@
       integer:: i,timestep,ier
 
       ! input
-      write(rankstr,'(i3.3)') rank
+      write(rankstr,'(i3.3)') myrank
       i = 0
       do timestep = firsttimestep, lasttimestep
         i = i+1
@@ -1112,7 +1112,7 @@
       integer:: i,timestep,ier
 
       ! output
-      write(rankstr,'(i3.3)') rank
+      write(rankstr,'(i3.3)') myrank
       i = 0
       do timestep = firsttimestep, lasttimestep
         i = i+1
@@ -1147,7 +1147,7 @@
       integer:: i,timestep,ier
 
       ! input
-      write(rankstr,'(i3.3)') rank
+      write(rankstr,'(i3.3)') myrank
       i = numofTimeSteps
       do timestep = firsttimestep, lasttimestep
         write(timestepstr,'(i8.7)')timestep
@@ -1182,7 +1182,7 @@
       integer:: timestep,ier
 
       ! get rid of files
-      write(rankstr,'(i3.3)') rank
+      write(rankstr,'(i3.3)') myrank
       do timestep = firsttimestep, lasttimestep
         write(timestepstr,'(i8.7)')timestep
         ! forward wavefield files
@@ -1332,7 +1332,7 @@
       ! checks window
       range = startindex - endindex + 1
       if (range < 1) then
-          print *,'Error: no window for windowed integration : ',rank
+          print *,'Error: no window for windowed integration : ',myrank
           print *,'       window start/end                   : ',WINDOW_START,WINDOW_END
           print *,'       adjoint indices start/end             : ',startindex,endindex
           print *,'       number of timesteps                : ',numofTimeSteps

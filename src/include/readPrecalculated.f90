@@ -20,6 +20,7 @@
       implicit none
       ! local parameters
       integer:: i,ier
+      real(WP),dimension(0:6) :: tmp_vertex
       character(len=1):: divString
       character(len=14):: ending
 
@@ -52,11 +53,12 @@
       if (ier /= 0) call stopProgram( 'abort - readPrecalculated cellEdgesLength   ')
 
       do i = 1, numVertices
-        read(IIN, *, iostat=ier) cellEdgesLength(i,0:6)
+        read(IIN, *, iostat=ier) tmp_vertex
         if (ier /= 0) then
           print *,'error at: ',i
           exit
         endif
+        cellEdgesLength(i,0:6) = tmp_vertex
       enddo
       close(IIN)
 
@@ -65,11 +67,12 @@
       if (ier /= 0) call stopProgram( 'abort - readPrecalculated cellEdgesLength   ')
 
       do i = 1, numVertices
-        read(IIN, *, iostat=ier) cellCenterDistances(i,0:6)
+        read(IIN, *, iostat=ier) tmp_vertex
         if (ier /= 0) then
           print *,'error at: ',i
           exit
         endif
+        cellCenterDistances(i,0:6) = tmp_vertex
       enddo
       close(IIN)
 
@@ -79,11 +82,12 @@
         if (ier /= 0) call stopProgram( 'abort - readPrecalculated cellFractions   ')
 
         do i = 1, numVertices
-          read(IIN, *, iostat=ier) cellFractions(i,0:6)
+          read(IIN, *, iostat=ier) tmp_vertex
           if (ier /= 0) then
             print *,'error at: ',i
             exit
           endif
+          cellFractions(i,0:6) = tmp_vertex
         enddo
         close(IIN)
         !debug

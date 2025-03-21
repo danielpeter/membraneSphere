@@ -276,8 +276,7 @@
         if (ANALYTICAL_CORRELATION) then
           ! bw_width must be set by earlier call to getTimelag()
           ! analytic time lag
-          call getAnalyticalTimelag(t_lagAnalytic,filename,fileReference, &
-                                    startTime,bw_width,BUTTERWORTH_POWER,bw_waveperiod,FILTERSEISMOGRAMS)
+          call getAnalyticalTimelag(t_lagAnalytic,filename,fileReference,startTime)
           ! kernel value term
           kernelAnalytic = getKernelValue(deltaVertex,heterogeneous,t_lagAnalytic, &
                                           phaseVelocityRef,arrivalTime,vperturbation)
@@ -343,8 +342,7 @@
 
           !if (ANALYTICAL_CORRELATION) then
           !  ! analytic time lag
-          !  call getAnalyticalTimelag(t_lagAnalytic,filename,fileReference,startTime, &
-          !                            bw_width,BUTTERWORTH_POWER,bw_waveperiod,FILTERSEISMOGRAMS)
+          !  call getAnalyticalTimelag(t_lagAnalytic,filename,fileReference,startTime)
           !  ! kernel value term
           !  kernelAnalytic = getKernelValue(deltaVertex,heterogeneous,t_lagAnalytic, &
           !                                  phaseVelocityRef,arrivalTime,vperturbation)

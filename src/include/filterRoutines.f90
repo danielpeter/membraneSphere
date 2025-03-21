@@ -133,6 +133,7 @@
       integer:: entries,centerfrequencyindex,i,xcorrlength
       real(WP):: startingTime,endtime,samplingFreq
       real(WP):: seismoTmp(2,WindowSIZE)
+      real(WP):: traceTmp(WindowSIZE)
 
       !add zero for non-periodic data, influences precision
       !zeropad=WindowSIZE
@@ -145,7 +146,7 @@
       !if (ier /= 0) call stopProgram( 'abort - dofilterSeismogram       ')
 
       ! determine startingTime
-      endtime=seismo(1,seismoLength)
+      endtime = seismo(1,seismoLength)
       call getStartTimeSeismogram(seismo,seismoLength,endtime,dt,startingTime)
 
       ! read in seismograms from startingTime
@@ -166,15 +167,15 @@
       call taperSeismogram(seismoTmp,xcorrlength,entries,beVerbose)
 
       ! smallest sampled frequency
-      samplingFreq=1.0_WP/(xcorrlength*dt)
+      samplingFreq = 1.0_WP/(xcorrlength*dt)
 
       ! position index of bandwidth frequency for given waveperiod
       centerfrequencyIndex = nint( 1.0_WP/((bw_waveperiod + MEMBRANECORRECTION)*samplingFreq) )
 
       ! determine bandwidth integer depending on windowsize and requested bandwidth-frequency
       ! integer is a factor of 2 to have same number of frequencies filtered around the center frequency to the left and the right
-      bw_width= 2*nint(bw_frequency*dt*xcorrlength)
-      !bw_width= 2*abs(centerfrequencyIndex-nint(bw_frequency*dt*xcorrlength))
+      bw_width = 2*nint(bw_frequency*dt*xcorrlength)
+      !bw_width = 2*abs(centerfrequencyIndex-nint(bw_frequency*dt*xcorrlength))
 
       ! console output
       if (beVerbose) then
@@ -208,13 +209,16 @@
         close(IOUT)
       endif
 
+      ! seismo trace array
+      traceTmp(:) = seismoTmp(2,:)
+
       ! filter seismograms in frequency domain
-      call filterSeismogram(seismoTmp(2,:),xcorrlength,bw_width,BUTTERWORTH_POWER,centerfrequencyIndex)
+      call filterSeismogram(traceTmp,xcorrlength,bw_width,BUTTERWORTH_POWER,centerfrequencyIndex)
 
       ! avoid taking temporary-working data in second half of fourier-transformed seismogram
       ! return as new filtered seismogram
       do i = 1,seismoLength
-        seismo(2,i)=seismoTmp(2,i)
+        seismo(2,i) = traceTmp(i)
       enddo
 
       ! apply hanning window  to smooth seismograms ends again
@@ -232,6 +236,7 @@
 
       ! be only once verbose
       beVerbose = .false.
+
       end subroutine
 
 
@@ -472,16 +477,20 @@
       ! (info: http://www.teemach.com/FFTProp/FFTProperties/FFTProperties.htm )
       ileft = 0
       iright = entries+1
+
       hannwindow = int(entries*HANNWINDOW_PERCENT)  ! width is x% of actual entries of seismogram
       hannA = PI/hannwindow
+
       do i = 1,hannwindow
         hannfactor = 0.5*(1-cos(hannA*i))
         seismo(2,ileft+i) = seismo(2,ileft+i)*hannfactor
         seismo(2,iright-i) = seismo(2,iright-i)*hannfactor
       enddo
+
       if (verboseOutput) then
         print *,'    hanning window applied:',ileft+1,iright-1,'window width:',hannwindow
       endif
+
       end subroutine
 
 

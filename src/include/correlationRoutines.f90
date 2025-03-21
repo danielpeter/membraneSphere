@@ -27,8 +27,8 @@ subroutine correlation_traces(trace1,trace2,correl,N)
   use propagationStartup, only: datadirectory
   implicit none
   integer, intent(in):: N
-  real(WP), dimension(N), intent(in) :: trace1,trace2
-  real(WP), dimension(N), intent(out) :: correl
+  real(WP), dimension(N), intent(inout) :: trace1,trace2
+  real(WP), dimension(N), intent(inout) :: correl
   ! local parameters
   complex(kind=8), dimension(N/2) :: fourierTransformed1,fourierTransformed2
   double precision :: dnorm

@@ -204,6 +204,7 @@
       implicit none
       ! local parameters
       real(WP):: lat,lon,distance
+      real(WP):: vectorA(3),vectorB(3)
       integer:: ier,i
 
       ! allocate grid arrays
@@ -263,7 +264,10 @@
         print *,'receiver(lat/lon) desired : ',desiredReceiverLat,desiredReceiverLon
         print *,'                  got     : ',receiverLat,receiverLon
         print *,'                  index   : ',receiverVertex
-        call greatCircleDistance(vertices(sourceVertex,:),vertices(receiverVertex,:),distance)
+        ! distance
+        vectorA(:) = vertices(sourceVertex,:)
+        vectorB(:) = vertices(receiverVertex,:)
+        call greatCircleDistance(vectorA,vectorB,distance)
         print *,'distance source-receiver  : ',distance*180.0/PI
         print *
         if (DELTA) then
@@ -671,6 +675,7 @@
       implicit none
       ! local parameters
       real(WP):: distance,lat,lon
+      real(WP):: vectorA(3),vectorB(3)
       integer:: ier
 
       ! reads in a heterogeneous phase velocity map
@@ -707,7 +712,10 @@
             print *, '  rotated source vertex:',sourceVertex,lat,lon
             call getSphericalCoord_Lat(receiverVertex,lat,lon)
             print *, '  rotated receiver vertex:',receiverVertex,lat,lon
-            call greatCircleDistance(vertices(sourceVertex,:),vertices(receiverVertex,:),distance)
+            ! distance
+            vectorA(:) = vertices(sourceVertex,:)
+            vectorB(:) = vertices(receiverVertex,:)
+            call greatCircleDistance(vectorA,vectorB,distance)
             print *,'  distance source-receiver:',distance*180.0/PI
             print *
           endif
@@ -903,6 +911,7 @@
       ! local parameters
       integer:: m,rounded,ier
       real(WP):: exact,distance
+      real(WP):: vectorA(3),vectorB(3)
 
       ! place all receiver stations
       if (manyReceivers) then
@@ -968,15 +977,20 @@
         if (manyKernels) then
           do m = 1,numofKernels
             rounded = int(kernelStartDistance+m-1)
-            call greatCircleDistance(vertices(sourceVertex,:),vertices(kernelsReceivers(m,1),:),distance)
+            ! distance
+            vectorA(:) = vertices(sourceVertex,:)
+            vectorB(:) = vertices(kernelsReceivers(m,1),:)
+            call greatCircleDistance(vectorA,vectorB,distance)
             exact = distance*180.0/PI
             write(IOUT,*) rounded, exact
             if (VERBOSE) print *,'    ',rounded,exact
           enddo
         else
-          call greatCircleDistance(vertices(sourceVertex,:),vertices(receiverVertex,:),distance)
+          ! distance
+          vectorA(:) = vertices(sourceVertex,:)
+          vectorB(:) = vertices(receiverVertex,:)
+          call greatCircleDistance(vectorA,vectorB,distance)
           rounded = nint(distance)*180.0/PI
-          call greatCircleDistance(vertices(sourceVertex,:),vertices(receiverVertex,:),distance)
           exact = distance*180.0/PI
           write(IOUT,*) rounded, exact
           if (VERBOSE) print *,'    ',rounded,exact
@@ -1193,6 +1207,7 @@
       real,intent(in):: epla,eplo,stla,stlo
       ! local parameters
       real(WP):: distance
+      real(WP):: vectorA(3),vectorB(3)
       integer:: iorbit
 
       ! source will be placed
@@ -1206,7 +1221,9 @@
       call setupNewReceiver( desiredReceiverLat, desiredReceiverLon )
 
       ! determine epicentral distance
-      call greatCircleDistance(vertices(sourceVertex,:),vertices(receiverVertex,:),distance)
+      vectorA(:) = vertices(sourceVertex,:)
+      vectorB(:) = vertices(receiverVertex,:)
+      call greatCircleDistance(vectorA,vectorB,distance)
 
       ! changes simulation time according to epicentral distance or antipode
       iorbit = 1
@@ -1250,6 +1267,7 @@
       real(WP),intent(in):: lat,lon
       ! local parameters
       real(WP):: distance
+      real(WP):: vectorA(3),vectorB(3)
       integer:: i
 
       ! find receiver location on the grid
@@ -1260,7 +1278,9 @@
       originReceiverVertex = receiverVertex
 
       ! determine epicentral distance
-      call greatCircleDistance(vertices(sourceVertex,:),vertices(receiverVertex,:),distance)
+      vectorA(:) = vertices(sourceVertex,:)
+      vectorB(:) = vertices(receiverVertex,:)
+      call greatCircleDistance(vectorA,vectorB,distance)
 
       ! find triangle where receiver lies
       if (Station_Correction) then
@@ -1432,9 +1452,12 @@
       integer,intent(out):: iorbit
       ! local parameters
       real(WP):: minor_distance,arrivalTime
+      real(WP):: vectorA(3),vectorB(3)
 
       ! gets minor arc distance (in rad)
-      call greatCircleDistance(vertices(sourceVertex,:),vertices(receiverVertex,:),minor_distance)
+      vectorA(:) = vertices(sourceVertex,:)
+      vectorB(:) = vertices(receiverVertex,:)
+      call greatCircleDistance(vectorA,vectorB,minor_distance)
       distance = minor_distance
 
       ! higher orbits

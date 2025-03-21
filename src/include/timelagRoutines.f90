@@ -438,13 +438,6 @@ end module
       ! set dt if not determined yet
       if (dt == 0.0) dt = timedelta
 
-      ! tapering ends
-      if (TAPER) then
-        if (beVerbose) print *,'    taper ends'
-        call taperSeismogram(seismo1,seismoLength,seismoLength,beVerbose)
-        call taperSeismogram(seismo2,seismoLength,seismoLength,beVerbose)
-      endif
-
       ! debug output
       if (fileOutput) then
         print *,'  printing to file: ',trim(datadirectory)//'Timelag_read.dat'
@@ -463,6 +456,13 @@ end module
         seismo(:,i) = seismo1(:,i)
         seismoRef(:,i) = seismo2(:,i)
       enddo
+
+      ! tapering ends
+      if (TAPER) then
+        if (beVerbose) print *,'    taper ends'
+        call taperSeismogram(seismo(:,1:seismoLength),seismoLength,seismoLength,beVerbose)
+        call taperSeismogram(seismoRef(:,1:seismoLength),seismoLength,seismoLength,beVerbose)
+      endif
 
       ! filtering necessary
       if (FILTERSEISMOGRAMS) then
@@ -1557,7 +1557,7 @@ end module
       implicit none
       real(WP),intent(out):: t_lag
       integer,intent(in):: seismoLength
-      real(WP),intent(in):: seismoRef(2,seismoLength),seismo(2,seismoLength)
+      real(WP),intent(inout):: seismoRef(2,seismoLength),seismo(2,seismoLength)
       real(WP),intent(in):: timedelta
       ! local parameters
       integer:: i
@@ -1572,12 +1572,6 @@ end module
       seismo2(:) = 0.0_WP
       seismoPerturbed(:) = 0.0_WP
 
-      ! tapering ends
-      if (TAPER) then
-        call taperSeismogram(seismo,seismoLength,seismoLength,beVerbose)
-        call taperSeismogram(seismoRef,seismoLength,seismoLength,beVerbose)
-      endif
-
       ! debug output
       if (fileOutput) then
         print *,'  printing to file: ',trim(datadirectory)//'TimelagAnalytic_read.dat'
@@ -1586,6 +1580,12 @@ end module
           write(IOUT,*) seismo(1,i),seismo(2,i),seismoRef(2,i)
         enddo
         close(IOUT)
+      endif
+
+      ! tapering ends
+      if (TAPER) then
+        call taperSeismogram(seismo,seismoLength,seismoLength,beVerbose)
+        call taperSeismogram(seismoRef,seismoLength,seismoLength,beVerbose)
       endif
 
       ! filter
@@ -1740,7 +1740,7 @@ end module
       implicit none
       real(WP),intent(out):: t_lag,amplification
       integer,intent(in):: seismoLength
-      real(WP),intent(in):: seismo1(2,seismoLength),seismo2(2,seismoLength)
+      real(WP),intent(inout):: seismo1(2,seismoLength),seismo2(2,seismoLength)
       ! local parameters
       integer:: i
       real(WP):: seismoWindow(WindowSIZE),seismoRefWindow(WindowSIZE)
@@ -1770,13 +1770,6 @@ end module
       ! checks if dt is set
       if (dt == 0.0) call stopProgram('Invalid dt in getTimelagSimplex()    ')
 
-      ! tapering ends
-      if (TAPER) then
-        if (beVerbose) print *,'  taper ends'
-        call taperSeismogram(seismo1,seismoLength,seismoLength,beVerbose)
-        call taperSeismogram(seismo2,seismoLength,seismoLength,beVerbose)
-      endif
-
       ! debug output
       if (fileOutput) then
         print *,'  printing to file: ',trim(datadirectory)//'TimelagSimplex_read.dat'
@@ -1786,6 +1779,13 @@ end module
           write(IOUT,*) seismo1(1,i),seismo1(2,i),seismo2(2,i)
         enddo
         close(IOUT)
+      endif
+
+      ! tapering ends
+      if (TAPER) then
+        if (beVerbose) print *,'  taper ends'
+        call taperSeismogram(seismo1,seismoLength,seismoLength,beVerbose)
+        call taperSeismogram(seismo2,seismoLength,seismoLength,beVerbose)
       endif
 
       ! filtering necessary

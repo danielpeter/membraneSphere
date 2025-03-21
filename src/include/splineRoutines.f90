@@ -37,12 +37,13 @@ subroutine cubicspline_setup()
   ! local parameters
   integer :: i, j, j1, j2, k
   double precision:: a0, b0, b1, h, h2, h2a, h2b, h3a, ha, y0
-  double precision:: yy(3) = [0.0d0, 0.0d0, 0.0d0]
+  double precision:: yy(3)
   double precision, parameter :: small = 1.0d-10
 
   ! initializes
   Q(:,:) = 0.0d0
   F(:,:) = 0.0d0
+  yy(:) = 0.0d0
 
   j1 = i1 + 1
   y0 = 0.0d0
@@ -336,6 +337,7 @@ double precision function cubicspline_derivative(x, step_size, error_estimate)
   real, dimension(max_iterations, max_iterations) :: richardson_table
   interface
     function geometric_progression(first, factor, n)
+      implicit none
       real, intent(in):: first, factor
       integer, intent(in):: n
       real, dimension(n):: geometric_progression

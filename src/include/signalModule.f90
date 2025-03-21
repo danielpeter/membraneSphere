@@ -14,12 +14,13 @@
 !-----------------------------------------------------------------------
       module  exception
       ! exception handling, using signal caught in c-routines
+        implicit none
         integer:: dataLoopIndex
-        public:: finterrupt2, finterrupt15,setupSignalHandling
+        public:: finterrupt2, finterrupt15, setupSignalHandling
       contains
         subroutine setupSignalHandling()
           implicit none
-          external def_interrupt2, def_interrupt15 !$PRAGMA C(def_interrupt2, def_interrupt15)
+          !external def_interrupt2, def_interrupt15 !$PRAGMA C(def_interrupt2, def_interrupt15)
           call def_interrupt2()
           ! call def_interrupt11()
           call def_interrupt15()

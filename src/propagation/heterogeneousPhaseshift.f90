@@ -26,6 +26,7 @@
   module heterogeneousArrays
 !-----------------------------------------------------------------------
     use precisions
+    implicit none
     real(WP), allocatable, dimension(:):: phaseVelocitySquarePREM,phaseVelocitySquareHET
     real, allocatable, dimension(:,:):: dataStore
     real:: shift_min,shift_max
@@ -353,13 +354,11 @@
     implicit none
     integer,intent(in):: newdataUnit,datacount
     ! local parameters
-    integer:: j,dataLoopIndex
-    logical:: doCalc
+    integer:: j,ier,dataLoopIndex
     real:: benchmarkLoopStart,benchmarkLoopEnd,epidelta
-    integer:: isqre,ier
     real:: eplo,epla,stla,stlo,datum,error
     real:: time_shift
-    external:: isqre,doCalc
+    logical, external:: doCalc
 
     ! prepare phasevelocities for time iterations
     call constructPhaseVelocities()

@@ -73,8 +73,8 @@
       ! local parameters
       double precision:: fact1,fact2
       integer:: factorial,m_positive
-      double precision,external:: associatedLegendre
-      double precision,parameter:: PI = 3.1415926535897931d0
+      double precision, external:: associatedLegendre
+      double precision, parameter:: PI = 3.1415926535897931d0
 
       ! range of m
       if (m < 0) then
@@ -110,8 +110,7 @@
       integer,intent(in):: l
       double precision,intent(in):: x
       ! local parameters
-      double precision:: associatedLegendre
-      external:: associatedLegendre
+      double precision, external:: associatedLegendre
 
       legendrePolynomial = associatedLegendre(l,0,x)
       return
@@ -232,8 +231,7 @@
       double precision,intent(in):: l
       double precision,intent(in):: x
       ! local parameters
-      double precision:: associatedLegendre_cont
-      external:: associatedLegendre_cont
+      double precision, external:: associatedLegendre_cont
 
       legendrePolynomial_cont = associatedLegendre_cont(l,0.0d0,x)
       return

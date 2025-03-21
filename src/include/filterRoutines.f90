@@ -290,6 +290,7 @@
       double precision:: butterworth
       interface
         subroutine FFT_complex(data,N,isign)
+          implicit none
           integer, intent(in) :: N,isign
           complex(kind=8), dimension(N), intent(inout) :: data
         end subroutine
@@ -799,6 +800,7 @@ subroutine FFT_real(data, N, isign, zdata)
   double precision :: c2
   interface
     subroutine FFT_complex(data,N,isign)
+      implicit none
       integer, intent(in) :: N,isign
       complex(kind=8), dimension(N), intent(inout) :: data
     end subroutine

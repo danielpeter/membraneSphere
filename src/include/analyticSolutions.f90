@@ -17,6 +17,7 @@
 !
 module ray_orbits
   use precisions
+  implicit none
   integer:: ray_orbit
   real(WP):: ray_time,ray_cphase,ray_sigma,ray_epiDelta
   real(WP):: ray_sigma2half,ray_cphaseSquare,ray_twoPI,ray_PIby4

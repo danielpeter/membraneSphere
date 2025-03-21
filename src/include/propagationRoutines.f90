@@ -464,7 +464,7 @@
       character(len=3):: recstr
       character(len=128):: filename
       real(WP):: reclat,reclon
-      integer,external:: getDomain
+      integer, external:: getDomain
 
       write(latstr,'(f6.1)') deltaLat
       write(lonstr,'(f6.1)') deltaLon

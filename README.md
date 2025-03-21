@@ -27,6 +27,28 @@ The theory behind this software implementation of the membrane waves is explaine
 
 ## Quick start
 
+### Installation and compilation
+
+Download sources:
+```
+$ git clone https://github.com/danielpeter/membraneSphere.git
+```
+
+Compile binaries:
+```
+$ cd membraneSphere/
+$ ./configure
+$ make all
+```
+
+The compilation requires to have a Fortran compiler and corresponding MPI library installed on your system.
+To use a specific compiler, one can for example run the configuration for an Intel compiler installation with
+```
+$ ./configure FC=ifort MPIFC=mpiifort
+```
+You can also modify the Makefile according to your specific needs.
+
+
 ### Infos about the repository folders
 
 - `data/griddata/`
@@ -118,18 +140,17 @@ The theory behind this software implementation of the membrane waves is explaine
 - codes are written in Fortran90, use the appropriate compiler flags
   in the Makefile by setting F90, FFLAGS, LDFLAGS
 
-- in `src/include/commonModules.f90` you have to choose precision (use single,
-  it'll do it), source parameters (see Carl Tape's thesis) and filter parameters.
+- in `src/include/constants.h` you have to choose precision (use single, it'll do).
+
+- in `src/include/commonModules.f90` you have to choose source parameters (see Carl Tape's thesis) and filter parameters.
   There are also a few others, but defaults should do it.
 
-- in `src/propagation/Parameter_Input` choose the physical model (grid refinement level,
-  simulation times and wave type) and set the source/receiver geometry.
-  You can also place a scatterer and use a heterogeneous background phase
-  speed model
+- For simulation runs, you probably want to create a new work directory. Examples are given in `examples/` subdirectory.
+  The main program `propagation` reads in simulation parameters from file `Parameter_Input`,
+  where you can choose the physical model (grid refinement level, simulation times and wave type)
+  and set the source/receiver geometry.
+  You can also select to place a scatterer and/or use a heterogeneous background phase speed model.
 
+  The program `timelag` reads in parameters from file `Timelag_Input`.
+  You would want to specify two traces and a window size to compute the time lag between those trace sections.
 
-
-Note: Subroutines from "Numerical Recipes: The Art of Scientific Computing"
-      by W. H. Press et al., Cambridge University Press, are used in
-      numericalRecipes*.f90. The user must acquire an official
-      Numerical Recipes license to run them.

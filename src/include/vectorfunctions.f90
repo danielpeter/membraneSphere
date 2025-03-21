@@ -160,7 +160,7 @@
       implicit none
       real(WP),intent(inout):: vector(3)
       ! local parameters
-      real(WP):: vectorlength
+      real(WP), external:: vectorlength
 
       call vectorscale(vector,1.0_WP/vectorlength(vector),vector)
       end subroutine
@@ -364,8 +364,9 @@
       real(WP),intent(inout):: vector(3)
       ! local parameters
       integer:: k
-      real(WP):: vectorlength, vNormale(3)
-      real(WP):: vTmpA(3),vTmpB(3),vTmpC(3),factor1,factor2, A,B,C,det
+      real(WP):: vNormale(3),vTmpA(3),vTmpB(3),vTmpC(3)
+      real(WP):: factor1,factor2,A,B,C,det
+      real(WP),external:: vectorlength
 
       ! be sure vector is not already on sphere
       if (abs(vectorlength( vector) - 1.0) < 1.0e-5) then
@@ -474,7 +475,8 @@
       real(WP),intent(out):: colatitude, longitude
       ! local parameters
       integer:: k
-      real(WP):: vectorlength,vector(3)
+      real(WP):: vector(3)
+      real(WP), external:: vectorlength
 
       !get corresponding vertex vector
       do k = 1,3
@@ -619,7 +621,8 @@
       real(WP),intent(out):: angle
       ! local parameters
       real(WP):: normalAB(3),normalAC(3),normalBC(3)
-      real(WP):: normalResult(3), vectorlength,scalar
+      real(WP):: normalResult(3), scalar
+      real(WP), external:: vectorlength
 
       !get cross products
       call vectorproduct(vectorA,vectorB, normalAB)
@@ -792,8 +795,8 @@
       real(WP),intent(in):: vsource(3),vreceiver(3)
       real(WP),intent(out):: rotationMatrix(3,3)
       ! local parameters
-      real(WP):: Vnormal1(3),Vnormal2(3),tauX,tauY,tauZ,vectorlength
-      external:: vectorlength
+      real(WP):: Vnormal1(3),Vnormal2(3),tauX,tauY,tauZ
+      real(WP), external:: vectorlength
 
       ! determine euler angles for rotation source to equator and receiver into equatorial plane
       ! get normale on plane of source and receiver
@@ -841,8 +844,8 @@
       real(WP),intent(in):: vsource(3),vreceiver(3)
       real(WP),intent(out):: invRotationMatrix(3,3)
       ! local parameters
-      real(WP):: Vnormal1(3),Vnormal2(3),tauX,tauY,tauZ,vectorlength
-      external:: vectorlength
+      real(WP):: Vnormal1(3),Vnormal2(3),tauX,tauY,tauZ
+      real(WP), external:: vectorlength
 
       ! determine euler angles for rotation source to equator and receiver into equatorial plane
       ! get normale on plane of source and receiver
@@ -939,8 +942,9 @@
 !      ! local parameters
 !      integer:: sourceVertex,receiverVertex
 !      real(WP):: Vmid(3),Vsource(3),Vreceiver(3),Vnormal1(3),Vnormal2(3),vtmp(3)
-!      real(WP):: vectorlength,tauX,tauY,tauZ,rot(3,3),lat,lon
+!      real(WP):: tauX,tauY,tauZ,rot(3,3),lat,lon
 !      real(WP):: sourceLat,sourceLon,receiverLat,receiverLon
+!      real(WP), external:: vectorlength
 !
 !      sourceLat = 0.0
 !      sourceLon = 60.0
@@ -1173,8 +1177,9 @@
       implicit none
       real(WP),intent(in):: vector1(3), vector2(3)
       ! local parameters
-      real(WP):: scalar, vectorlength
       integer:: k
+      real(WP):: scalar
+      real(WP), external:: vectorlength
 
       if (abs(vector1(1)*vector1(1)+vector1(2)*vector1(2)+              &
                vector1(3)*vector1(3) - 1.0d0) > 0.00001d0              &
@@ -1204,9 +1209,10 @@
       real(WP),intent(in):: vector1(3),vector2(3)
       real(WP),intent(out):: midpoint(3)
       ! local parameters
-      real(WP):: distance, vectorlength  !,normale(3)
-      real(WP):: midAngle,factor  !vX,vY,vZ, cosAlpha,sinAlpha
       integer:: k
+      real(WP):: distance  !,normale(3)
+      real(WP):: midAngle,factor  !vX,vY,vZ, cosAlpha,sinAlpha
+      real(WP), external:: vectorlength
 
       ! get angle for the midpoint between the two vectors
       ! (the radian of this angle for the unit sphere is equal to half

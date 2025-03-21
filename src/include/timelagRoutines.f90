@@ -1879,6 +1879,7 @@ end module
       real,parameter:: ftol = 1.e-3  ! tolerance
       interface
         subroutine minimize_downhill_simplex(p, y, ftol, func, iter)
+          implicit none
           integer, intent(out) :: iter
           real, intent(in) :: ftol
           real, dimension(3), intent(inout) :: y

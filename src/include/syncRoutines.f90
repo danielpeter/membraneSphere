@@ -1133,7 +1133,7 @@
       implicit none
       ! local parameters
       integer:: domain,i,length,ier
-      integer,external::getDomain
+      integer, external::getDomain
 
       ! check if different grid domains exist
       if (nprocesses < 2) return

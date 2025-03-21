@@ -553,6 +553,7 @@ function simpsons_integral_vecFunc(vecFunc, lower_bound, upper_bound)
   ! function interface
   interface
     function vecFunc(x)
+      implicit none
       double precision, dimension(:), intent(in) :: x
       double precision, dimension(size(x)) :: vecFunc
     end function
@@ -627,6 +628,7 @@ subroutine trapezoidal_rule_refine_vecFunc(vecFunc, lower_bound, upper_bound, in
   ! function interface
   interface
     function vecFunc(x)
+      implicit none
       double precision, dimension(:), intent(in) :: x
       double precision, dimension(size(x)) :: vecFunc
     end function

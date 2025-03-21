@@ -19,7 +19,7 @@
       implicit none
       ! local parameters
       integer:: range,index,n,domain,numDomainVert(0:nprocesses-1),ier
-      integer,external:: getDomain
+      integer, external:: getDomain
 
       ! domains only make sense for more then 1 processors
       if (nprocesses < 2) then
@@ -405,9 +405,9 @@
       implicit none
       ! local parameters
       integer:: numDomainVert(0:nprocesses,0:nprocesses),index,maxRange,n,k,domain,ier
-      logical:: isBoundary
-      integer:: getDomain,neighbors(nprocesses-1)
-      external:: isBoundary,getDomain
+      integer:: neighbors(nprocesses-1)
+      integer, external:: getDomain
+      logical, external:: isBoundary
 
       !count boundary vertices in each domain
       numDomainVert(:,:) = 0
@@ -460,7 +460,7 @@
       ! fill boundaries array
       numDomainVert(:,:) = 0
       do n = 1,numVertices
-        domain=getDomain(n)
+        domain = getDomain(n)
         ! check if on bounday
         if (isBoundary(n)) then
           ! get neighbors

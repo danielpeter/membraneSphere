@@ -302,10 +302,11 @@
       integer,allocatable,dimension(:):: nsqrs,nsqtot,nsqrsh,nsqtoth
       integer,dimension(:),allocatable:: inew,iold,inewh,ioldh,iresolu,ire2
       integer:: numto,numhi,kfine,ifine,kireso,kire2,ilat,ilon,icoarse,ifila,ico
-      integer:: isqrl,isqre,superISQRE,icoar,icoblo,iche,nprime,iof,jsqre,isqrh,ifilo
+      integer:: isqrl,icoar,icoblo,iche,nprime,iof,jsqre,isqrh,ifilo
       integer:: i,j,k
       real:: colat,theta,deltalon,parall,rmerid
       real:: xlafi,xlofi,xlat,xlon,xlamin,xlamax,xlomin,xlomax
+      integer, external:: isqre,superISQRE
 
       ! initialize
       EQ_INCR = heterogeneousPixelsize
@@ -490,7 +491,7 @@
       END
 
 !-----------------------------------------------------------------------
-      integer function superisqre(LAT,LON,nsqrs,nsqtot,nlatzones,n,eq_incr)
+      integer function superISQRE(LAT,LON,nsqrs,nsqtot,nlatzones,n,eq_incr)
 !-----------------------------------------------------------------------
 ! FINDS THE NUMBER OF THE SQUARE WHERE (LAT,LON) IS
       implicit none
@@ -507,12 +508,13 @@
 
       LLON = LON
       if (LLON < 0) LLON = 36000+LLON
+
       superISQRE = (LLON*NSQRS(LAZONE))/36000+1
       superISQRE = superISQRE+NSQTOT(LAZONE)
 
       if (superISQRE > n) superISQRE = n
       return
-      END
+      end function
 
 !-----------------------------------------------------------------------
       integer function isqre(LAT,LON,nsqrs,nsqtot,nlatzones,n,eq_incr)
@@ -533,12 +535,12 @@
       LLON = LON
       if (LLON < 0) LLON = 36000+LLON
 
-      ISQRE = (LLON*NSQRS(LAZONE))/36000+1
-      ISQRE = ISQRE+NSQTOT(LAZONE)
+      isqre = (LLON*NSQRS(LAZONE))/36000+1
+      isqre = isqre+NSQTOT(LAZONE)
 
-      if (ISQRE > n) ISQRE = n
+      if (isqre > n) isqre = n
       return
-      END
+      end function
 
 !-----------------------------------------------------------------------
       subroutine correspc(iresolu,niresolu,kireso,n,ioffset,inew,ninew,iold,niold,ico)

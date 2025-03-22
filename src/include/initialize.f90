@@ -38,7 +38,7 @@
 
       ! console output
       if (MAIN_PROCESS .and. VERBOSE) then
-        print *,'initialization o.k.'
+        print *,'initialization ok'
 
         ! benchmark
         benchAllEnd = syncWtime()
@@ -158,14 +158,16 @@
       ! console output
       if (MAIN_PROCESS) then
         print *
-        print *,'number of processes         : ',nprocesses
-        if (.not. FIXED_SOURCEPARAMETER) print *,'wave parameters: theta_wid factor ',THETA_WID
-        if (DELTA) print *,'delta phase velocity increment : ', deltaPerturbation
-        print *,'number of subdivisions used : ', subdivisions
+        print *,'number of processes            : ',nprocesses
+        if (.not. FIXED_SOURCEPARAMETER) &
+          print *,'wave parameters                : ',THETA_WID,' theta_wid factor'
+        if (DELTA) &
+          print *,'delta phase velocity increment : ', deltaPerturbation
+        print *,'number of subdivisions used    : ', subdivisions
         if (HETEROGENEOUS) then
-          print *,'heterogeneous phase map used'
+          print *,'phase map                      : heterogeneous map used'
         else
-          print *,'homogeneous phase map      ', cphaseRef
+          print *,'phase map                      : ', cphaseRef,' (homogeneous map)'
         endif
         print *,'-----------------------------------------------------------------------'
         print *
@@ -179,7 +181,7 @@
       endif
 
       if (MAIN_PROCESS .and. VERBOSE) then
-        print *,'parameters o.k'
+        print *,'parameters ok'
       endif
       end subroutine
 
@@ -217,7 +219,7 @@
       call findVertex(receiverLat,receiverLon,receiverVertex)
 
       ! find triangle where receiver lies
-      if (Station_Correction) then
+      if (STATION_CORRECTION) then
         call getClosestTriangle(desiredReceiverlat,desiredReceiverlon,interpolation_triangleIndex, &
                               interpolation_distances,interpolation_corners,interpolation_triangleLengths)
         ! triangle array no more needed
@@ -260,24 +262,24 @@
         print *,'distance source-receiver  : ',distance*180.0/PI
         print *
         if (DELTA) then
-          print *,'delta phase map ', DELTA, (cphaseRef + deltaPerturbation)
-          print *,'delta(lat/lon) desired:',deltaLat,deltaLon
+          print *,'delta phase map       : ', DELTA,'/',(cphaseRef + deltaPerturbation)
+          print *,'delta(lat/lon) desired: ',deltaLat,deltaLon
           call getSphericalCoord_Lat(deltaVertex,lat,lon)
-          print *,'                   got:',lat,lon
-          print *,'                 index:',deltaVertex
+          print *,'                   got: ',lat,lon
+          print *,'                 index: ',deltaVertex
           if (SECONDDELTA) then
-            print *,'second delta(lat/lon):',deltaSecondLat,deltaSecondLon
+            print *,'second delta(lat/lon): ',deltaSecondLat,deltaSecondLon
             call getSphericalCoord_Lat(deltaSecondVertex,lat,lon)
-            print *,'                  got:',lat,lon
-            print *,'                index:',deltaSecondVertex
+            print *,'                  got: ',lat,lon
+            print *,'                index: ',deltaSecondVertex
           endif
         endif
-        if (Station_Correction) then
+        if (STATION_CORRECTION) then
           print *,'interpolation receiver station:'
-          print *,'  triangle:',interpolation_triangleIndex
-          print *,'  corners :',(interpolation_corners(i),i=1,3)
-          print *,'  side lengths (deg)    :',(interpolation_triangleLengths(i)*180.0/PI,i=1,3)
-          print *,'  receiverdistance (deg):',(interpolation_distances(i)*180.0/PI,i=1,3)
+          print *,'  triangle              : ',interpolation_triangleIndex
+          print *,'  corners               : ',(interpolation_corners(i),i=1,3)
+          print *,'  side lengths (deg)    : ',(interpolation_triangleLengths(i)*180.0/PI,i=1,3)
+          print *,'  receiverdistance (deg): ',(interpolation_distances(i)*180.0/PI,i=1,3)
           print *
         endif
         print *
@@ -316,7 +318,7 @@
 !        backwardNewdisplacement(:) = 0.0_WP
 !      endif
       if (MAIN_PROCESS .and. VERBOSE) then
-        print *,'  meshing o.k'
+        print *,'  meshing ok'
       endif
 
       end subroutine
@@ -379,7 +381,7 @@
       endif
 
       if (MAIN_PROCESS .and. VERBOSE) then
-        print *,'  world o.k'
+        print *,'  world ok'
       endif
       end subroutine
 
@@ -396,11 +398,11 @@
       integer:: n,vertex,timestep,index,ier,jrec
       real(WP),external:: forceTerm2Source,forceTermExact
       real(WP):: time,force,arraysize
-      real(WP),parameter:: EPS = 1.0e-5
       real(WP):: forcetrace(numofTimeSteps)
       character(len=3):: rankstr
-      real(WP),parameter:: RAM_LIMIT                 = 2000   ! in MB ; e.g.  2 GB equal 2000 MB
-      character(len=128),parameter:: temporaryDir   = '/scratch/dpeter/'
+      real(WP), parameter:: EPS = 1.0e-5
+      real(WP),parameter:: RAM_LIMIT = 2000   ! in MB ; e.g.  2 GB equal 2000 MB
+      character(len=128),parameter:: temporaryDir   = '/scratch/tmp/'  ! choose something appropriate for your system
 
       ! console output
       if (MAIN_PROCESS .and. VERBOSE) then
@@ -412,7 +414,10 @@
       call determineSourceParameters()
 
       ! pre-calculates the force terms
-      if (PRESCRIBEDSOURCE) then
+      if (PRESCRIBED_SOURCE) then
+        ! prescribe the source
+        if (MAIN_PROCESS .and. VERBOSE) print *,'  prescribing source...'
+
         ! check if to reallocate force array
         if (allocated(forceTermPrescribed)) then
           if (size(forceTermPrescribed(:,1)) /= numDomainVertices .or. &
@@ -420,6 +425,7 @@
             deallocate(forceTermPrescribed)
           endif
         endif
+
         ! reallocates array
         if (.not. allocated(forceTermPrescribed)) then
           arraysize = numDomainVertices*numofTimeSteps*WP/1024./1024.
@@ -428,11 +434,11 @@
             print *,'  allocating prescribedForce array: '
             print *,'      vertices            : ',numDomainVertices
             print *,'      steps               : ',numofTimeSteps
-            print *,'      size                : ',arraysize,'Mb'
+            print *,'      size                : ',arraysize,'(MB)'
           endif
 
           ! allocate array
-          if (arraysize > RAM_LIMIT .and. FILTERINITIALSOURCE) then
+          if (arraysize > RAM_LIMIT .and. FILTER_INITIALSOURCE) then
             if (MAIN_PROCESS .and. VERBOSE) print *,'    using file to store source array.'
             sourceOnFile = .true.
           else
@@ -441,14 +447,14 @@
             if (ier /= 0) then
               print *,'    cannot allocate prescribedForce array: ',myrank
               ! change prescribed flag if necessary
-              if (FILTERINITIALSOURCE) then
+              if (FILTER_INITIALSOURCE) then
                 if (MAIN_PROCESS .and. VERBOSE) print *,'    using file to store source array.'
                 sourceOnFile = .true.
               else
-                PRESCRIBEDSOURCE = .false.
-                if (MAIN_PROCESS .and. VERBOSE) print *,'    using calculation of source on the fly...'
-                ! nothing else to do
-                return
+                ! abort
+                print *,'Error: exceeding memory limit, invalid prescribe source parameter'
+                print *,'       Please set PRESCRIBED_SOURCE = .false. to use calculation of source on the fly...'
+                call stopProgram('Exceeding memory limit for PRESCRIBED_SOURCE    ')
               endif
             endif
           endif
@@ -463,7 +469,7 @@
             print *,'      prescribed source file: ',trim(datadirectory)//'forceTermPrescribed'//rankstr//'.bin'
             ! opens file to store data for each process
             open(sourceFileID,file=trim(datadirectory)//'forceTermPrescribed'//rankstr//'.bin', &
-               access='direct',form='unformatted',recl=WP)
+                 access='direct',form='unformatted',recl=WP)
 
             ! storage in scratch dir
             !open(sourceFileID,file=trim(temporaryDir)//'forceTermPrescribed'//rankstr//'.bin', &
@@ -479,14 +485,11 @@
           forcetrace(:) = 0.0_WP
         endif
 
-        ! prescribe the source
-        if (MAIN_PROCESS .and. VERBOSE) print *,'  prescribing source...'
-
         ! prescribe source for each vertex
         do n = 1,numDomainVertices
           ! get cell vertex
           if (PARALLELSEISMO) then
-            vertex=domainVertices(n)
+            vertex = domainVertices(n)
           else
             vertex = n
           endif
@@ -496,7 +499,7 @@
             ! model time
             time = timestep*dt
             index = index+1
-            if (Station_Correction) then
+            if (STATION_CORRECTION) then
               force = forceTermExact(vertex,time,desiredSourceLat,desiredSourceLon)
             else
               force = forceTerm2Source(vertex,time,sourceVertex)
@@ -522,12 +525,14 @@
         enddo
 
         ! filter source
-        if (FILTERINITIALSOURCE) call filterSource()
+        if (FILTER_INITIALSOURCE) call filterSource()
       endif
 
       if (MAIN_PROCESS .and. VERBOSE) then
-        print *,'  source o.k'
+        print *,'  source ok'
+        print *
       endif
+
       end subroutine
 
 
@@ -991,7 +996,7 @@
       ! output
       if (MAIN_PROCESS .and. VERBOSE) then
         print *
-        print *,'kernel initialization o.k.'
+        print *,'kernel initialization ok'
         print *
       endif
 
@@ -1239,9 +1244,9 @@
       call getSphericalCoord_Lat(sourceVertex,sourceLat,sourceLon)
 
       if (MAIN_PROCESS .and. VERBOSE) then
-        print *,'    source(lat/lon) desired:',lat,lon
-        print *,'      got:',sourceLat,sourceLon
-        print *,'      index:',sourceVertex
+        print *,'    source(lat/lon) desired  : ',lat,lon
+        print *,'                        got  : ',sourceLat,sourceLon
+        print *,'                      index  : ',sourceVertex
       endif
 
       end
@@ -1272,22 +1277,22 @@
       call greatCircleDistance(vectorA,vectorB,distance)
 
       ! find triangle where receiver lies
-      if (Station_Correction) then
+      if (STATION_CORRECTION) then
         call getClosestTriangle(desiredReceiverlat,desiredReceiverlon,interpolation_triangleIndex, &
                               interpolation_distances,interpolation_corners,interpolation_triangleLengths)
       endif
 
       if (MAIN_PROCESS .and. VERBOSE) then
-        print *,'    receiver(lat/lon) desired:',desiredReceiverLat,desiredReceiverLon
-        print *,'      got:',receiverLat,receiverLon
-        print *,'      index:',receiverVertex
-        print *,'    distance source-receiver:',distance*180.0/PI
-        if (Station_Correction) then
+        print *,'    receiver(lat/lon) desired: ',desiredReceiverLat,desiredReceiverLon
+        print *,'                          got: ',receiverLat,receiverLon
+        print *,'                        index: ',receiverVertex
+        print *,'    distance source-receiver : ',distance*180.0/PI
+        if (STATION_CORRECTION) then
           print *,'    interpolation receiver station:'
-          print *,'      triangle:',interpolation_triangleIndex
-          print *,'      corners :',(interpolation_corners(i),i=1,3)
-          print *,'      side lengths (degrees):',(interpolation_triangleLengths(i)*180.0/PI,i=1,3)
-          print *,'      receiverdistance (degr.):',(interpolation_distances(i)*180.0/PI,i=1,3)
+          print *,'      triangle               : ',interpolation_triangleIndex
+          print *,'      corners                : ',(interpolation_corners(i),i=1,3)
+          print *,'      side lengths (degr)    : ',(interpolation_triangleLengths(i)*180.0/PI,i=1,3)
+          print *,'      receiverdistance (degr): ',(interpolation_distances(i)*180.0/PI,i=1,3)
         endif
       endif
       end subroutine
@@ -1347,7 +1352,7 @@
       subroutine setupNewSimulationtime(distance,iorbit)
 !-----------------------------------------------------------------------
 ! changes simulation time according to epicentral distance or antipode given and
-! depending on parameter USEOVERTIME set by commonModules
+! depending on parameter USE_OVERTIME set by commonModules
 !
 ! input:
 !   distance - epicentral distance between source & receiver (can be higher orbit)
@@ -1365,8 +1370,9 @@
       antipodeTime = (PI + (iorbit-1)*PI)*EARTHRADIUS/cphaseRef
       arrivalTime = distance*EARTHRADIUS/cphaseRef
 
-      if (USEOVERTIME) then
-        LASTTIME = arrivalTime + SIMULATIONOVERTIMEPERCENT*arrivalTime
+      if (USE_OVERTIME) then
+        ! uses overtime percent instead of antipodal time
+        LASTTIME = arrivalTime + OVERTIME_PERCENT*arrivalTime
         if (LASTTIME > antipodeTime) LASTTIME = antipodetime
       else if (WINDOWEDINTEGRATION) then
         if (MAIN_PROCESS .and. VERBOSE) then

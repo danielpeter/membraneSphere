@@ -32,67 +32,71 @@
         implicit none
 
         ! source parameters
-        ! fixed_sourceparameter: use fixed source parameters, important when a higher grid level
-        !                       is choosen but the same source should be simulated
-        ! adapt_source: used to change the time parameter sigma in a empirical way to have a maximum
-        !                         energy band at the considered period
-        ! TimeParameterSigma: level 4: 164.6128 ; L150: 41.1795264700414 ; L75: 42.9967494824469
-        !                                      TimeParameterSigma = 42.0216_WP
-        !                                      good other values: q4: 204.5, q6: 51.125, 42.0216(L150)
-        ! WidthParameterMu: level 4: 7.1343616E-02 ; L150: 1.783786819208144E-002 ;
-        !                                  L75: 1.783786819208144E-002
-        !                                  WidthParameterMu = 0.017968_WP
-        !                                  good other values q4:0.0713 (20 degree),
-        !                                                   q6: 0.017826 (5 degree),0.017968 (factor 8x)
-        ! theta_wid: factor is taken to calculate source parameters mu
-        !                     when no FIXED_SOURCEPARAMETER
-        !                     (see Tape, thesis 2003, eq. 3.21)
-        !                     for Love L150 - subdivision 8: fW8.0 have main period at 139.6 s ,
-        !                                              subdivision 7: fW10.0 main period at 206.9 s
-        !                     (check with waveparameters executable)
+        ! FIXED_SOURCEPARAMETER  - use fixed source parameters, important when a higher grid level
+        !                          is choosen but the same source should be simulated
+        ! ADAPT_SOURCE           - used to change the time parameter sigma in a empirical way to have a maximum
+        !                          energy band at the considered period
+        ! TimeParameterSigma     - level 4: 164.6128 ; L150: 41.1795264700414 ; L75: 42.9967494824469
+        !                          TimeParameterSigma = 42.0216_WP
+        !                          good other values: q4: 204.5, q6: 51.125, 42.0216(L150)
+        ! WidthParameterMu       - level 4: 7.1343616E-02 ; L150: 1.783786819208144E-002 ; L75: 1.783786819208144E-002
+        !                          WidthParameterMu = 0.017968_WP
+        !                          good other values q4: 0.0713 (20 degree),
+        !                                            q6: 0.017826 (5 degree), 0.017968 (factor 8x)
+        ! THETA_WID              - factor is taken to calculate source parameters mu when no FIXED_SOURCEPARAMETER
+        !                          (see Tape, thesis 2003, eq. 3.21)
+        !                          for Love L150 - subdivision 8: fW8.0 have main period at 139.6 s ,
+        !                                          subdivision 7: fW10.0 main period at 206.9 s
+        !                          (check with waveparameters executable)
         ! default:
         !     sigma = 60.0
-        !     mu     = 4.e-2
+        !     mu    = 4.e-2
         ! other comparison: 180. 15.e-2 (bit better...), Carl 204.5/theta_wid=5
-        real(WP) :: TimeParameterSigma              = 60.0 ! with adapt_source: L150 30.0_WP  ! L100: 30.0  , L50: 10.0 , L150: 60.0
-        real(WP) :: WidthParameterMu                = 0.04 ! with adapt source: L150 0.015_WP ! L100: 2.e-2 , L50: 1.e-2, L150: 0.04
+        real(WP) :: TimeParameterSigma              = 60.0 ! with adapt_source: L150 30.0_WP; L100: 30.0; L50: 10.0
+        real(WP) :: WidthParameterMu                = 0.04 ! with adapt source: L150 0.015_WP; L100: 0.02; L50: 0.01
         logical,parameter :: FIXED_SOURCEPARAMETER  = .true.
         logical,parameter :: ADAPT_SOURCE           = .false.
         real(WP),parameter :: THETA_WID             = 5.0_WP ! (in degrees)
 
         ! filter parameters
-        ! FILTERINITIALSOURCE: filter initial prescribed source too
-        ! FILTERSEISMOGRAMS: use filtering when calculating timelag
-        ! bw_fixfrequency: use the fixed halfband-frequency or a percentage of the wave period
+        ! FILTER_INITIALSOURCE   - filter initial prescribed source
+        !                          (applied only when PRESCRIBED_SOURCE is turned on; useful when calculating kernels
+        !                           to filter out spurious frequency artefacts)
+        ! FILTER_SEISMOGRAMS     - use filtering when calculating timelag
         !
-        ! half-bandwidth frequency: use same bandwidth-half as for analytic comparision
-        !                                           (compare: Kernels/BORN/find_kernels.f, parameter deltau)
-        !                                           paper suggests:
-        !                                           Spetzler et al. 2002: delta_f_half = 2.5 mHz
-        !                                           Ekstrom et al. 1997: delta_f_half ~ 2.27 mHz (derived from eq. 13 and fig. 2)
+        ! BW_FIXFREQUENCY        - bandwidth filter use the fixed halfband-frequency or a percentage of the wave period
+        ! BW_HALFFREQUENCY       - use same bandwidth-half as for analytic comparision
+        !                          (compare: Kernels/BORN/find_kernels.f, parameter deltau)
+        !                          paper suggests:
+        !                            Spetzler et al. 2002: delta_f_half = 2.5 mHz
+        !                            Ekstrom et al. 1997 : delta_f_half ~ 2.27 mHz (derived from eq. 13 and fig. 2)
+        ! BW_PERCENT             - 10% of corner period used as filter width on both sides
+        !                          (e.g., Love 150s gets +- 15 s filter ), 0.6059 for half-bandwidth of 2.5 mHz
         !
-        ! bandwidth percent: 10% of corner period used as filter width on both sides
-        !                    ( e.g. Love 150s gets +- 15 s filter ), 0.6059 for half-bandwidth of 2.5 mHz
-        ! butterworthfilter: just use bandpass filter or butterworth bandpass filter
-        ! butterworth_power: butterworth power exponent
-        ! arrival_threshold: threshold value for arrival time picking also determines startTime
-        !                             for fourier transformation
-        ! hannwindow_percent: hanning window width to apply at the ends of the seismogram
-        !                                     in percent of the seismogram length
-        ! membranecorrection: [s] to correct wave period in filtering routines;
-        !                                   -10.0 for grid level 6 (empirical value; compare with single
-        !                                   frequency kernel cross-sections)
-        ! ANALYTICAL_CORRELATION: calculates also the analytically derived timelag kernel value
-        logical,parameter :: FILTERINITIALSOURCE    = .true. !.true. for inversions/kernels
-        logical,parameter :: FILTERSEISMOGRAMS      = .false.
+        ! BUTTERWORTHFILTER      - use butterworth bandpass filter or just bandpass filter
+        ! BUTTERWORTH_POWER      - butterworth power exponent
+        !
+        ! ARRIVAL_THRESHOLD      - threshold value for arrival time picking also determines startTime
+        !                          for fourier transformation
+        ! HANNWINDOW_PERCENT     - Hanning window width to apply at the ends of the seismogram
+        !                          in percent of the seismogram length
+        ! MEMBRANECORRECTION     - in [s] to correct wave period in filtering routines
+        !                          for grid level 6 == -10.0 (empirical value; compare with single frequency kernel cross-sections)
+        logical,parameter :: FILTER_INITIALSOURCE   = .false.  !.true. for inversions/kernels
+        logical,parameter :: FILTER_SEISMOGRAMS     = .false.
+
         logical,parameter :: BW_FIXFREQUENCY        = .true.
         real(WP),parameter :: BW_HALFFREQUENCY      = 2.5e-3  ! default: 2.5e-3; Ekstrom: 2.27e-3
         real(WP),parameter :: BW_PERCENT            = 0.0_WP
+
         logical,parameter :: BUTTERWORTHFILTER      = .false.
         integer,parameter :: BUTTERWORTH_POWER      = 1
+
         real(WP),parameter :: ARRIVAL_THRESHOLD     = 1.0_WP
         real(WP),parameter :: HANNWINDOW_PERCENT    = 0.1_WP
         real(WP),parameter :: MEMBRANECORRECTION    = 0.0_WP
+
+        ! calculates also the analytically derived timelag kernel value
         logical,parameter :: ANALYTICAL_CORRELATION = .false.
 
         ! filter the source around a new period
@@ -112,53 +116,51 @@
 
 
         ! routine optimization
-        ! precalculated_cells: speeding up computation by using precalculated cell areas
-        !                                 and distances
-        ! prescribedsource: precalculates source values and stores in an array for faster
-        !                              computation of finite-difference iteration
-        ! relaxed_grid: takes cell infos from grid files ***.relaxed.dat
+        ! PRECALCULATED_CELLS    - speeding up computation by using precalculated cell areas and distances
+        ! PRESCRIBED_SOURCE      - precalculates source values and stores in an array for faster
+        !                          computation of finite-difference iteration
+        ! RELAXED_GRID           - takes cell infos from grid files ***.relaxed.dat
         logical,parameter:: PRECALCULATED_CELLS      = .true.
-        logical:: PRESCRIBEDSOURCE                   = .true.
+        logical,parameter:: PRESCRIBED_SOURCE        = .true.
         logical,parameter:: RELAXED_GRID             = .false.
         logical,parameter:: CORRECT_RATIO            = .false.
 
         ! analytical spherical harmonics degrees
-        ! degree's l & m : spherical harmonic degrees for comparision with laplacian accuracy
-        ! degreeAccuracy : legendre accuracy for analytic solution of seismogram with source 2
-        !                              see plot fig. (3.3)B, Tape, p. 32
-        !                             ( 38 for 180/0.15; 80 for 60/0.04; >120 for 10/0.02 )
+        ! DEGREE_L & DEGREE_M    - spherical harmonic degrees for comparision with laplacian accuracy
+        ! DEGREEACCURACY         - legendre accuracy for analytic solution of seismogram with source 2
+        !                           see plot fig. (3.3)B, Tape, p. 32
+        !                           (38 for 180/0.15; 80 for 60/0.04; >120 for 10/0.02)
         integer, parameter :: DEGREE_L              = 6
         integer, parameter :: DEGREE_M              = 1
         integer, parameter :: DEGREEACCURACY        = 120
 
         ! inversion
-        ! compatible_refgridXrefgrid: set equal to 1 to make the grid
-        !                           compatible with a refgridXrefgrid grid
-        !   0 for L0035.jwkb.lsqr.mod.pcn-.2-.2 or L150.crust.2degree.gsh.modelVector.*.pcn.blk
-        !   1 for L150.crust
+        ! compatible_refgridXrefgrid - set equal to 1 to make the grid compatible with a refgridXrefgrid grid
+        !                              0 for L0035.jwkb.lsqr.mod.pcn-.2-.2 or L150.crust.2degree.gsh.modelVector.*.pcn.blk
+        !                              1 for L150.crust
         ! grid pixelsize: inversion grid consists of approximately equal sized
         ! pixels with this size (in  degrees)
         integer,parameter:: compatible_refgridXrefgrid  = 0
 
         ! source/station location
-        ! station_correction: tries to use exact locations of source and receiver.
-        !                               interpolates linearly for the receiver displacement.
-        logical:: Station_Correction                    = .true.
+        ! STATION_CORRECTION     - tries to use exact locations of source and receiver.
+        !                          interpolates linearly for the receiver displacement.
+        logical,parameter:: STATION_CORRECTION          = .true.
 
-        ! use overtime : for the adaption of the simulation time for different source/receiver setups
-        !                         otherwise the antipode time is taken when calculating a new simulation time
-        !                         (e.g. for many-kernels calculation)
-        ! simulation overtime %: how much percent more time shall be given for the overtime
-        logical,parameter :: USEOVERTIME                = .false.
-        real(WP),parameter :: SIMULATIONOVERTIMEPERCENT = 0.8_WP
+        ! USE_OVERTIME           - for the adaption of the simulation time for different source/receiver setups
+        !                          otherwise the antipode time is taken when calculating a new simulation time
+        !                          (e.g. for many-kernels calculation)
+        ! OVERTIME_PERCENT       - how much percent more time shall be given for the overtime
+        logical,parameter :: USE_OVERTIME               = .false.
+        real(WP),parameter :: OVERTIME_PERCENT          = 0.8_WP
 
         ! checkerboard map parameters
         ! instead of reading in a heterogeneous phase velocity map, it creates
         ! a checkerboard map with corresponding parameters
         logical,parameter :: DO_CHECKERBOARD           = .false.
-        real(WP),parameter :: MAP_PERCENT_AMPLITUDE    = 2.0    !given in percent, i.e. 5% = 5.0
         integer,parameter :: MAP_DEGREE_L              = 13 ! 9 ! 20
         integer,parameter :: MAP_DEGREE_M              = 7 ! 5 ! 10
+        real(WP),parameter :: MAP_PERCENT_AMPLITUDE    = 2.0    !given in percent, i.e. 5% = 5.0
 
         ! simulation output
         integer,parameter :: SIMULATION_TIMESTEPPING   = 4  ! takes every fifth timestep for output
@@ -304,7 +306,7 @@
       ! cells module
       ! used for precalculated values of cell areas etc.
         use constants, only: WP,EARTHRADIUS,EARTHRADIUS_SQUARED,PI,DEGREE2RAD,IIN
-        use precisions, only: CORRECT_RATIO,RELAXED_GRID,Station_Correction
+        use precisions, only: CORRECT_RATIO,RELAXED_GRID,STATION_CORRECTION
         implicit none
         integer:: subdivisions,MaxTriangles,MaxVertices
         integer,allocatable, dimension(:,:):: cellFace,cellNeighbors,cellTriangleFace
@@ -324,10 +326,10 @@
       ! propagationStartup module
       ! used for initialization startup process
         use constants, only: WP,IIN,IOUT,PI,EARTHRADIUS
-        use precisions, only: SIMULATIONOVERTIMEPERCENT,USEOVERTIME,WINDOWEDINTEGRATION, &
-          FILTERINITIALSOURCE,PRESCRIBEDSOURCE, &
-          FILTERSEISMOGRAMS, &
-          Station_Correction,timeParameterSigma
+        use precisions, only: USE_OVERTIME,OVERTIME_PERCENT,WINDOWEDINTEGRATION, &
+          PRESCRIBED_SOURCE,FILTER_INITIALSOURCE, &
+          FILTER_SEISMOGRAMS, &
+          STATION_CORRECTION,timeParameterSigma
         implicit none
         logical:: Phaseshift_Program = .false.
         logical:: HetPhaseshift_Program = .false.

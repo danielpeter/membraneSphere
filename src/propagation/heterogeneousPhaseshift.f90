@@ -23,27 +23,27 @@
 ! based upon heterogeneousInversion.f90 & phaseshift.f90
 
 !-----------------------------------------------------------------------
-  module heterogeneousArrays
+module heterogeneousArrays
 !-----------------------------------------------------------------------
-    use precisions
-    implicit none
-    real(WP), allocatable, dimension(:):: phaseVelocitySquarePREM,phaseVelocitySquareHET
-    real, allocatable, dimension(:,:):: dataStore
-    real:: shift_min,shift_max
-  end module
+  use precisions
+  implicit none
+  real(WP), allocatable, dimension(:):: phaseVelocitySquarePREM,phaseVelocitySquareHET
+  real, allocatable, dimension(:,:):: dataStore
+  real:: shift_min,shift_max
+end module
 
-!-----------------------------------------------------------------------
+  !-----------------------------------------------------------------------
   program heterogeneousPhaseshift
-!-----------------------------------------------------------------------
-! calculates the new synthetic data which can be used for a benchmark exercise
-! the synthetic phase shifts for a heterogeneous background earth are plotted as
-! a new data file similar as e.g. wei_sum.2.L0150.1.txt
-!
-! performs a simulation, with a reference earth model (PREM), and calculates the
-! phase shift to a second simulation within a heterogeneous background earth
-!
-! adjoint method: information in tromp et al. (2005)
-! finite-difference iteration: information in carl tape thesis (2003), chap 5, (5.7)
+  !-----------------------------------------------------------------------
+  ! calculates the new synthetic data which can be used for a benchmark exercise
+  ! the synthetic phase shifts for a heterogeneous background earth are plotted as
+  ! a new data file similar as e.g. wei_sum.2.L0150.1.txt
+  !
+  ! performs a simulation, with a reference earth model (PREM), and calculates the
+  ! phase shift to a second simulation within a heterogeneous background earth
+  !
+  ! adjoint method: information in Tromp et al. (2005)
+  ! finite-difference iteration: information in Carl Tape thesis (2003), chap 5, (5.7)
     use propagationStartup; use parallel
     use minimize_trace, only: trace_length
     implicit none
@@ -105,9 +105,11 @@
     ! checks that only main process is going to do it
     if (.not. MAIN_PROCESS) return
 
+    print *,'getting phaseshift data...'
+
     ! open data file
     print *,'  open datafile: '
-    print *,'      ',trim(heterogeneousDataFile)
+    print *,'    ',trim(heterogeneousDataFile)
     open(dataUnit,file=trim(heterogeneousDataFile),status="old",iostat=ier)
     if (ier /= 0) then
       print *,'Error: process ',myrank,' could not open data file: ',trim(heterogeneousDataFile)
@@ -119,13 +121,13 @@
     !------and reference velocity of that type of sw at that period
     !read(2,1003) wave_type,period,v0
     read(dataUnit,*) wave_type,period,v0
-    print *,'    wave type, period, v0:',wave_type,period,v0
+    print *,'    wave type/period/v0: ',wave_type,'/',period,'/',v0
     read(dataUnit,'(a47)') commentline
 
-    omega = 1./period
+    omega = 1.0/period
 
- 1003 format(8x,a1,7x,f8.4,10x,f8.5)
- !1002 format(4(f11.4,1x),1x,f11.6,1x,f11.7)
+  1003 format(8x,a1,7x,f8.4,10x,f8.5)
+  !1002 format(4(f11.4,1x),1x,f11.6,1x,f11.7)
 
     ! count data entries
     stla_old = 0.0
@@ -163,8 +165,8 @@
         enddo
         if (.not. stationfound) then
           stationscount = stationscount+1
-          stations(stationscount,1)=stla
-          stations(stationscount,2)=stlo
+          stations(stationscount,1) = stla
+          stations(stationscount,2) = stlo
         endif
 
         ! events/sources: file is (normally) ordered by receiver location,
@@ -179,8 +181,8 @@
         enddo
         if (.not. eventfound) then
           eventscount = eventscount+1
-          events(eventscount,1)=epla
-          events(eventscount,2)=eplo
+          events(eventscount,1) = epla
+          events(eventscount,2) = eplo
         endif
 
         ! some statistics
@@ -210,17 +212,17 @@
 
     ! console output
     print *,'  data:'
-    print *,'    number of stations:',stationscount
-    print *,'    number of events:',eventscount
+    print *,'    number of stations : ',stationscount
+    print *,'    number of events   : ',eventscount
     print *,'    great circle distances:'
     print *,'      minimum = ',epicentraldistance_min,epiminIndex
     print *,'      maximum = ',epicentraldistance_max,epimaxIndex
     print *,'    datum data:'
-    print *,'      min = ',datummin
-    print *,'      max = ',datummax
+    print *,'      minimum = ',datummin
+    print *,'      maximum = ',datummax
 
     ! open new output data file
-    slashindex = 1
+    slashindex = 0
     do i = 1,len_trim(heterogeneousDataFile)
       if (heterogeneousDataFile(i:i) == '/') slashindex = i
     enddo
@@ -238,84 +240,87 @@
 
     ! info
     print *,'  data read done'
+    print *
     call myflush(6)
 
   end subroutine
 
-!-----------------------------------------------------------------------
-subroutine storeHeterogeneousDataArray(dataUnit,datacount)
-!-----------------------------------------------------------------------
-! stores the data in an array
-  use parallel; use phaseBlockData; use heterogeneousArrays
-  implicit none
-  integer,intent(in):: dataUnit
-  integer,intent(inout):: datacount
-  ! local parameters
-  integer:: i,ier,length
-  character:: commentline*47,wave_type*1
-  real:: period,v0
-  real:: eplo,epla,stla,stlo,datum,error
+  !-----------------------------------------------------------------------
+  subroutine storeHeterogeneousDataArray(dataUnit,datacount)
+  !-----------------------------------------------------------------------
+  ! stores the data in an array
+    use parallel; use phaseBlockData; use heterogeneousArrays
+    implicit none
+    integer,intent(in):: dataUnit
+    integer,intent(inout):: datacount
+    ! local parameters
+    integer:: i,ier,length
+    character:: commentline*47,wave_type*1
+    real:: period,v0
+    real:: eplo,epla,stla,stlo,datum,error
 
-  ! info
-  if (MAIN_PROCESS) then
-    print *,'  data count: ',datacount
-  endif
+    ! info
+    if (MAIN_PROCESS) then
+      print *,'preparing data array...'
+      print *,'  data count: ',datacount
+    endif
 
-  ! wait until all processes reached this point
-  call syncProcesses()
+    ! wait until all processes reached this point
+    call syncProcesses()
 
-  ! synchronize datacount from main process to all other processes
-  call syncBroadcastSinglei(datacount)
-  !or
-  !call syncSingleInteger(datacount)
+    ! synchronize datacount from main process to all other processes
+    call syncBroadcastSinglei(datacount)
+    !or
+    !call syncSingleInteger(datacount)
 
-  ! allocate array
-  allocate(dataStore(6,datacount),stat=ier)
-  if (ier /= 0) call stopProgram('error allocating data - storeHeterogeneousDataArray()    ')
+    ! allocate array
+    allocate(dataStore(6,datacount),stat=ier)
+    if (ier /= 0) call stopProgram('error allocating data - storeHeterogeneousDataArray()    ')
 
-  ! process data file
-  if (MAIN_PROCESS) then
-    ! reset to first data entry
-    rewind(dataUnit)
-    read(dataUnit,*) wave_type,period,v0
-    read(dataUnit,'(a47)') commentline
+    ! process data file
+    if (MAIN_PROCESS) then
+      ! reset to first data entry
+      rewind(dataUnit)
+      read(dataUnit,*) wave_type,period,v0
+      read(dataUnit,'(a47)') commentline
 
-    ! read data
-    print *,'reading in data array...'
-    print *,'    number of data entries: ',datacount
-    do i = 1,datacount
-      read(dataUnit,*,iostat=ier) epla,eplo,stla,stlo,datum,error
-      if (ier /= 0) call stopProgram('error reading data - storeHeterogeneousDataArray()    ')
+      ! read data
+      print *,'  reading in data array...'
+      print *,'    number of data entries: ',datacount
+      do i = 1,datacount
+        read(dataUnit,*,iostat=ier) epla,eplo,stla,stlo,datum,error
+        if (ier /= 0) call stopProgram('error reading data - storeHeterogeneousDataArray()    ')
 
-      ! store in data array
-      dataStore(1,i) = epla
-      dataStore(2,i) = eplo
-      dataStore(3,i) = stla
-      dataStore(4,i) = stlo
-      dataStore(5,i) = datum
-      dataStore(6,i) = error
-    enddo
+        ! store in data array
+        dataStore(1,i) = epla
+        dataStore(2,i) = eplo
+        dataStore(3,i) = stla
+        dataStore(4,i) = stlo
+        dataStore(5,i) = datum
+        dataStore(6,i) = error
+      enddo
 
-    ! close file
-    close(dataUnit)
-  endif
+      ! close file
+      close(dataUnit)
+    endif
 
-  ! synchronize dataStore array with processes
-  length = 6*datacount
-  call syncBroadcastRealArray(dataStore,length)
-  !or
-  !call syncRealArray(dataStore,length)
+    ! synchronize dataStore array with processes
+    length = 6*datacount
+    call syncBroadcastRealArray(dataStore,length)
+    !or
+    !call syncRealArray(dataStore,length)
 
-  ! TEST console output
-  if (MAIN_PROCESS) then
-    print *,'    first datum extract: ',(dataStore(i,1),i=1,6)
-    call myflush(6)
-  endif
+    ! TEST console output
+    if (MAIN_PROCESS) then
+      print *,'    first datum extract: ',(dataStore(i,1),i=1,6)
+      print *
+      call myflush(6)
+    endif
 
-  ! wait until all processes reached this point
-  call syncProcesses()
+    ! wait until all processes reached this point
+    call syncProcesses()
 
-end subroutine
+  end subroutine
 
   !-----------------------------------------------------------------------
   subroutine processDatafile(newdataUnit,datacount)
@@ -331,30 +336,67 @@ end subroutine
     real:: epidelta
     real:: eplo,epla,stla,stlo,datum,error
     real:: time_shift
+    logical:: output_info
     logical, external:: doCalc
     real(WP), external:: syncWtime
+    ! console output with information about current data index
+    integer, parameter :: OUTPUT_INFO_INTERVAL = 500
+
+    if (MAIN_PROCESS) then
+      print *,'processing data...'
+    endif
 
     ! prepare phasevelocities for time iterations
     call constructPhaseVelocities()
 
     ! loop over data
     if (MAIN_PROCESS) then
-      print *,'begin loop over data:',datacount
+      print *,'  begin loop over data: ',datacount
+      print *
       call myflush(6)
     endif
 
+    ! stats
     shift_min = 0.0
     shift_max = 0.0
+
     dataLoopIndex = 0
+    output_info = .false.
+
     do j = 1,datacount
       ! console output
-      if (MAIN_PROCESS .and. ( mod(j,500) == 0 .or. j == 1)) then
-        VERBOSE = .true.
-        print *
-        print *,j," data read"
-        call myflush(6)
+      if (MAIN_PROCESS) then
+        if (PARALLELSEISMO) then
+          ! parallelized (forward) simulations
+          if (mod(j,OUTPUT_INFO_INTERVAL) == 0 .or. j == 1) then
+            VERBOSE = .true.      ! turns on verbosity of source initialization
+            output_info = .true.  ! console info output & file trace output
+          else
+            ! turn off verbosity
+            VERBOSE = .false.
+            output_info = .false.  ! console info output
+          endif
+        else
+          ! distributed simulations (each process simulates different source/data entry)
+          if (mod(j,OUTPUT_INFO_INTERVAL) < nprocesses .and. doCalc(j)) then
+            VERBOSE = .true.      ! turns on verbosity of source initialization
+            output_info = .true.  ! console info output & file trace output
+          else
+            ! turn off verbosity
+            VERBOSE = .false.
+            output_info = .false.  ! console info output
+          endif
+        endif
       else
         VERBOSE = .false.
+      endif
+
+      ! info header
+      if (output_info) then
+        print *,'*****************************************************************'
+        print *,'*** processing data index : ',j,' out of ',datacount,'***'
+        print *,'*****************************************************************'
+        call myflush(6)
       endif
 
       ! check if this process has to do something
@@ -368,36 +410,35 @@ end subroutine
         error = dataStore(6,j)
 
         ! benchmark
-        if (MAIN_PROCESS .and. mod(j,500) < nprocesses) then
-          benchmarkLoopStart = syncWtime()
-        endif
+        if (output_info) benchmarkLoopStart = syncWtime()
 
         ! prepare source/receiver locations for simulation
         call prepareCouple(epla,eplo,stla,stlo)
 
         ! do the time iteration and phase shift calculation
-        call doTimeIteration(j,time_shift)
+        call doTimeIteration(j,time_shift,output_info)
 
         ! secondary processes transfers data to main process which prints them to file
-        call outputDataLine(j,datacount,epla,eplo,stla,stlo,time_shift, &
-                            error,newdataUnit)
+        call outputDataLine(j,datacount,epla,eplo,stla,stlo,time_shift,error,newdataUnit)
 
-        ! output to file
-        if (MAIN_PROCESS .and. mod(j,500) < nprocesses) then
+        ! output to console
+        if (output_info) then
           ! find epicentral distances between source and station
           call epicentralDistance(epla,eplo,stla,stlo,epidelta)
 
           ! console output
-          print *,'    data:',j
-          print *,'      source:',sourceLat,sourceLon
-          print *,'        (original):',epla,eplo
-          print *,'      receiver:',receiverLat,receiverLon
-          print *,'        (original):',stla,stlo
-          print *,'      distance source-receiver:',epidelta
-          print *,'      time shift:',time_shift
+          print *,'    data: ',j
+          print *,'      source                  : ',sourceLat,sourceLon
+          print *,'        (original)            : ',epla,eplo
+          print *,'      receiver                : ',receiverLat,receiverLon
+          print *,'        (original)            : ',stla,stlo
+          print *,'      distance source-receiver: ',epidelta
+          print *,'      time shift              : ',time_shift
+
           ! benchmark for this run
           benchmarkLoopEnd = syncWtime()
-          print *,'      benchmark seconds:',benchmarkLoopEnd-benchmarkLoopStart
+          print *,'    benchmark seconds ',benchmarkLoopEnd-benchmarkLoopStart
+          print *
           ! flush to console output (i/o unit nr. 6 or on SGI system nr. 101)
           call myflush(6)
         endif
@@ -419,8 +460,10 @@ end subroutine
     if (MAIN_PROCESS) then
       VERBOSE = .true.
       print *,'data written:',datacount
+      print *
       call myflush(6)
     endif
+
   end subroutine
 
 
@@ -436,18 +479,26 @@ end subroutine
 
     ! allocate memory
     allocate(phaseVelocitySquarePREM(numVertices), &
-            phaseVelocitySquareHET(numVertices),stat=ier)
+             phaseVelocitySquareHET(numVertices),stat=ier)
     if (ier /= 0) stop "allocate phasevelocities error"
+    phaseVelocitySquarePREM(:) = 0.0_WP
+    phaseVelocitySquareHET(:) = 0.0_WP
 
     ! PREM
-    if (MAIN_PROCESS .and. VERBOSE) print *,' constructing reference phase map...'
+    if (MAIN_PROCESS .and. VERBOSE) then
+      print *
+      print *,'  constructing reference phase map...'
+    endif
     HETEROGENEOUS = .false. ! homogeneous
     DELTA         = .false. ! no delta scatterer
     call constructPhaseVelocitySquare()
     phaseVelocitySquarePREM(:) = phaseVelocitySquare(:)
 
     ! heterogeneous phase speed map
-    if (MAIN_PROCESS .and. VERBOSE) print *,' constructing heterogeneous phase map...'
+    if (MAIN_PROCESS .and. VERBOSE) then
+      print *
+      print *,'  constructing heterogeneous phase map...'
+    endif
     HETEROGENEOUS = .true.
     rotate_frame  = .false.  ! no rotation of phase map
     DELTA         = .false.  ! no delta scatterer
@@ -456,6 +507,7 @@ end subroutine
     if (allocated(phaseMap)) deallocate(phaseMap)
     allocate(phaseMap(numVertices), stat=ier)
     if (ier /= 0) stop 'Abort - phase map allocation'
+    phaseMap(:) = 0.0_WP
 
     ! read phase map (e.g. Love 150 s) (note: is rotated for non-adjoint simulations)
     if (MAIN_PROCESS) then
@@ -508,7 +560,7 @@ end subroutine
 
 
   !-----------------------------------------------------------------------
-  subroutine doTimeIteration(jrecord,time_shift)
+  subroutine doTimeIteration(jrecord,time_shift,output_info)
   !-----------------------------------------------------------------------
     use propagationStartup; use phaseVelocityMap
     use traveltime; use cells; use verbosity; use parallel
@@ -516,6 +568,7 @@ end subroutine
     implicit none
     integer,intent(in):: jrecord
     real,intent(out):: time_shift
+    logical,intent(in):: output_info
     ! local parameters
     real(WP),dimension(2,numofTimeSteps):: seismogramPREM,seismogramHET
     real(WP):: startTime,distance,amplification
@@ -527,13 +580,16 @@ end subroutine
 
     ! PREM reference simulation
     phaseVelocitySquare(:) = phaseVelocitySquarePREM(:)
+
     call forwardIteration()
+
     seismogramPREM(:,:) = seismogramReceiver(:,:)
+
     ! file output
-    if (MAIN_PROCESS .and. mod(jrecord,500) < nprocesses) then
-      write(jstr,'(i6.6)')jrecord
-      open(IOUT,file=trim(datadirectory)//'seismoPREM.'//jstr//'.txt',iostat=ier)
-      if (ier /= 0) call stopProgram('Error opening seismoPREM output file    ')
+    if (output_info) then
+      write(jstr,'(i6.6)') jrecord
+      open(IOUT,file=trim(datadirectory)//'seismo.PREM.'//jstr//'.txt',iostat=ier)
+      if (ier /= 0) call stopProgram('Error opening seismo.PREM output file    ')
       do i = 1,numofTimeSteps
         write(IOUT,*) seismogramPREM(1,i), seismogramPREM(2,i)
       enddo
@@ -542,12 +598,15 @@ end subroutine
 
     ! heterogeneous simulation
     phaseVelocitySquare(:) = phaseVelocitySquareHET(:)
+
     call forwardIteration()
+
     seismogramHET(:,:) = seismogramReceiver(:,:)
+
     ! file output
-    if (MAIN_PROCESS .and. mod(jrecord,500) < nprocesses) then
-      open(IOUT,file=trim(datadirectory)//'seismoHET.'//jstr//'.txt',iostat=ier)
-      if (ier /= 0) call stopProgram('Error opening seismoHET output file    ')
+    if (output_info) then
+      open(IOUT,file=trim(datadirectory)//'seismo.HET.'//jstr//'.txt',iostat=ier)
+      if (ier /= 0) call stopProgram('Error opening seismo.HET output file    ')
       do i = 1,numofTimeSteps
         write(IOUT,*)seismogramHET(1,i), seismogramHET(2,i)
       enddo
@@ -557,7 +616,7 @@ end subroutine
     ! determine phase shift:
     ! determine startTime
     call getStartTimeSeismogram(seismogramPREM,numofTimeSteps, &
-                          seismogramPREM(1,numofTimeSteps),dt,startTime)
+                                seismogramPREM(1,numofTimeSteps),dt,startTime)
 
     ! calculate the analytical arrival time
     call greatCircleDistance(vertices(sourceVertex,:), &
@@ -566,8 +625,9 @@ end subroutine
 
     ! console output
     if (MAIN_PROCESS .and. VERBOSE) then
-      print *,'    arrival time:',arrivalTime
-      print *,'    start time for fourier transformation:',startTime
+      print *,'  determining phase shift...'
+      print *,'    arrival time                         : ',arrivalTime
+      print *,'    start time for fourier transformation: ',startTime
     endif
 
     ! calculate time lag (in seconds, when dt in seconds)
@@ -578,31 +638,36 @@ end subroutine
     !call epicentralDistance(epla,eplo,stla,stlo,epidelta)
 
     ! t0: traveltime (s) with factor PI/180 * 6371 km ~ 111.2
-    !t0=epidelta*111.19492664/v0
+    !t0 = epidelta*111.19492664/v0
     ! relative phase shift = relative traveltime anomaly
-    !dphi_phi=datum/t0
+    !dphi_phi = datum/t0
     !print *,'    relative traveltime = ',dphi_phi,datum,t0
-    !      dphi_phi=datum            !to invert for absolute delta_p
+    !dphi_phi = datum            !to invert for absolute delta_p
+
     if (MAIN_PROCESS .and. VERBOSE) then
-      print *,'    cross-correlation lag:',t_lag
+      print *,'    cross-correlation lag : ',t_lag
     endif
 
     ! downhill simplex
     call getTimelagSimplex(t_lag,amplification,seismogramHET,seismogramPREM,numofTimeSteps)
+
+    if (MAIN_PROCESS .and. VERBOSE) then
+      print *,'    downhill simplex  lag : ',t_lag
+    endif
 
     ! set phase shift
     time_shift = t_lag
 
     ! console output
     if (MAIN_PROCESS .and. VERBOSE) then
-      print *,'    time shift:',time_shift
+      print *,'    using phase time shift: ',time_shift
+      print *
       call myflush(6)
     endif
   end subroutine
 
   !-----------------------------------------------------------------------
-  subroutine outputDataLine(jrecord,datacount,epla,eplo,stla,stlo,shift, &
-                            error,newdataUnit)
+  subroutine outputDataLine(jrecord,datacount,epla,eplo,stla,stlo,shift,error,newdataUnit)
   !-----------------------------------------------------------------------
   ! sync with main process and print to file
     use parallel

@@ -63,7 +63,7 @@
           u_tminus1  = displacement_old(vertex)
 
           ! determines force
-          if (PRESCRIBEDSOURCE) then
+          if (PRESCRIBED_SOURCE) then
             ! get the value out of the prescribed force array
             ! prescribed array goes on till numDomainVertices, see indexing at initialization
             if (.not. sourceOnFile) then
@@ -73,7 +73,7 @@
               read(sourceFileID,rec=jrec) forcing
             endif
           else
-            if (Station_Correction) then
+            if (STATION_CORRECTION) then
               forcing = forceTermExact(vertex,time,desiredSourceLat,desiredSourceLon)
             else
               forcing = forceTerm2Source(vertex,time,sourceVertex)
@@ -104,7 +104,7 @@
           seismogramReceiver(1,index) = time+dt
 
           ! set displacement
-          if (Station_Correction) then
+          if (STATION_CORRECTION) then
             !interpolate new displacement for original receiver location
             call interpolateLinear(interpolation_distances,interpolation_triangleLengths, &
                                   interpolation_corners,newdisp)
@@ -124,6 +124,7 @@
           call printWavefield(timestep,time,index)
         endif
       enddo !timestep
+
       end subroutine
 
 !-----------------------------------------------------------------------
@@ -176,6 +177,7 @@
           enddo
         endif
       endif
+
       end subroutine
 
 
@@ -317,6 +319,17 @@
         open(IOUT,file=trim(datadirectory)//'PhaseMap.dat')
         ! header info
         write(IOUT,*) '# Phase map'
+        if (HETEROGENEOUS) then
+          write(IOUT,*) '# heterogeneous phase velocity map'
+        else
+          write(IOUT,*) '# homogeneous phase velocity map'
+        endif
+        if (DELTA) then
+          write(IOUT,*) '# added delta scatterer'
+          if (SECONDDELTA) then
+            write(IOUT,*) '# added second delta scatterer'
+          endif
+        endif
         write(IOUT,*) '# format:'
         ! format: #lon #lat #phase-velocity #vertexID
         write(IOUT,*) '#lon #lat #phase-velocity #vertexID'
@@ -397,10 +410,10 @@
         if (distance > DELTARADIUS) then
           cphase = referencePhaseVelocity
         else
-          if (DELTAfunction == "plateau") then
+          if (trim(DELTAfunction) == "plateau") then
             cphase = referencePhaseVelocity + deltaPerturbation
           else
-            if (DELTAfunction == "Gaussian") then
+            if (trim(DELTAfunction) == "Gaussian") then
               ! some experimental function which looks like a Gaussian for distances between 0 and 560 km
               cphase = (1.0-exp(-distance*distance/62500.0))*referencePhaseVelocity&
                 + exp(-distance*distance/62500.0)*(referencePhaseVelocity + deltaPerturbation)
@@ -419,10 +432,10 @@
         ! determine which phase velocity to apply for second scatterer
         if (SECONDDELTA) then
           if (distanceSnd <= DELTARADIUS) then
-            if (DELTAfunction == "plateau") then
+            if (trim(DELTAfunction) == "plateau") then
               cphase = referencePhaseVelocity + deltaPerturbation
             else
-              if (DELTAfunction == "Gaussian") then
+              if (trim(DELTAfunction) == "Gaussian") then
                 ! some experimental function which looks like a Gaussian for distances between 0 and 560 km
                 cphase = (1.0-exp(-distanceSnd*distanceSnd/62500.0))*referencePhaseVelocity &
                   + exp(-distanceSnd*distanceSnd/62500.0)*(referencePhaseVelocity + deltaPerturbation)
@@ -570,6 +583,7 @@
           close(200)
         endif
       endif
+
       end subroutine
 
 !-----------------------------------------------------------------------
@@ -651,4 +665,5 @@
           print *,'    file written: ',trim(datadirectory)//'simulation.'//timestr//'.vtk'
         endif
       endif
+
       end subroutine

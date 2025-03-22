@@ -194,12 +194,12 @@
 
             ! wave type e.g. L150
             case('CPHAS')
-              if (FILTERSEISMOGRAMS) then
+              if (FILTER_SEISMOGRAMS) then
                 read(line(35:len_trim(line)),*) cphasetype
                 cphasetype = trim(cphasetype)
                 ! suppress leading white spaces, if any
                 cphasetype = adjustl(cphasetype)
-
+                ! get corresponding phase velocity
                 call determinePhaseRef(cphasetype,8,cphaseRef)
                 if (Verbose) print *,'cphase         : ', cphasetype, cphaseRef
               endif

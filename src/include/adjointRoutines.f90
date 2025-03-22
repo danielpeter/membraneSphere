@@ -51,7 +51,7 @@
       call setupStation( desiredReceiverLat, desiredReceiverLon )
 
       ! initialize new model with new simulation time
-      if (USEOVERTIME) then
+      if (USE_OVERTIME) then
         call initializeWorld()
         ! build new source (only when number of time steps changed)
         if (size(forceTermPrescribed(1,:)) /= numofTimeSteps) call initializeSource()
@@ -312,7 +312,7 @@
       if (PARALLELSEISMO) call syncReceiverSeismogram()
 
       ! filter around corner frequency
-      !if (FILTERSEISMOGRAMS) then
+      !if (FILTER_SEISMOGRAMS) then
       !  if (MAIN_PROCESS .and. VERBOSE) print *,'    using filtered receiver seismogram...'
       !  if (.not. MAIN_PROCESS) beVerbose=.false.
       !  call dofilterSeismogram(seismogramReceiver,numofTimeSteps)
@@ -460,7 +460,7 @@
 
       ! every vertex has its own seismogram to derive
       seismo(1,:)=seismogramReceiver(1,:) ! time is the same as from the receiver station seismogram
-      if (MAIN_PROCESS .and. VERBOSE .and. FILTERSEISMOGRAMS) print *,'    using filtered forward seismograms...'
+      if (MAIN_PROCESS .and. VERBOSE .and. FILTER_SEISMOGRAMS) print *,'    using filtered forward seismograms...'
 
       do n = 1,numDomainVertices
         ! get cell vertex
@@ -479,7 +479,7 @@
         seismo(2,:)=seismoTmp(:)
 
         ! filter seismogram
-        if (FILTERSEISMOGRAMS) then
+        if (FILTER_SEISMOGRAMS) then
           call dofilterSeismogram(seismo,numofTimeSteps)
           seismoTmp(:) = seismo(2,:)
         endif
@@ -646,7 +646,7 @@
       ! benchmark output
       if (MAIN_PROCESS .and. VERBOSE) then
         benchend = syncWtime()
-        print *,'  benchmark seconds:',benchend-benchstart
+        print *,'  benchmark seconds ',benchend-benchstart
         print *
       endif
       end subroutine
@@ -919,7 +919,7 @@
         endif
 
         ! filter (and taper) the seismograms
-        if (FILTERSEISMOGRAMS) then
+        if (FILTER_SEISMOGRAMS) then
           ! filter
           if (beverbose) print *,'   filtering seismograms...'
           call dofilterSeismogram(seismo,numofTimeSteps)

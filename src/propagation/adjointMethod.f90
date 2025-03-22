@@ -113,7 +113,7 @@
         ! benchmark output
         if (MAIN_PROCESS .and. VERBOSE) then
           benchend = syncWtime()
-          print *,'    benchmark seconds:',benchend-benchstart
+          print *,'    benchmark seconds ',benchend-benchstart
           print *
         endif
 

@@ -389,12 +389,12 @@ end module
 ! definition: seismo1 shifted to the right of seismo2, then timelag is positiv (i.e. waves arrive later in seismo1)
 !
 ! input:
-!       t_lag                                 - time lag
-!       seismo1,seismo2             - seismograms (array 2 x seismoLength, first index is time, second displacement)
-!       seismoLength                  - seismograms length (number of entries in seismogram)
+!       t_lag                   - time lag
+!       seismo1,seismo2         - seismograms (array 2 x seismoLength, first index is time, second displacement)
+!       seismoLength            - seismograms length (number of entries in seismogram)
 !
 ! remember:
-!       Filterseismograms                        - use filter before determining time lag
+!       FILTER_SEISMOGRAMS      - use filter before determining time lag
 ! returns: t_lag timelag in seconds ( uses dt )
       use precisions
       use verbosity; use filterType
@@ -465,7 +465,7 @@ end module
       endif
 
       ! filtering necessary
-      if (FILTERSEISMOGRAMS) then
+      if (FILTER_SEISMOGRAMS) then
         if (beVerbose) print *,'    filter seismograms'
         call dofilterSeismogram(seismo,WindowSIZE)
         call dofilterSeismogram(seismoRef,WindowSIZE)
@@ -555,9 +555,7 @@ end module
       endif
 
       if (beVerbose) then
-        print *
         print *,'  correlation array length = ',xcorrlength
-        print *
       endif
 
       ! calculate the subsample precision maximum position
@@ -763,7 +761,8 @@ end module
 
       max = crosscorrelation(indexmax)  ! could be negative maximum
       if (beVerbose) then
-        print *,'    maximum correlation:',max,indexmax
+        print *,'    maximum correlation  :',max
+        print *,'        index max        :',indexmax
       endif
 
       !subsample precision
@@ -797,8 +796,8 @@ end module
 
       ! console output debug
       if (beVerbose) then
-        print *,'        pointleft:',pointleft
-        print *,'        pointright:',pointright
+        print *,'        pointleft        : ',pointleft
+        print *,'        pointright       : ',pointright
       endif
 
       ! respect wrap-around order of the returned crosscorrelation array by
@@ -821,9 +820,9 @@ end module
       ! console output debug
       if (beVerbose) then
         maxestimate = max-0.25*(pointleft-pointright)*getMaximum
-        print *,'    subsample position:',getMaximum
-        print *,'        index:',indexmax
-        print *,'        estimated maximum:',maxestimate
+        print *,'    subsample position   : ',getMaximum
+        print *,'        index            : ',indexmax
+        print *,'        estimated maximum: ',maxestimate
       endif
 
       return
@@ -1549,7 +1548,7 @@ end module
 !       seismoLength                 - seismograms length (number of entries in seismogram)
 !
 ! remember:
-!       FILTERSEISMOGRAMS                        - use filter before determining time lag
+!       FILTER_SEISMOGRAMS           - use filter before determining time lag
 ! returns: t_lag timelag in seconds ( uses dt )
       use precisions
       use verbosity, only: beVerbose,fileOutput
@@ -1589,7 +1588,7 @@ end module
       endif
 
       ! filter
-      if (FILTERSEISMOGRAMS) then
+      if (FILTER_SEISMOGRAMS) then
         call dofilterSeismogram(seismoRef,seismoLength)
         call dofilterSeismogram(seismo,seismoLength)
 
@@ -1789,7 +1788,7 @@ end module
       endif
 
       ! filtering necessary
-      if (FILTERSEISMOGRAMS) then
+      if (FILTER_SEISMOGRAMS) then
         if (beVerbose) print *,'  filter seismograms'
         call dofilterSeismogram(seismo1,seismoLength)
         call dofilterSeismogram(seismo2,seismoLength)

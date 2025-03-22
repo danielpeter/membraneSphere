@@ -109,7 +109,7 @@
         if (MAIN_PROCESS .and. VERBOSE) then
           benchend = syncWtime()
           print *
-          print *,'benchmark seconds:',benchend-benchstart
+          print *,'benchmark seconds ',benchend-benchstart
           print *
         endif
       enddo !delta location

@@ -174,7 +174,7 @@
           length = 1
           call MPI_Send(numFaces,length,MPI_INTEGER,n,tag,MPI_COMM_WORLD,ier)
 
-          if (Station_Correction .or. SIMULATIONOUTPUT) then
+          if (STATION_CORRECTION .or. SIMULATIONOUTPUT) then
             ! cellTriangleFace
             length = MaxTriangles*3
             call MPI_Send(cellTriangleFace,length,MPI_INTEGER,n,tag,MPI_COMM_WORLD,ier)
@@ -236,7 +236,7 @@
         length = 1
         call MPI_RECV(numFaces,length,MPI_INTEGER,0,tag,MPI_COMM_WORLD,status,ier)
 
-        if (Station_Correction .or. SIMULATIONOUTPUT) then
+        if (STATION_CORRECTION .or. SIMULATIONOUTPUT) then
           ! cellTriangleFace
           length = MaxTriangles*3
           call MPI_RECV(cellTriangleFace,length,MPI_INTEGER,0,tag,MPI_COMM_WORLD,status,ier)

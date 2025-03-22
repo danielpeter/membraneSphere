@@ -155,7 +155,7 @@
       !print *,'cellFace',1,(cellFace(1,k),k=0,6)
 
       ! allocate triangle face array
-      if (Station_Correction .or. SIMULATIONOUTPUT) then
+      if (STATION_CORRECTION .or. SIMULATIONOUTPUT) then
         !read in the corresponding triangle face indices
         fileName = 'data/griddata/Dtface'//divString//ending
         if (VERBOSE) print *,'  ',trim(fileName)
@@ -204,7 +204,7 @@
             cellFace(MaxVertices,0:6),cellCorners(MaxTriangles,3),stat=ier )
       if (ier /= 0) call stopProgram('error in allocating arrays for cell face,..')
 
-      if (Station_Correction .or. SIMULATIONOUTPUT) then
+      if (STATION_CORRECTION .or. SIMULATIONOUTPUT) then
         if (MAIN_PROCESS .and. VERBOSE) then
           print *,'  allocating cellTriangleFace array:'
           print *,'    size                : ',3*MaxTriangles*WP/1024./1024.,'Mb'

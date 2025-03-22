@@ -18,7 +18,7 @@ echo "***********************************************"
 echo "running propagation w/ homogeneous phase map..."
 echo "***********************************************"
 echo
-sed "s:^HETEROGENEOUS                    =:HETEROGENEOUS                    = .false.:" Parameter_Input.org > Parameter_Input
+sed "s:^HETEROGENEOUS .*:HETEROGENEOUS                    = .false.:" Parameter_Input.org > Parameter_Input
 
 # run simulation
 ./bin/propagation | tee OUTPUT/output_propagation.hom.txt
@@ -38,7 +38,7 @@ echo "***********************************************"
 echo "running propagation w/ heterogeneous phase map..."
 echo "***********************************************"
 echo
-sed "s:^HETEROGENEOUS                    =:HETEROGENEOUS                    = .true.:" Parameter_Input.org > Parameter_Input
+sed "s:^HETEROGENEOUS .*:HETEROGENEOUS                    = .true.:" Parameter_Input.org > Parameter_Input
 
 # run simulation
 ./bin/propagation | tee OUTPUT/output_propagation.het.txt

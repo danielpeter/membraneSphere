@@ -1,5 +1,6 @@
 #!/bin/bash
 
+datafilename=$1
 
 # check
 if [ ! -s "$1" ]; then
@@ -13,7 +14,6 @@ fi
 #zdepth=-Jz0.745
 #datafilename=tt_kernel.cmplete.L150.dat
 
-datafilename=$1
 ps_filename=$1.3D.ps
 
 
@@ -28,18 +28,27 @@ coastoffset=-Y13.45  #13.85
 zdepth=-Jz1.0       #0.732
 perspective=-E175/35
 
-
-
 title='travel time anomaly kernel - Love 150 s'
 
+# check if colormap file exists in ../../scripts/ folder
+if [ -e ../../scripts/$colormap ]; then colormap=../../scripts/$colormap; fi
+if [ ! -e $colormap ]; then
+  echo ""; echo "Error: color map not found: $colormap"; echo "Please find colormaps in scripts/ folder"; echo "";
+  exit 1
+fi
+echo "using color map: " $colormap
 
 # check if polygon data available
 if [ ! -s $datafilename ];then
-     echo "can not find polygon data file $datafilename"
-     exit
+  echo "can not find polygon data file $datafilename"
+  exit 1
 fi
 
 gmt gmtset HEADER_FONT_SIZE 14 MAP_ANNOT_OBLIQUE 0 BASEMAP_TYPE plain GMT_HISTORY false
+
+# checks exit code
+if [[ $? -ne 0 ]]; then exit 1; fi
+
 gmt xyz2grd $datafilename -Gimage.bin -I1/1 $region  -N0.0 -V
 
 #gmt grdimage image.bin $portrait $offset $region -G $projection -Bg15/g15 -T -K -V -C$colormap > $ps_filename
@@ -48,6 +57,9 @@ gmt grdview image.bin $perspective $zdepth -Qs -P $Plotregion $projection -K -V 
 gmt psscale -D15/3.5/4/0.5 -Ba.2f0.1:"": -C$colormap -O -Y-1.5 $portrait -V -K  >> $ps_filename
 gmt pscoast $coastoffset $Plotregion $projection $portrait $perspective -W1 -Dc -A10000 -O -K >> $ps_filename
 gmt psbasemap  $Plotregion $verbose $projection $perspective -Bg15/g15:."": -O   >> $ps_filename
+
+# checks exit code
+if [[ $? -ne 0 ]]; then exit 1; fi
 
 echo "plotted to $ps_filename"
 

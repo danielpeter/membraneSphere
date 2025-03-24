@@ -7,6 +7,7 @@
 
 # arguments:
 #       $1 = data-file name, e.g. ttkernel.rot.dat
+datafilename=$1
 
 # check
 if [ ! -s "$1" ]; then
@@ -28,7 +29,6 @@ crosssections=no
 # input file
 ##datafilename=analytic.L150_90.avg0.9e-3.n10.dat
 #datafilename=tt_kernel.cmplete.L150.dat
-datafilename=$1
 
 # output file
 datafilename1=$1.regular.xyz
@@ -53,11 +53,17 @@ else
 	print($1,$2,$3); }' $datafilename >> tmpData.dat
 fi
 
+# checks exit code
+if [[ $? -ne 0 ]]; then exit 1; fi
+
 # ---------------------------------------------------------------------------------------------------------
 # GMT
 # ---------------------------------------------------------------------------------------------------------
 
 gmt gmtset HEADER_FONT_SIZE 14 MAP_ANNOT_OBLIQUE 0 BASEMAP_TYPE plain GMT_HISTORY false
+
+# checks exit code
+if [[ $? -ne 0 ]]; then exit 1; fi
 
 # gmt interpolation
 gmt blockmean tmpData.dat $region $increment > tmpData.med.xyz
@@ -98,6 +104,9 @@ echo '#cross-section at longitude ' $crosslon ' from' $datafilename > $datafilen
 echo '#lon lat val' >> $datafilename.$crosslon.xyz
 gawk '{if( (substr($1,1,1)!="#") && ($1!="") && (substr($1,1,1)~"[0-9]") ) \
 	if( $1=='$crosslon') print($1,$2,$3); }' $datafilename1 >> $datafilename.$crosslon.xyz
+
+# checks exit code
+if [[ $? -ne 0 ]]; then exit 1; fi
 
 echo "cross-section at longitude 10/20/45/70/80 to $datafilename.--.xyz"
 fi

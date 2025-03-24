@@ -44,6 +44,8 @@ gmt gmtset HEADER_FONT_SIZE 14 MAP_ANNOT_OBLIQUE 0 BASEMAP_TYPE plain GMT_HISTOR
 #gmt gmtset DEGREE_FORMAT 1 DOTS_PR_INCH 300 MEASURE_UNIT cm
 #gmt gmtset BASEMAP_TYPE fancy
 
+# checks exit code
+if [[ $? -ne 0 ]]; then exit 1; fi
 
 
 # check if polygon data available
@@ -70,6 +72,9 @@ gawk '{if((substr($1,1,1)!="#")&&($1!=""))if(NR==59)print($1,$2,0.5)}' $datafile
 #echo receiver:
 gawk '{if((substr($1,1,1)!="#")&&($1!=""))if(NR==59)print($1,$2,0.5)}' $datafilename >> coords
 
+# checks exit code
+if [[ $? -ne 0 ]]; then exit 1; fi
+
 gmt psxy -W5/220/220/220  $projection $region coords -V -O -K >> $ps_filename
 
 # Use pscoast to plot a map with different colors for land and sea rivers(I1), political(N1)
@@ -86,6 +91,9 @@ gmt psscale -D9/-1/4/0.5h -Ba.1f1:"km/s": -C$colormap -V -O -K >> $ps_filename
 #	  -O   >> $ps_filename
 gmt psbasemap $projection $region  -Ba90f90  -O >> $ps_filename
 
+# checks exit code
+if [[ $? -ne 0 ]]; then exit 1; fi
+
 echo converting...
 
 # pdf
@@ -93,6 +101,9 @@ echo converting...
 
 # jpg
 magick -density 300 $tmp.ps -quality 90 tmp.jpg
+
+# checks exit code
+if [[ $? -ne 0 ]]; then exit 1; fi
 
 rm -f tmp.ps
 

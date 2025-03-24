@@ -2,6 +2,7 @@
 
 # arguments:
 #  $1 = station file , e.g. tmpReceiverStations001.dat
+datafilename=$1
 
 # check
 if [ ! -s "$1" ]; then
@@ -21,9 +22,6 @@ offsets='-X1.5 -Y14'
 portrait=-P
 verbose=-V
 
-datafilename=$1
-
-
 title='phase velocity map'
 ps_filename=$datafilename.ps
 
@@ -41,6 +39,9 @@ gmt gmtset HEADER_FONT_SIZE 14 MAP_ANNOT_OBLIQUE 0 BASEMAP_TYPE plain GMT_HISTOR
 #gmt gmtset HEADER_FONT Times-Bold HEADER_FONT_SIZE 18
 #gmt gmtset DEGREE_FORMAT 1 DOTS_PR_INCH 300 MEASURE_UNIT cm
 #gmt gmtset BASEMAP_TYPE fancy
+
+# checks exit code
+if [[ $? -ne 0 ]]; then exit 1; fi
 
 # check if polygon data available
 if [ ! -s $datafilename ];then
@@ -60,6 +61,9 @@ gawk '{if((substr($1,1,1)!="#")&&($1!=""))if(NR==1)print($1,$2,0.5)}' $datafilen
 #echo source:
 gawk '{if((substr($1,1,1)!="#")&&($1!=""))if(NR==1)print($1,$2,0.5)}' $datafilename > coords
 
+# checks exit code
+if [[ $? -ne 0 ]]; then exit 1; fi
+
 gmt psxy -W5/220/220/220  $projection $region coords -V -O -K -: >> $ps_filename
 
 # Use pscoast to plot a map with different colors for land and sea rivers(I1), political(N1)
@@ -76,6 +80,9 @@ gmt pscoast $region $projection -Di -A1000 -W1 -O -K  >> $ps_filename
 #	  -O   >> $ps_filename
 gmt psbasemap $projection $region  -Ba90f90  -O >> $ps_filename
 
+# checks exit code
+if [[ $? -ne 0 ]]; then exit 1; fi
+
 # pdf
 #convert $ps_filename $datafilename.pdf
 #open $datafilename.pdf
@@ -83,10 +90,12 @@ gmt psbasemap $projection $region  -Ba90f90  -O >> $ps_filename
 # jpg
 magick -density 300 $ps_filename -quality 90 $datafilename.jpg
 
+# checks exit code
+if [[ $? -ne 0 ]]; then exit 1; fi
+
 rm -f $ps_filename
 
 echo
 echo "image plotted to $datafilename.jpg"
 echo
-
 

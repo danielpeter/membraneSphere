@@ -56,7 +56,6 @@ end module
     ! most parameters concerning wave propagation set in file
     ! Parameter_Input (&default values in commonModules.f90/initialize.f90)
     HetPhaseshift_Program  = .true.
-    rotate_frame           = .false.  ! no rotation of phase map
     !-----------------------------------------------------------------------
 
     ! initialization of parameters and arrays
@@ -336,11 +335,11 @@ end module
     real:: epidelta
     real:: eplo,epla,stla,stlo,datum,error
     real:: time_shift
-    logical:: output_info
+    ! console output with information about current data index
+    integer :: info_interval
+    logical:: output_info,do_simulation
     logical, external:: doCalc
     real(WP), external:: syncWtime
-    ! console output with information about current data index
-    integer, parameter :: OUTPUT_INFO_INTERVAL = 500
 
     if (MAIN_PROCESS) then
       print *,'processing data...'
@@ -356,6 +355,11 @@ end module
       call myflush(6)
     endif
 
+    ! determine interval for output infos
+    info_interval = int(datacount / 20)
+    if (info_interval > 500) info_interval = 500
+    if (info_interval < 5) info_interval = 5
+
     ! stats
     shift_min = 0.0
     shift_max = 0.0
@@ -364,11 +368,14 @@ end module
     output_info = .false.
 
     do j = 1,datacount
+      ! flag if process needs to do simulation for this data index
+      do_simulation = doCalc(j)
+
       ! console output
       if (MAIN_PROCESS) then
         if (PARALLELSEISMO) then
           ! parallelized (forward) simulations
-          if (mod(j,OUTPUT_INFO_INTERVAL) == 0 .or. j == 1) then
+          if (mod(j,info_interval) == 0 .or. j == 1) then
             VERBOSE = .true.      ! turns on verbosity of source initialization
             output_info = .true.  ! console info output & file trace output
           else
@@ -378,7 +385,7 @@ end module
           endif
         else
           ! distributed simulations (each process simulates different source/data entry)
-          if (mod(j,OUTPUT_INFO_INTERVAL) < nprocesses .and. doCalc(j)) then
+          if (mod(j,info_interval) < nprocesses .and. do_simulation) then
             VERBOSE = .true.      ! turns on verbosity of source initialization
             output_info = .true.  ! console info output & file trace output
           else
@@ -400,7 +407,7 @@ end module
       endif
 
       ! check if this process has to do something
-      if (doCalc(j)) then
+      if (do_simulation) then
         ! take data from array
         epla = dataStore(1,j)
         eplo = dataStore(2,j)
@@ -500,8 +507,10 @@ end module
       print *,'  constructing heterogeneous phase map...'
     endif
     HETEROGENEOUS = .true.
-    rotate_frame  = .false.  ! no rotation of phase map
     DELTA         = .false.  ! no delta scatterer
+
+    ! check that no rotation of phase map
+    if (ROTATE_FRAME) call stopProgram('heterogeneouse phase map needs rotate_frame set to .false.    ')
 
     !allocate phaseMap array
     if (allocated(phaseMap)) deallocate(phaseMap)
@@ -540,19 +549,19 @@ end module
     ! default
     doCalc = .true.
 
-    ! parallel processes
+    ! parallel processing
     if (nprocesses < 2) return
+    if (PARALLELSEISMO) return
 
     ! distribute following calculation over all processes
-    if (.not. PARALLELSEISMO) then
-      ! main process: j=1,9,17,...; rank 1: j=2,10,...; rank 2: j=3,11,...
-      if (mod((index-myrank+2*nprocesses-1),nprocesses) == 0) then
-        doCalc = .true.
-      else
-        doCalc = .false.
-      endif
-    else
+    ! example: > mpirun -np 8 ./bin/heterogeneousPhaseshift
+    !            main process: j=1,9,17,...
+    !            rank 1      : j=2,10,...
+    !            rank 2      : j=3,11,...
+    if (mod((index-myrank+2*nprocesses-1),nprocesses) == 0) then
       doCalc = .true.
+    else
+      doCalc = .false.
     endif
 
     return
@@ -680,7 +689,11 @@ end module
 
     ! single processor/single simulation job
     if (nprocesses < 2 .or. PARALLELSEISMO) then
-      call printDataLine(newdataUnit,epla,eplo,stla,stlo,shift,error)
+      ! only main process writes out data
+      if (MAIN_PROCESS) then
+        call printDataLine(newdataUnit,epla,eplo,stla,stlo,shift,error)
+      endif
+      ! all done
       return
     endif
 

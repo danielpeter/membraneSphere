@@ -127,11 +127,13 @@
         SECONDDELTA     = .false. ! no second delta scatterers
         manyReceivers   = .false. ! no many receivers supported
         kernelIteration = .false. ! no many kernels
-        rotate_frame    = .false. ! no rotation of heterogeneous phase maps
         if (manyKernels) then
           manyKernels = .false.   ! iteration of kernels must be done differently, no manykernels routine supported
           kernelIteration = .true.
         endif
+
+        ! check that no rotation of heterogeneous phase maps
+        if (ROTATE_FRAME) call stopProgram('adjoint method needs ROTATE_FRAME set to .false.    ')
 
         ! console output
         if (MAIN_PROCESS .and. VERBOSE) then
@@ -694,7 +696,7 @@
         !print *,'rank ',myrank,'synchronizing phase map...'
         call syncPhaseMap()
 
-        if (rotate_frame) then
+        if (ROTATE_FRAME) then
           ! rotated frame has the source sitting at equator (1,0,0)
           ! rotate source & receiver (only for 1 receiver station setup)
           call getRotatedIndex(sourceVertex)
@@ -859,7 +861,7 @@
             phaseBlock(i) = phasevelocity
           enddo
 
-          if (rotate_frame) then
+          if (ROTATE_FRAME) then
             ! determine rotation matrix from (1,0,0)/... to source/receiver frame
             Vsource(:) = vertices(originSourceVertex,:)
             Vreceiver(:) = vertices(originReceiverVertex,:)
@@ -872,7 +874,7 @@
             vtmp(:) = vertices(i,:)
 
             ! get rotated vector
-            if (rotate_frame) then
+            if (ROTATE_FRAME) then
               call rotateVector(rot,vtmp,vtmp)
             endif
 

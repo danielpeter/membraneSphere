@@ -124,7 +124,7 @@
       ! local parameters
       character(len=128):: inputName,tmp
       character(len=128):: line
-      integer:: i,ier,length
+      integer:: i,istart,iend,ier
 
       ! open input parameter file
       i = 0
@@ -143,69 +143,93 @@
         ! suppress leading white spaces, if any
         line = adjustl(line)
 
-        length = len_trim(line)
-        if (length == 0) then
-          continue
-        else
-          if (line(1:1) == "%" .or. line(1:1) == " " .or. line(1:1) == "!") then
-            continue
-          else
-            select case(line(1:5))
+        ! suppress trailing carriage return (ASCII code 13) if any (e.g. if input text file coming from Windows/DOS)
+        if (index(line,achar(13)) > 0) line = line(1:index(line,achar(13))-1)
 
-            ! start value to begin reading lines from
-            case('START')
-              read(line(35:len_trim(line)),*) startingTime
-              if (Verbose) print *,'firsttime        : ',startingTime
-              FIRSTTIME = startingTime
-            case('ENDIN')
-              read(line(35:len_trim(line)),*) endingTime
-              if (Verbose) print *,'endtime          : ',endingTime
-              LASTTIME = endingTime
+        ! suppress trailing comments " .. ! my comment"
+        if (index(line,'#') > 5) line = line(1:index(line,'#')-1)
+        if (index(line,'!') > 5) line = line(1:index(line,'!')-1)
 
-            ! verbosity
-            case('VERBO')
-              read(line(35:len_trim(line)),*) beVerbose
-              VERBOSE = beVerbose
+        line = trim(line)
 
-            ! file names
-            case('REFER')
-              read(line(35:len_trim(line)),'(A128)') tmp
-              fileReference = trim(tmp)
-              ! suppress leading white spaces, if any
-              fileReference = adjustl(fileReference)
-              i = i+1
-              if (Verbose) print *,'reference file   : ',trim(fileReference)
+        ! check line
+        if (len_trim(line) == 0) cycle
 
-            case('PERTU')
-              read(line(35:len_trim(line)),'(A128)') tmp
-              fileDelta = trim(tmp)
-              ! suppress leading white spaces, if any
-              fileDelta = adjustl(fileDelta)
-              i = i+1
-              if (Verbose) print *,'perturbation file: ',trim(fileDelta)
+        ! check if comment line
+        if (line(1:1) == " " .or. line(1:1) == "!" .or. line(1:1) == "%") cycle
 
-            ! file output directory
-            case('DATAD')
-              read(line(35:len_trim(line)),*) tmp
-              datadirectory = trim(tmp)
-              ! suppress leading white spaces, if any
-              datadirectory = adjustl(datadirectory)
-              if (Verbose) print *,'data output      : ',trim(datadirectory)
+        ! get index of "=" sign
+        istart = index(line,'=')
+        if (istart == 0) cycle
 
-            ! wave type e.g. L150
-            case('CPHAS')
-              if (FILTER_SEISMOGRAMS) then
-                read(line(35:len_trim(line)),*) cphasetype
-                cphasetype = trim(cphasetype)
-                ! suppress leading white spaces, if any
-                cphasetype = adjustl(cphasetype)
-                ! get corresponding phase velocity
-                call determinePhaseRef(cphasetype,8,cphaseRef)
-                if (Verbose) print *,'cphase         : ', cphasetype, cphaseRef
-              endif
-            end select
-          endif
+        ! check if parameter name valid
+        if (istart < 5) then
+          print *,'Error: line with wrong format         : ***'//trim(line)//'***'
+          print *,'       start index for parameter value: istart = ',istart
+          call stopProgram('Abort - line with wrong format in input file    ')
         endif
+
+        ! index range for parameter values
+        istart = istart + 1
+        iend = len_trim(line)
+
+        !debug
+        !print *,'debug: index range is/ie = ',is,'/',ie
+        !print *,'debug: parameter string  = ***'//line(is:ie)//'***'
+
+        select case(line(1:5))
+        ! start value to begin reading lines from
+        case('START')
+          read(line(istart:iend),*) startingTime
+          if (Verbose) print *,'firsttime        : ',startingTime
+          FIRSTTIME = startingTime
+        case('ENDIN')
+          read(line(istart:iend),*) endingTime
+          if (Verbose) print *,'endtime          : ',endingTime
+          LASTTIME = endingTime
+
+        ! verbosity
+        case('VERBO')
+          read(line(istart:iend),*) beVerbose
+          VERBOSE = beVerbose
+
+        ! file names
+        case('REFER')
+          read(line(istart:iend),'(A128)') tmp
+          fileReference = trim(tmp)
+          ! suppress leading white spaces, if any
+          fileReference = adjustl(fileReference)
+          i = i+1
+          if (Verbose) print *,'reference file   : ',trim(fileReference)
+
+        case('PERTU')
+          read(line(istart:iend),'(A128)') tmp
+          fileDelta = trim(tmp)
+          ! suppress leading white spaces, if any
+          fileDelta = adjustl(fileDelta)
+          i = i+1
+          if (Verbose) print *,'perturbation file: ',trim(fileDelta)
+
+        ! file output directory
+        case('DATAD')
+          read(line(istart:iend),*) tmp
+          datadirectory = trim(tmp)
+          ! suppress leading white spaces, if any
+          datadirectory = adjustl(datadirectory)
+          if (Verbose) print *,'data output      : ',trim(datadirectory)
+
+        ! wave type e.g. L150
+        case('CPHAS')
+          if (FILTER_SEISMOGRAMS) then
+            read(line(istart:iend),*) cphasetype
+            cphasetype = trim(cphasetype)
+            ! suppress leading white spaces, if any
+            cphasetype = adjustl(cphasetype)
+            ! get corresponding phase velocity
+            call determinePhaseRef(cphasetype,8,cphaseRef)
+            if (Verbose) print *,'cphase         : ', cphasetype, cphaseRef
+          endif
+        end select
       enddo
       close(IIN)
 

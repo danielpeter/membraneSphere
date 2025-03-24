@@ -19,7 +19,7 @@
       use verbosity; use adjointVariables; use cells
       implicit none
       ! local parameters
-      integer:: length,ier,tmpInteger
+      integer:: ier,tmpInteger,istart,iend
       character(len=32):: inputName
       character(len=150):: line
       character(len=128):: tmp
@@ -31,7 +31,7 @@
       open(IIN, file=trim(inputName),status='old',iostat=ier)
       if (ier /= 0) then
         print *,'Error: opening file ',trim(inputName)
-        call stopProgram( 'abort - readParameters() opening input    ')
+        call stopProgram('Abort - readParameters() opening input    ')
       endif
 
       do while( ier == 0)
@@ -41,169 +41,195 @@
         ! suppress leading white spaces, if any
         line = adjustl(line)
 
-        length = len_trim(line)
-        if (length == 0) then
-          continue
-        else
-          if (line(1:1) == " " .or. line(1:1) == "!") then
-            continue
-          else
-            select case(line(1:5))
-            case('VERBO')
-              read(line(35:len_trim(line)),*) VERBOSE
-              if (VERBOSE) print *,'verbose output'
-            case('LEVEL')
-              read(line(35:len_trim(line)),*) subdivisions
-              if (VERBOSE) print *,'level',subdivisions
-            case('FIRST')
-              read(line(35:len_trim(line)),*) FIRSTTIME
-              if (VERBOSE) print *,'firsttimestep',FIRSTTIME
-            case('LASTT')
-              read(line(35:len_trim(line)),*) LASTTIME
-              if (VERBOSE) print *,'lasttimestep',LASTTIME
-            case('CPHAS')
-              read(line(35:len_trim(line)),*) cphasetype
-              cphasetype = trim(cphasetype)
-              ! suppress leading white spaces, if any
-              cphasetype = adjustl(cphasetype)
-              call determinePhaseRef(cphasetype,8,cphaseRef)
-              if (VERBOSE) print *,'cphase    ', cphasetype, cphaseRef
-            case('SOURC')
-              read(line(35:len_trim(line)),*) sourceLat,sourceLon
-              if (VERBOSE) print *,'source',sourceLat,sourceLon
-            case('RECEI')
-              read(line(35:len_trim(line)),*) receiverLat,receiverLon
-              if (VERBOSE) print *,'receiver',receiverLat,receiverLon
-            case('MANYR')
-              read(line(35:len_trim(line)),*) manyReceivers
-              if (VERBOSE) print *,'many receiver stations', manyReceivers
-            case('MANYN')
-              read(line(35:len_trim(line)),*) numofReceivers
-              if (VERBOSE .and. manyReceivers) print *,'    receiver stations',numofReceivers
-            case('MANYK')
-              read(line(35:len_trim(line)),*) manyKernels
-              if (VERBOSE) print *,'many kernels', manyKernels
-            case('KRNEP')
-              read(line(35:len_trim(line)),*) kernelStartDistance,kernelEndDistance
-              if (VERBOSE .and. manyKernels) print *,'    epicentral distances',kernelStartDistance,kernelEndDistance
-            case('IMPOR')
-              read(line(35:len_trim(line)),*) importKernelsReceivers
-              if (VERBOSE .and. manyKernels) print *,'    importing receivers', importKernelsReceivers
-            case('DELTA')
-              read(line(35:len_trim(line)),*) DELTA
-              if (VERBOSE) print *,'delta', DELTA
-            case('MOVED')
-              read(line(35:len_trim(line)),*) MOVEDELTA
-              if (VERBOSE .and. DELTA) print *,'  move delta', MOVEDELTA
-            case('DRADI')
-              read(line(35:len_trim(line)),*) DELTARADIUS
-              if (VERBOSE .and. DELTA) print *,'  delta radius',DELTARADIUS
-            case('DTYPE')
-              read(line(35:len_trim(line)),*) DELTAfunction
-              DELTAfunction=trim(DELTAfunction)
-              if (VERBOSE .and. DELTA) print *,'  delta type ',DELTAfunction
-            case('DLOCA')
-              read(line(35:len_trim(line)),*) deltaLat,deltaLon
-              if (VERBOSE .and. DELTA) print *,'  delta location',deltaLat,deltaLon
-            case('DPERT')
-              read(line(35:len_trim(line)),*) deltaPerturbation
-              if (VERBOSE .and. DELTA) print *,'  delta perturbation',deltaPerturbation
-            case('DLATS')
-              read(line(35:len_trim(line)),*) latitudeStart
-              if (VERBOSE .and. DELTA) print *,'  delta start latitude',latitudeStart
-            case('DLATE')
-              read(line(35:len_trim(line)),*) latitudeEnd
-              if (VERBOSE .and. DELTA) print *,'  delta end latitude',latitudeEnd
-            case('DLONE')
-              read(line(35:len_trim(line)),*) longitudeEnd
-              if (VERBOSE .and. DELTA) print *,'  delta end longitude',longitudeEnd
-            case('DINCR')
-              read(line(35:len_trim(line)),*) deltaMoveIncrement
-              if (VERBOSE .and. DELTA) print *,'  delta move increment',deltaMoveIncrement
-            case('SECON')
-              read(line(35:len_trim(line)),*) SECONDDELTA
-              if (VERBOSE .and. DELTA) print *,'  second delta:',SECONDDELTA
-            case('HETER')
-              read(line(35:len_trim(line)),*) HETEROGENEOUS
-              if (VERBOSE) print *,'heterogeneous', HETEROGENEOUS
-            case('BLKFI')
-              read(line(35:len_trim(line)),*) line
-              phaseBlockFile = trim(line)
-              ! suppress leading white spaces, if any
-              phaseBlockFile = adjustl(phaseBlockFile)
-              if (DO_CHECKERBOARD) then
-                if (VERBOSE .and. HETEROGENEOUS) &
-                  print *,'   checkerboard - L',MAP_DEGREE_L,'M',MAP_DEGREE_M
-              else
-                if (VERBOSE .and. HETEROGENEOUS) &
-                  print *,'  phaseBlockFile used: ',trim(phaseBlockFile)
-              endif
-            case('BLK/I')
-              read(line(35:len_trim(line)),*) heterogeneousPixelsize
-              if (.not. DO_CHECKERBOARD) then
-                if (phaseBlockFile(len_trim(phaseBlockFile)-2:len_trim(phaseBlockFile)) == 'gsh') then
-                  gsh_maximum_expansion = heterogeneousPixelsize
-                  heterogeneousPixelsize = 0
-                  if (VERBOSE .and. HETEROGENEOUS) print *,'    maximum degree expansion ',gsh_maximum_expansion
-                else
-                  if (VERBOSE .and. HETEROGENEOUS) print *,'  Grid pixel size ',heterogeneousPixelsize
-                endif
-              endif
-            case('BLKVE')
-              read(line(35:len_trim(line)),*) tmp
-              tmp = trim(tmp)
-              ! suppress leading white spaces, if any
-              tmp = adjustl(tmp)
-              call determinePhaseRef(tmp,128,phaseBlockVelocityReference)
-              if (VERBOSE .and. HETEROGENEOUS) print *,'  phaseBlock VelocityReference',phaseBlockVelocityReference
-            case('INV_D')
-              read(line(35:len_trim(line)),*) line
-              heterogeneousDataFile = trim(line)
-              ! suppress leading white spaces, if any
-              heterogeneousDataFile = adjustl(heterogeneousDataFile)
-              if (VERBOSE .and. (HetPhaseshift_Program .or. Adjoint_InversionProgram)) &
-                print *,'  Data input: ',trim(heterogeneousDataFile)
-            case('INV_O')
-              read(line(35:len_trim(line)),*) line
-              heterogeneousOutput = trim(line)
-              ! suppress leading white spaces, if any
-              heterogeneousOutput = adjustl(heterogeneousOutput)
-              if (VERBOSE .and. (HetPhaseshift_Program .or. Adjoint_InversionProgram)) &
-                print *,'  Output files: ',trim(heterogeneousOutput)
-            case('INV_V')
-              read(line(35:len_trim(line)),*) tmpInteger
-              if (phaseBlockFile(len_trim(phaseBlockFile)-2:len_trim(phaseBlockFile)) /= 'gsh') then
-                if (tmpInteger /= floor(heterogeneousPixelsize+0.1)) then
-                  print *,'Error: inversion grid size and block phase velocity map are different', &
-                          tmpInteger,floor(heterogeneousPixelsize+0.1)
-                  call stopProgram('abort - readParameters ')
-                endif
-              endif
-              heterogeneousPixelsize = tmpInteger
-              if (VERBOSE .and. (HetPhaseshift_Program .or. Adjoint_InversionProgram)) &
-                print *,'  Inversion Grid pixel size ',heterogeneousPixelsize
-            case('SIMUL')
-              read(line(35:len_trim(line)),*) SIMULATIONOUTPUT
-              if (VERBOSE) print *,'simulationoutput',SIMULATIONOUTPUT
-            case('DATAD')
-              read(line(35:len_trim(line)),*) tmp
-              datadirectory = trim(tmp)
-              ! suppress leading white spaces, if any
-              datadirectory = adjustl(datadirectory)
-              if (VERBOSE) print *,'data output directory : ',trim(datadirectory)
-            case('ADJOI')
-              read(line(35:len_trim(line)),*) tmp
-              adjointKernelName = trim(tmp)
-              ! suppress leading white spaces, if any
-              adjointKernelName = adjustl(adjointKernelName)
-              if (VERBOSE .and. Adjoint_Program) &
-                print *,'adjoint kernel name : ',trim(adjointKernelName)
-            case('PARAL')
-              read(line(35:len_trim(line)),*) PARALLELSEISMO
-              if (VERBOSE) print *,'parallelize single simulation',PARALLELSEISMO
-            end select
-          endif
+        ! suppress trailing carriage return (ASCII code 13) if any (e.g. if input text file coming from Windows/DOS)
+        if (index(line,achar(13)) > 0) line = line(1:index(line,achar(13))-1)
+
+        ! suppress trailing comments " .. ! my comment"
+        if (index(line,'#') > 5) line = line(1:index(line,'#')-1)
+        if (index(line,'!') > 5) line = line(1:index(line,'!')-1)
+
+        line = trim(line)
+
+        ! check line
+        if (len_trim(line) == 0) cycle
+
+        ! check if comment line
+        if (line(1:1) == " " .or. line(1:1) == "!" .or. line(1:1) == "%") cycle
+
+        ! get index of "=" sign
+        istart = index(line,'=')
+        if (istart == 0) cycle
+
+        ! check if parameter name valid
+        if (istart < 5) then
+          print *,'Error: line with wrong format         : ***'//trim(line)//'***'
+          print *,'       start index for parameter value: istart = ',istart
+          call stopProgram('Abort - line with wrong format in input file    ')
         endif
+
+        ! index range for parameter values
+        istart = istart + 1
+        iend = len_trim(line)
+
+        !debug
+        !print *,'debug: index range istart/iend = ',istart,'/',iend
+        !print *,'debug: parameter string  = ***'//line(istart:iend)//'***'
+
+        ! read in parameter
+        select case(line(1:5))
+        case('VERBO')
+          read(line(istart:iend),*) VERBOSE
+          if (VERBOSE) print *,'verbose output'
+        case('LEVEL')
+          read(line(istart:iend),*) subdivisions
+          if (VERBOSE) print *,'level',subdivisions
+        case('FIRST')
+          read(line(istart:iend),*) FIRSTTIME
+          if (VERBOSE) print *,'firsttimestep',FIRSTTIME
+        case('LASTT')
+          read(line(istart:iend),*) LASTTIME
+          if (VERBOSE) print *,'lasttimestep',LASTTIME
+        case('CPHAS')
+          read(line(istart:iend),*) cphasetype
+          cphasetype = trim(cphasetype)
+          ! suppress leading white spaces, if any
+          cphasetype = adjustl(cphasetype)
+          call determinePhaseRef(cphasetype,8,cphaseRef)
+          if (VERBOSE) print *,'cphase    ', cphasetype, cphaseRef
+        case('SOURC')
+          read(line(istart:iend),*) sourceLat,sourceLon
+          if (VERBOSE) print *,'source',sourceLat,sourceLon
+        case('RECEI')
+          read(line(istart:iend),*) receiverLat,receiverLon
+          if (VERBOSE) print *,'receiver',receiverLat,receiverLon
+        case('MANYR')
+          read(line(istart:iend),*) manyReceivers
+          if (VERBOSE) print *,'many receiver stations', manyReceivers
+        case('MANYN')
+          read(line(istart:iend),*) numofReceivers
+          if (VERBOSE .and. manyReceivers) print *,'    receiver stations',numofReceivers
+        case('MANYK')
+          read(line(istart:iend),*) manyKernels
+          if (VERBOSE) print *,'many kernels', manyKernels
+        case('KRNEP')
+          read(line(istart:iend),*) kernelStartDistance,kernelEndDistance
+          if (VERBOSE .and. manyKernels) print *,'    epicentral distances',kernelStartDistance,kernelEndDistance
+        case('IMPOR')
+          read(line(istart:iend),*) importKernelsReceivers
+          if (VERBOSE .and. manyKernels) print *,'    importing receivers', importKernelsReceivers
+        case('DELTA')
+          read(line(istart:iend),*) DELTA
+          if (VERBOSE) print *,'delta', DELTA
+        case('MOVED')
+          read(line(istart:iend),*) MOVEDELTA
+          if (VERBOSE .and. DELTA) print *,'  move delta', MOVEDELTA
+        case('DRADI')
+          read(line(istart:iend),*) DELTARADIUS
+          if (VERBOSE .and. DELTA) print *,'  delta radius',DELTARADIUS
+        case('DTYPE')
+          read(line(istart:iend),*) DELTAfunction
+          DELTAfunction=trim(DELTAfunction)
+          if (VERBOSE .and. DELTA) print *,'  delta type ',DELTAfunction
+        case('DLOCA')
+          read(line(istart:iend),*) deltaLat,deltaLon
+          if (VERBOSE .and. DELTA) print *,'  delta location',deltaLat,deltaLon
+        case('DPERT')
+          read(line(istart:iend),*) deltaPerturbation
+          if (VERBOSE .and. DELTA) print *,'  delta perturbation',deltaPerturbation
+        case('DLATS')
+          read(line(istart:iend),*) latitudeStart
+          if (VERBOSE .and. DELTA) print *,'  delta start latitude',latitudeStart
+        case('DLATE')
+          read(line(istart:iend),*) latitudeEnd
+          if (VERBOSE .and. DELTA) print *,'  delta end latitude',latitudeEnd
+        case('DLONE')
+          read(line(istart:iend),*) longitudeEnd
+          if (VERBOSE .and. DELTA) print *,'  delta end longitude',longitudeEnd
+        case('DINCR')
+          read(line(istart:iend),*) deltaMoveIncrement
+          if (VERBOSE .and. DELTA) print *,'  delta move increment',deltaMoveIncrement
+        case('SECON')
+          read(line(istart:iend),*) SECONDDELTA
+          if (VERBOSE .and. DELTA) print *,'  second delta:',SECONDDELTA
+        case('HETER')
+          read(line(istart:iend),*) HETEROGENEOUS
+          if (VERBOSE) print *,'heterogeneous', HETEROGENEOUS
+        case('BLKFI')
+          read(line(istart:iend),*) line
+          phaseBlockFile = trim(line)
+          ! suppress leading white spaces, if any
+          phaseBlockFile = adjustl(phaseBlockFile)
+          if (DO_CHECKERBOARD) then
+            if (VERBOSE .and. HETEROGENEOUS) &
+              print *,'  checkerboard used  :  L=',MAP_DEGREE_L,'M=',MAP_DEGREE_M
+          else
+            if (VERBOSE .and. HETEROGENEOUS) &
+              print *,'  phaseBlockFile used: ',trim(phaseBlockFile)
+          endif
+        case('BLK/I')
+          read(line(istart:iend),*) heterogeneousPixelsize
+          if (.not. DO_CHECKERBOARD) then
+            if (phaseBlockFile(len_trim(phaseBlockFile)-2:len_trim(phaseBlockFile)) == 'gsh') then
+              gsh_maximum_expansion = heterogeneousPixelsize
+              heterogeneousPixelsize = 0
+              if (VERBOSE .and. HETEROGENEOUS) print *,'    maximum degree expansion ',gsh_maximum_expansion
+            else
+              if (VERBOSE .and. HETEROGENEOUS) print *,'  Grid pixel size ',heterogeneousPixelsize
+            endif
+          endif
+        case('BLKVE')
+          read(line(istart:iend),*) tmp
+          tmp = trim(tmp)
+          ! suppress leading white spaces, if any
+          tmp = adjustl(tmp)
+          call determinePhaseRef(tmp,128,phaseBlockVelocityReference)
+          if (VERBOSE .and. HETEROGENEOUS) print *,'  phaseBlock VelocityReference',phaseBlockVelocityReference
+        case('INV_D')
+          read(line(istart:iend),*) line
+          heterogeneousDataFile = trim(line)
+          ! suppress leading white spaces, if any
+          heterogeneousDataFile = adjustl(heterogeneousDataFile)
+          if (VERBOSE .and. (HetPhaseshift_Program .or. Adjoint_InversionProgram)) &
+            print *,'  Data input: ',trim(heterogeneousDataFile)
+        case('INV_O')
+          read(line(istart:iend),*) line
+          heterogeneousOutput = trim(line)
+          ! suppress leading white spaces, if any
+          heterogeneousOutput = adjustl(heterogeneousOutput)
+          if (VERBOSE .and. (HetPhaseshift_Program .or. Adjoint_InversionProgram)) &
+            print *,'  Output files: ',trim(heterogeneousOutput)
+        case('INV_V')
+          read(line(istart:iend),*) tmpInteger
+          if (phaseBlockFile(len_trim(phaseBlockFile)-2:len_trim(phaseBlockFile)) /= 'gsh') then
+            if (tmpInteger /= floor(heterogeneousPixelsize+0.1)) then
+              print *,'Error: inversion grid size and block phase velocity map are different', &
+                      tmpInteger,floor(heterogeneousPixelsize+0.1)
+              call stopProgram('abort - readParameters ')
+            endif
+          endif
+          heterogeneousPixelsize = tmpInteger
+          if (VERBOSE .and. (HetPhaseshift_Program .or. Adjoint_InversionProgram)) &
+            print *,'  Inversion Grid pixel size ',heterogeneousPixelsize
+        case('SIMUL')
+          read(line(istart:iend),*) SIMULATIONOUTPUT
+          if (VERBOSE) print *,'simulationoutput',SIMULATIONOUTPUT
+        case('DATAD')
+          read(line(istart:iend),*) tmp
+          datadirectory = trim(tmp)
+          ! suppress leading white spaces, if any
+          datadirectory = adjustl(datadirectory)
+          if (VERBOSE) print *,'data output directory : ',trim(datadirectory)
+        case('ADJOI')
+          read(line(istart:iend),*) tmp
+          adjointKernelName = trim(tmp)
+          ! suppress leading white spaces, if any
+          adjointKernelName = adjustl(adjointKernelName)
+          if (VERBOSE .and. Adjoint_Program) &
+            print *,'adjoint kernel name : ',trim(adjointKernelName)
+        case('PARAL')
+          read(line(istart:iend),*) PARALLELSEISMO
+          if (VERBOSE) print *,'parallelize single simulation',PARALLELSEISMO
+        end select
       enddo
 
       !if (VERBOSE) print *,'delta location(lat/lon):',deltaLat,deltaLon

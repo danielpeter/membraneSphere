@@ -92,7 +92,7 @@
       if (VERBOSE) then
         print *,"    maximum expansion     : l = ",lmax
         print *,"    interrupt expansion at: l = ",lmaxuser
-        if (rotate_frame) print *,"  rotate frame to equator"
+        if (ROTATE_FRAME) print *,"  rotate frame to equator"
       endif
 
       ! debug check values
@@ -128,7 +128,7 @@
       write(IOUT,*) '#lon #lat #phase-velocity-perturbation (in percent)'
 
       ! determine rotation matrix from (1,0,0)/... to source/receiver frame
-      if (rotate_frame) then
+      if (ROTATE_FRAME) then
         Vsource(:) = vertices(originSourceVertex,:)
         Vreceiver(:) = vertices(originReceiverVertex,:)
         call getRotationMatrix(Vsource,Vreceiver,rot)
@@ -142,7 +142,7 @@
         vtmp(:) = vertices(i,:)
 
         ! get rotated vector
-        if (rotate_frame) then
+        if (ROTATE_FRAME) then
           call rotateVector(rot,vtmp,vtmp)
         endif
 

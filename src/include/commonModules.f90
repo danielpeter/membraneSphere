@@ -120,10 +120,10 @@
         ! PRESCRIBED_SOURCE      - precalculates source values and stores in an array for faster
         !                          computation of finite-difference iteration
         ! RELAXED_GRID           - takes cell infos from grid files ***.relaxed.dat
-        logical,parameter:: PRECALCULATED_CELLS      = .true.
-        logical,parameter:: PRESCRIBED_SOURCE        = .true.
-        logical,parameter:: RELAXED_GRID             = .false.
-        logical,parameter:: CORRECT_RATIO            = .false.
+        logical,parameter :: PRECALCULATED_CELLS     = .true.
+        logical,parameter :: PRESCRIBED_SOURCE       = .true.
+        logical,parameter :: RELAXED_GRID            = .false.
+        logical,parameter :: CORRECT_RATIO           = .false.
 
         ! analytical spherical harmonics degrees
         ! DEGREE_L & DEGREE_M    - spherical harmonic degrees for comparision with laplacian accuracy
@@ -140,12 +140,12 @@
         !                              1 for L150.crust
         ! grid pixelsize: inversion grid consists of approximately equal sized
         ! pixels with this size (in  degrees)
-        integer,parameter:: compatible_refgridXrefgrid  = 0
+        integer,parameter :: compatible_refgridXrefgrid = 0
 
         ! source/station location
         ! STATION_CORRECTION     - tries to use exact locations of source and receiver.
         !                          interpolates linearly for the receiver displacement.
-        logical,parameter:: STATION_CORRECTION          = .true.
+        logical,parameter :: STATION_CORRECTION         = .true.
 
         ! USE_OVERTIME           - for the adaption of the simulation time for different source/receiver setups
         !                          otherwise the antipode time is taken when calculating a new simulation time
@@ -164,6 +164,9 @@
 
         ! simulation output
         integer,parameter :: SIMULATION_TIMESTEPPING   = 4  ! takes every fifth timestep for output
+
+        ! rotate source&receiver locations / heterogeneous phase map to equatorial plane (by default)
+        logical,parameter :: ROTATE_FRAME              = .false.
 
         !----------------------------------------------------------------------------------------
         ! Surface waves
@@ -329,7 +332,7 @@
         use precisions, only: USE_OVERTIME,OVERTIME_PERCENT,WINDOWEDINTEGRATION, &
           PRESCRIBED_SOURCE,FILTER_INITIALSOURCE, &
           FILTER_SEISMOGRAMS, &
-          STATION_CORRECTION,timeParameterSigma
+          STATION_CORRECTION,timeParameterSigma,ROTATE_FRAME
         implicit none
         logical:: Phaseshift_Program = .false.
         logical:: HetPhaseshift_Program = .false.
@@ -374,9 +377,6 @@
         integer:: sourceFileID = 201
         integer:: SH_lmx,SH_ncoef
         real,allocatable,dimension(:):: SH_coef
-        ! rotate source&receiver locations /
-        ! heterogeneous phase map to equatorial plane (by default)
-        logical:: rotate_frame = .false.
       end module
 
 !-----------------------------------------------------------------------

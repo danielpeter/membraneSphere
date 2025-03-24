@@ -254,7 +254,7 @@
       call getStartingTime(fileReference,startTime)
 
       ! get rotation matrix to rotate into equatorial plane
-      if (rotate_frame) call getInverseRotationMatrix(vsource,vreceiver,mat)
+      if (ROTATE_FRAME) call getInverseRotationMatrix(vsource,vreceiver,mat)
 
       ! console output only from main process
       if (.not. MAIN_PROCESS) beVerbose = .false.
@@ -292,7 +292,7 @@
                   real(realdeltaLat),kernel,kernelAnalytic, &
                   receiverVertex, t_lag,t_lagAnalytic,vperturbation,recvLat,recvLon
         ! rotate into equatorial plane
-        if (rotate_frame) then
+        if (ROTATE_FRAME) then
           call getVector( realdeltaLat,realdeltaLon,vdelta(1),vdelta(2),vdelta(3) )
           call rotateVector(mat,vdelta,vdelta)
           call getSphericalCoordinates(vdelta,realdeltaLat,realdeltaLon)
@@ -377,7 +377,7 @@
           endif
 
           ! rotate into equatorial plane
-          if (rotate_frame) then
+          if (ROTATE_FRAME) then
             call getVector( correctedLat,correctedLon,vdelta(1),vdelta(2),vdelta(3) )
             call rotateVector(mat,vdelta,vdelta)
             call getSphericalCoordinates(vdelta,correctedLat,correctedLon)

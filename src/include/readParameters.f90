@@ -161,7 +161,7 @@
           phaseBlockFile = adjustl(phaseBlockFile)
           if (DO_CHECKERBOARD) then
             if (VERBOSE .and. HETEROGENEOUS) &
-              print *,'  checkerboard used  :  L=',MAP_DEGREE_L,'M=',MAP_DEGREE_M
+              print *,'  checkerboard used: L=',MAP_DEGREE_L,'M=',MAP_DEGREE_M
           else
             if (VERBOSE .and. HETEROGENEOUS) &
               print *,'  phaseBlockFile used: ',trim(phaseBlockFile)

@@ -158,8 +158,8 @@
         ! instead of reading in a heterogeneous phase velocity map, it creates
         ! a checkerboard map with corresponding parameters
         logical,parameter :: DO_CHECKERBOARD           = .false.
-        integer,parameter :: MAP_DEGREE_L              = 13 ! 9 ! 20
-        integer,parameter :: MAP_DEGREE_M              = 7 ! 5 ! 10
+        integer,parameter :: MAP_DEGREE_L              = 13     ! or: 9, 13, 20
+        integer,parameter :: MAP_DEGREE_M              = 7      ! or: 5, 7, 10
         real(WP),parameter :: MAP_PERCENT_AMPLITUDE    = 2.0    !given in percent, i.e. 5% = 5.0
 
         ! simulation output

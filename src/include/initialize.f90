@@ -815,8 +815,9 @@
 !-----------------------------------------------------------------------
 ! calculates for each vertex of the spherical grid a corresponding phase velocity
 ! which is taken from a pixel map
-! notice: the heterogeneous phase map is rotated for the non-adjoint simulations!
-!           (with source/receiver vertices lying on the equator)
+!
+! notice: ROTATE_FRAME - the heterogeneous phase map is rotated for the non-adjoint simulations!
+!                        (with source/receiver vertices lying on the equator)
 !
 ! returns: phaseMap() array
       use propagationStartup;use phaseVelocityMap;use phaseBlockData
@@ -826,23 +827,29 @@
       integer:: index,i
       real(WP):: lat,lon,phasevelocity,vtmp(3),rot(3,3),Vsource(3),Vreceiver(3)
 
-      ! check if phase reference is same as the one used for the propagation
-      if (phaseBlockVelocityReference /= cphaseRef) then
-        print *,'Error: using a false phase velocity data file for this referenced velocity:', &
-                      cphaseRef,phaseBlockVelocityReference,phaseBlockFile
-        call stopProgram( 'abort - constructPhasedata   ')
-      endif
+      ! only main process constructs phase map (will be broadcast afterwards)
+      if (.not. MAIN_PROCESS) return
 
-      ! checkerboard phase velocity map
+      ! phase velocity map
       if (DO_CHECKERBOARD) then
-        if (MAIN_PROCESS .and. VERBOSE) print *,'checkerboard phase velocity map'
+        ! checkerboard
         call makeCheckerboard()
       else
+        ! heterogeneous phase map
+        ! check if phase reference is same as the one used for the propagation
+        if (phaseBlockVelocityReference /= cphaseRef) then
+          print *,'Error: using a false phase velocity data file for this referenced velocity:', &
+                        cphaseRef,phaseBlockVelocityReference,trim(phaseBlockFile)
+          call stopProgram('Abort - invalid phase reference in constructPhasedata()   ')
+        endif
+
         ! check if we read a gsh-file
-        phaseBlockFile=trim(phaseBlockFile)
+        phaseBlockFile = trim(phaseBlockFile)
         print *,'  reading phase map file-type: '//&
               phaseBlockFile(len_trim(phaseBlockFile)-2:len_trim(phaseBlockFile))
+
         if (phaseBlockFile(len_trim(phaseBlockFile)-2:len_trim(phaseBlockFile)) == "gsh") then
+          ! GSH phase map
           ! read in phaseMap() array data
           ! notice: using a heterogeneous phase map always rotates the map for a non-adjoint simulation!
           !             such that source/receiver will lie on the equator
@@ -852,7 +859,8 @@
             call readGSHPhasemap(phaseBlockFile,.true.)
           endif
         else
-          !read in phase anomalies in percent
+          ! Pixel phase map
+          ! read in phase anomalies in percent
           call readPixelPhasemap(phaseBlockFile)
 
           ! recalculate the absolute phase velocity (uses a reference velocity )
@@ -894,6 +902,7 @@
           enddo
         endif
       endif
+
       end subroutine
 
 !-----------------------------------------------------------------------

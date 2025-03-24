@@ -887,7 +887,7 @@ end subroutine rotmx2
 !-----------------------------------------------------------------------
       subroutine makeCheckerboard()
 !-----------------------------------------------------------------------
-! constructs a phaseMap with the spherical harmonics L=20, M=10
+! constructs a phaseMap with spherical harmonics (e.g., L=20, M=10)
 !
 ! returns: phaseMap() filled with file data
       use phaseVelocityMap; use propagationStartup; use cells
@@ -905,9 +905,14 @@ end subroutine rotmx2
       ! checks that only main process is executing this
       if (.not. MAIN_PROCESS) return
 
+      ! info
+      if (VERBOSE) print *,'  checkerboard phase velocity map'
+
       ! file output
       write(chL,'(i2.2)') MAP_DEGREE_L
       write(chM,'(i2.2)') MAP_DEGREE_M
+      if (VERBOSE) print *,'  degree              : L'//chL//' - M'//chM
+
       open(IOUT,file=trim(datadirectory)//'PhaseMap.L'//chL//'-M'//chM//'.dat')
       open(IOUT+1,file=trim(datadirectory)//'PhaseMap.L'//chL//'-M'//chM//'.percent.dat')
 
@@ -925,7 +930,7 @@ end subroutine rotmx2
         if (dabs(harmonical) > zmax) zmax = dabs(harmonical)
       enddo
       Nfactor = 1.0d0/zmax
-      if (MAIN_PROCESS .and. VERBOSE) print *,'normalization: ',Nfactor
+      if (VERBOSE) print *,'  normalization       : ',Nfactor
 
       ! creates phase map
       zmax = 0.0
@@ -952,7 +957,7 @@ end subroutine rotmx2
         !print *,'  harmonical = ',harmonical
 
         if (m /= 0) then
-          harmonical = harmonical*dsin( m*longitude)
+          harmonical = harmonical*dsin(m*longitude)
         endif
         z = harmonical
 
@@ -964,28 +969,30 @@ end subroutine rotmx2
         ! set corresponding phase velocity
         ! with perturbation given_as_percent
         vphase = z/100.0_WP*cphaseRef + cphaseRef
-        phaseMap(i)=vphase
+        phaseMap(i) = vphase
 
         ! statistics
         if (z < zmin) zmin = z
         if (z > zmax) zmax = z
 
         ! file output
-        write(IOUT,*)lon_degree,lat_degree,phaseMap(i)
+        write(IOUT,*) lon_degree,lat_degree,phaseMap(i)
         ! given_as_percent
-        write(IOUT+1,*)lon_degree,lat_degree,z
+        write(IOUT+1,*) lon_degree,lat_degree,z
       enddo
 
       ! close output-file
       close(IOUT)
       close(IOUT+1)
-      if (MAIN_PROCESS .and. VERBOSE) then
-        print *,'  total points readin: ',igrid
+
+      if (VERBOSE) then
+        print *,'  total points readin : ',igrid
         print *,'    percent values minimum/maximum: ',zmin,zmax
-        print *,'    phase velocity min/max:',zmin/100.0*cphaseRef+cphaseRef, &
-                                      zmax/100.0*cphaseRef+cphaseRef
-        print *,'  phase maps stored as: '
+        print *,'    phase velocity min/max        : ',zmin/100.0*cphaseRef+cphaseRef, &
+                                                       zmax/100.0*cphaseRef+cphaseRef
+        print *,'  phase map stored as : '
         print *,'    ',trim(datadirectory)//'PhaseMap.L'//chL//'-M'//chM//'.dat'
+        print *
       endif
 
       end subroutine

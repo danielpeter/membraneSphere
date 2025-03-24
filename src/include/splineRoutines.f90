@@ -20,7 +20,7 @@
 ! function cubicspline_eval: calculates the function value at a specific location
 
 !-----------------------------------------------------------------------
-subroutine cubicspline_setup()
+  subroutine cubicspline_setup()
 !-----------------------------------------------------------------------
 ! computes cubic spline interpolation coefficients
 !
@@ -187,12 +187,11 @@ subroutine cubicspline_setup()
   ! Fini
 13 return
 
-  ! No need for these labels as they're now correctly placed in the code flow above
-end subroutine cubicspline_setup
+  end subroutine cubicspline_setup
 
 
 !-----------------------------------------------------------------------
-double precision function cubicspline_eval(s)
+  double precision function cubicspline_eval(s)
 !-----------------------------------------------------------------------
 ! returns the value of the function y(x) evaluated at point s
 ! using the cubic spline coefficients computed by cubicspline_setup and saved in q.
@@ -268,11 +267,11 @@ double precision function cubicspline_eval(s)
   cubicspline_eval = y(i) + h*(q(1,i) + h*(q(2,i) + h*q(3,i)))
 
   return
-end function cubicspline_eval
+  end function
 
 
 !-----------------------------------------------------------------------
-function myspline_func(trace)
+  function myspline_func(trace)
 !-----------------------------------------------------------------------
   implicit none
   double precision, dimension(:),intent(in) :: trace
@@ -294,11 +293,12 @@ function myspline_func(trace)
     myspline_func(i) = cubicspline_eval(trace(i))
   enddo
 
-end function
+  return
+  end function
 
 
 !-----------------------------------------------------------------------
-double precision function cubicspline_derivative(x, step_size, error_estimate)
+  double precision function cubicspline_derivative(x, step_size, error_estimate)
 !-----------------------------------------------------------------------
 ! Computes the first derivative of a function stored in the spline module
 ! at a given location using Richardson extrapolation.
@@ -396,10 +396,11 @@ double precision function cubicspline_derivative(x, step_size, error_estimate)
     endif
   enddo
 
-end function
+  return
+  end function
 
 !-----------------------------------------------------------------------
-function geometric_progression(first, factor, n)
+  function geometric_progression(first, factor, n)
 !-----------------------------------------------------------------------
 ! Computes the first `n` terms of a geometric sequence.
 !
@@ -432,4 +433,5 @@ function geometric_progression(first, factor, n)
     geometric_progression(k) = geometric_progression(k - 1) * factor
   enddo
 
-end function
+  return
+  end function

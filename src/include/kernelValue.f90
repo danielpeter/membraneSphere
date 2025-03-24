@@ -12,7 +12,7 @@
 !=====================================================================
 
 !-----------------------------------------------------------------------
-      function getKernelValue(deltaScatterer,heterogeneous,t_lag,phaseVelocityRef,arrivalTime,vperturbation)
+  function getKernelValue(deltaScatterer,heterogeneous,t_lag,phaseVelocityRef,arrivalTime,vperturbation)
 !-----------------------------------------------------------------------
 ! calculates the sensitivity kernel based upon travel time anomalies
 !
@@ -25,41 +25,41 @@
 !   vperturbation         - velocity perturbation
 !
 ! returns: kernel value [1/rad^2]
-      use cells;use phaseVelocityMap
-      implicit none
-      real(WP),intent(in):: t_lag,phaseVelocityRef,arrivalTime,vperturbation
-      integer,intent(in):: deltaScatterer
-      logical,intent(in):: heterogeneous
-      real(WP):: getKernelValue
-      ! local parameters
-      real(WP):: phasevelocity,vertexCellArea
+  use cells;use phaseVelocityMap
+  implicit none
+  real(WP),intent(in):: t_lag,phaseVelocityRef,arrivalTime,vperturbation
+  integer,intent(in):: deltaScatterer
+  logical,intent(in):: heterogeneous
+  real(WP):: getKernelValue
+  ! local parameters
+  real(WP):: phasevelocity,vertexCellArea
 
-      ! convert cell area into radians square
-      vertexCellArea = cellAreas(deltaScatterer)/EARTHRADIUS_SQUARED
+  ! convert cell area into radians square
+  vertexCellArea = cellAreas(deltaScatterer)/EARTHRADIUS_SQUARED
 
-      ! get velocity correction
-      if (heterogeneous) then
-          phasevelocity = sqrt(phaseVelocitySquare(deltaScatterer))
-      else
-          phasevelocity = phaseVelocityRef
-      endif
-      !print *,'phase velocity:',phasevelocity, deltaScatterer
+  ! get velocity correction
+  if (heterogeneous) then
+      phasevelocity = sqrt(phaseVelocitySquare(deltaScatterer))
+  else
+      phasevelocity = phaseVelocityRef
+  endif
+  !print *,'phase velocity:',phasevelocity, deltaScatterer
 
-      if (phasevelocity < 0.001) then
-        print *,'Error: phase velocity correction too small:',phasevelocity
-        print *,'       vertex:',deltaScatterer
-        call stopProgram( 'abort - getKernelValue   ')
-      endif
+  if (phasevelocity < 0.001) then
+    print *,'Error: phase velocity correction too small:',phasevelocity
+    print *,'       vertex:',deltaScatterer
+    call stopProgram( 'abort - getKernelValue   ')
+  endif
 
-      ! kernel value term (becomes unit-less)
-      getKernelValue = (t_lag*phasevelocity)/(arrivalTime*vperturbation*vertexCellArea)
+  ! kernel value term (becomes unit-less)
+  getKernelValue = (t_lag*phasevelocity)/(arrivalTime*vperturbation*vertexCellArea)
 
-      return
-      end function
+  return
+  end function
 
 
 !-----------------------------------------------------------------------
-      subroutine getClosestTriangle(lat,lon,triangleIndex,distances,corners,lengths)
+  subroutine getClosestTriangle(lat,lon,triangleIndex,distances,corners,lengths)
 !-----------------------------------------------------------------------
 ! finds the triangle which contains the desired location
 !
@@ -71,75 +71,76 @@
 !     lengths           - triangle side lengths (in radian)
 ! returns: tirangleIndex, distances and corners
 
-      use cells
-      implicit none
-      real(WP),intent(in):: lat,lon
-      integer,intent(out):: triangleIndex
-      real(WP),intent(out):: distances(3),lengths(3)
-      integer,intent(out):: corners(3)
-      ! local parameters
-      real(WP):: totaldistance,distanceMin,vectorA(3),vectorB(3)
-      real(WP):: distance,tmpdistances(3)
-      integer:: triangleMin,i,j,tmpcorners(3)
+  use cells
+  implicit none
+  real(WP),intent(in):: lat,lon
+  integer,intent(out):: triangleIndex
+  real(WP),intent(out):: distances(3),lengths(3)
+  integer,intent(out):: corners(3)
+  ! local parameters
+  real(WP):: totaldistance,distanceMin,vectorA(3),vectorB(3)
+  real(WP):: distance,tmpdistances(3)
+  integer:: triangleMin,i,j,tmpcorners(3)
 
-      ! get vector on sphere of location
-      call getVector(lat,lon,vectorA(1),vectorA(2),vectorA(3))
-      !print *,'vector:',lat,lon
-      !print *,'    ',vectorA(:)
+  ! get vector on sphere of location
+  call getVector(lat,lon,vectorA(1),vectorA(2),vectorA(3))
+  !print *,'vector:',lat,lon
+  !print *,'    ',vectorA(:)
 
-      ! determine triangle where the corners are closest
-      distanceMin = 1.0e+4
-      triangleMin = 0
-      do i = 1,numTriangleFaces
-        ! distance to triangle's corners
-        totaldistance = 0.0
-        do j = 1,3
-          vectorB(:) = vertices(cellTriangleFace(i,j),:)
-          call greatCircleDistance(vectorA,vectorB,distance)
-          totaldistance = totaldistance+distance
-          ! store values
-          tmpdistances(j) = distance
-          tmpcorners(j) = cellTriangleFace(i,j)
-        enddo
+  ! determine triangle where the corners are closest
+  distanceMin = 1.0e+4
+  triangleMin = 0
+  do i = 1,numTriangleFaces
+    ! distance to triangle's corners
+    totaldistance = 0.0
+    do j = 1,3
+      vectorB(:) = vertices(cellTriangleFace(i,j),:)
+      call greatCircleDistance(vectorA,vectorB,distance)
+      totaldistance = totaldistance+distance
+      ! store values
+      tmpdistances(j) = distance
+      tmpcorners(j) = cellTriangleFace(i,j)
+    enddo
 
-        ! check for minimum
-        if (distanceMin > totaldistance) then
-          distanceMin = totaldistance
-          triangleMin = i
-          distances(:) = tmpdistances(:)
-          corners(:) = tmpcorners(:)
-          !print *,'  new distance :',totaldistance,i
-          !print *,'      distances:',(distances(j)*180.0/PI,j=1,3)
-          !print *,'      corners  :',(corners(j),j=1,3)
-        endif
-      enddo
+    ! check for minimum
+    if (distanceMin > totaldistance) then
+      distanceMin = totaldistance
+      triangleMin = i
+      distances(:) = tmpdistances(:)
+      corners(:) = tmpcorners(:)
+      !print *,'  new distance :',totaldistance,i
+      !print *,'      distances:',(distances(j)*180.0/PI,j=1,3)
+      !print *,'      corners  :',(corners(j),j=1,3)
+    endif
+  enddo
 
-      ! set as result
-      triangleIndex = triangleMin
+  ! set as result
+  triangleIndex = triangleMin
 
-      ! check result
-      if (triangleIndex < 1 .or. triangleIndex > numTriangleFaces) then
-        print *,'Error: triangle not found',lat,lon,triangleIndex
-        call stopProgram('no fitting triangle   ')
-      endif
+  ! check result
+  if (triangleIndex < 1 .or. triangleIndex > numTriangleFaces) then
+    print *,'Error: triangle not found',lat,lon,triangleIndex
+    call stopProgram('no fitting triangle   ')
+  endif
 
-      ! side lengths of triangle
-      vectorA(:) = vertices(corners(1),:)
-      vectorB(:) = vertices(corners(2),:)
-      call greatCircleDistance(vectorA,vectorB,lengths(1))
+  ! side lengths of triangle
+  vectorA(:) = vertices(corners(1),:)
+  vectorB(:) = vertices(corners(2),:)
+  call greatCircleDistance(vectorA,vectorB,lengths(1))
 
-      vectorA(:) = vertices(corners(1),:)
-      vectorB(:) = vertices(corners(3),:)
-      call greatCircleDistance(vectorA,vectorB,lengths(2))
+  vectorA(:) = vertices(corners(1),:)
+  vectorB(:) = vertices(corners(3),:)
+  call greatCircleDistance(vectorA,vectorB,lengths(2))
 
-      vectorA(:) = vertices(corners(2),:)
-      vectorB(:) = vertices(corners(3),:)
-      call greatCircleDistance(vectorA,vectorB,lengths(3))
+  vectorA(:) = vertices(corners(2),:)
+  vectorB(:) = vertices(corners(3),:)
+  call greatCircleDistance(vectorA,vectorB,lengths(3))
 
-      end subroutine
+  end subroutine
+
 
 !-----------------------------------------------------------------------
-      subroutine interpolateLinear(distances,lengths,corners,value)
+  subroutine interpolateLinear(distances,lengths,corners,value)
 !-----------------------------------------------------------------------
 ! linear interpolation of displacement at a location inside a given triangle
 !
@@ -150,30 +151,30 @@
 !     value         - interpolated displacement
 !
 ! returns: value
-      use displacements
-      implicit none
-      real(WP),intent(in):: distances(3),lengths(3)
-      integer,intent(in):: corners(3)
-      real(WP),intent(out):: value
-      ! local parameters
-      real(WP):: f_1,f_2,f_3,distance_12,distance_13,distance_23
+  use displacements
+  implicit none
+  real(WP),intent(in):: distances(3),lengths(3)
+  integer,intent(in):: corners(3)
+  real(WP),intent(out):: value
+  ! local parameters
+  real(WP):: f_1,f_2,f_3,distance_12,distance_13,distance_23
 
-      ! displacements at triangle corners
-      f_1 = newdisplacement(corners(1))
-      f_2 = newdisplacement(corners(2))
-      f_3 = newdisplacement(corners(3))
+  ! displacements at triangle corners
+  f_1 = newdisplacement(corners(1))
+  f_2 = newdisplacement(corners(2))
+  f_3 = newdisplacement(corners(3))
 
-      ! triangle side lengths
-      distance_12 = lengths(1)
-      distance_13 = lengths(2)
-      distance_23 = lengths(3)
+  ! triangle side lengths
+  distance_12 = lengths(1)
+  distance_13 = lengths(2)
+  distance_23 = lengths(3)
 
-      ! linear interpolation depending on distances to corners
-      value = distances(2)*distances(3)/(distance_12*distance_13)*f_1 &
-              + distances(1)*distances(3)/(distance_12*distance_23)*f_2 &
-              + distances(1)*distances(2)/(distance_13*distance_23)*f_3
+  ! linear interpolation depending on distances to corners
+  value = distances(2)*distances(3)/(distance_12*distance_13)*f_1 &
+          + distances(1)*distances(3)/(distance_12*distance_23)*f_2 &
+          + distances(1)*distances(2)/(distance_13*distance_23)*f_3
 
-      end subroutine
+  end subroutine
 
 
 

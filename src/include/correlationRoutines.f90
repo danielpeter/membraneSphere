@@ -13,7 +13,7 @@
 
 
 !-----------------------------------------------------------------------
-subroutine correlation_traces(trace1,trace2,correl,N)
+  subroutine correlation_traces(trace1,trace2,correl,N)
 !-----------------------------------------------------------------------
 
 ! Computes the correlation of two real datasets inputArray1 and inputArray2 of length N (including any user-supplied zeropadding).
@@ -102,11 +102,11 @@ subroutine correlation_traces(trace1,trace2,correl,N)
   ! inverse FFT
   call FFT_real(correl,N,-1,fourierTransformed1)
 
-end subroutine
+  end subroutine
 
 
 !-----------------------------------------------------------------------
-function simpsons_integral(func, lower_bound, upper_bound)
+  function simpsons_integral(func, lower_bound, upper_bound)
 !-----------------------------------------------------------------------
 ! Computes the integral of a given function using Simpson’s rule.
 !
@@ -172,10 +172,10 @@ function simpsons_integral(func, lower_bound, upper_bound)
   call stopProgram("simpsons_integral: exceeded maximum iterations    ")
 
   return
-end function
+  end function
 
 !-----------------------------------------------------------------------
-subroutine trapezoidal_rule_refine(func, lower_bound, upper_bound, integral, iteration)
+  subroutine trapezoidal_rule_refine(func, lower_bound, upper_bound, integral, iteration)
 !-----------------------------------------------------------------------
 ! Performs iterative refinement of the integral using the trapezoidal rule.
 !
@@ -229,11 +229,11 @@ subroutine trapezoidal_rule_refine(func, lower_bound, upper_bound, integral, ite
     integral = 0.5d0 * (integral + step_size * sum_values)
   endif
 
-  return
-end subroutine
+  end subroutine
+
 
 !-----------------------------------------------------------------------
-subroutine simpsons_integral_degree(func, polynomial_degree, lower_bound, upper_bound, integral, parameter_mu)
+  subroutine simpsons_integral_degree(func, polynomial_degree, lower_bound, upper_bound, integral, parameter_mu)
 !-----------------------------------------------------------------------
 ! Computes the integral of a function using Simpson’s rule with a specified degree.
 !
@@ -296,11 +296,12 @@ subroutine simpsons_integral_degree(func, polynomial_degree, lower_bound, upper_
   print *, 'Error: simpsons_integral_degree did not converge:', polynomial_degree, lower_bound, upper_bound, integral
   call stopProgram("Exceeded maximum iterations in simpsons_rule_degree    ")
 
-end subroutine
+  end subroutine
+
 
 !-----------------------------------------------------------------------
-subroutine trapezoidal_rule_refine_degree(func, polynomial_degree, lower_bound, upper_bound, &
-                                          integral, iteration, parameter_mu)
+  subroutine trapezoidal_rule_refine_degree(func, polynomial_degree, lower_bound, upper_bound, &
+                                            integral, iteration, parameter_mu)
 !-----------------------------------------------------------------------
 ! Performs iterative refinement of the trapezoidal rule for numerical integration.
 !
@@ -356,11 +357,10 @@ subroutine trapezoidal_rule_refine_degree(func, polynomial_degree, lower_bound, 
     integral = 0.5 * (integral + (upper_bound - lower_bound) * sum / num_points)
   endif
 
-  return
-end subroutine
+  end subroutine
 
 !-----------------------------------------------------------------------
-function romberg_integral(func, lower_bound, upper_bound)
+  function romberg_integral(func, lower_bound, upper_bound)
 !-----------------------------------------------------------------------
 ! Performs numerical integration using Romberg's method.
 !
@@ -439,11 +439,11 @@ function romberg_integral(func, lower_bound, upper_bound)
   call stopProgram("Romberg integration exceeded maximum steps    ")
 
   return
-end function
+  end function
 
 
 !-----------------------------------------------------------------------
-subroutine polynomial_interpolation(x_values, y_values, num_points, x_target, y_result, error_estimate)
+  subroutine polynomial_interpolation(x_values, y_values, num_points, x_target, y_result, error_estimate)
 !-----------------------------------------------------------------------
 ! Performs polynomial interpolation using Neville's algorithm.
 !
@@ -520,11 +520,11 @@ subroutine polynomial_interpolation(x_values, y_values, num_points, x_target, y_
     y_result = y_result + error_estimate
   enddo
 
-end subroutine
+  end subroutine
 
 
 !-----------------------------------------------------------------------
-function simpsons_integral_vecFunc(vecFunc, lower_bound, upper_bound)
+  function simpsons_integral_vecFunc(vecFunc, lower_bound, upper_bound)
 !-----------------------------------------------------------------------
 ! Adaptive integration using Simpson’s rule.
 !
@@ -597,10 +597,10 @@ function simpsons_integral_vecFunc(vecFunc, lower_bound, upper_bound)
   call stopProgram("simpsons_integral_vecFunc: exceeded maximum iterations    ")
 
   return
-end function
+  end function
 
 !-----------------------------------------------------------------------
-subroutine trapezoidal_rule_refine_vecFunc(vecFunc, lower_bound, upper_bound, integral, iteration)
+  subroutine trapezoidal_rule_refine_vecFunc(vecFunc, lower_bound, upper_bound, integral, iteration)
 !-----------------------------------------------------------------------
 ! Adaptive trapezoidal rule for numerical integration.
 !
@@ -682,7 +682,7 @@ contains
     do index = 2, num_terms
       arithmetic_sequence(index) = arithmetic_sequence(index - 1) + step_size
     enddo
-
+    return
   end function
 
-end subroutine
+  end subroutine

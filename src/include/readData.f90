@@ -38,7 +38,7 @@
 
       if (VERBOSE) then
         print *,'  reading grid data:'
-        print *,'    subdivisions:',subdivisions
+        print *,'    subdivisions            : ',subdivisions
       endif
 
       !initialize
@@ -62,7 +62,7 @@
       if (ier /= 0) then
         print *,'Error: could not open file ',trim(fileName)
         print *,'       Please check if the file exists...'
-        call stopProgram( 'abort - readData File1   ')
+        call stopProgram('Abort - readData File1   ')
       endif
 
       !print *,'getting voronoi cell centre vertices from',fileName
@@ -79,8 +79,8 @@
         !  print *,'vertex ',ilocal,' :',lat,lon
         !endif
       enddo
-      if (VERBOSE) print *,'   number of vertices: ',numVertices
       close(IIN)
+      if (VERBOSE) print *,'    number of vertices      : ',numVertices
       !debug
       !print *,'vertex',1,(vertices(1,k),k=1,3)
 
@@ -88,7 +88,7 @@
       fileName = 'data/griddata/Dvvert'//divString//ending
       if (VERBOSE) print *,'  ',trim(fileName)
       open(IIN,file=trim(fileName),status='old',iostat=ier)
-      if (ier /= 0) call stopProgram( 'abort - readData File2   ')
+      if (ier /= 0) call stopProgram('Abort - readData File2   ')
 
       !print *,'getting voronoi cell corner vertices...'
       numCorners = 0
@@ -97,8 +97,8 @@
         if (ier /= 0) exit
         numCorners = numCorners +1
       enddo
-      if (VERBOSE) print *,'   number of corners: ',numCorners
       close(IIN)
+      if (VERBOSE) print *,'    number of corners       : ',numCorners
       !debug
       !print *,'vertex',1,(cellCorners(1,k),k=1,3)
 
@@ -106,7 +106,7 @@
       fileName = 'data/griddata/Dnear'//divString//ending
       if (VERBOSE) print *,'  ',trim(fileName)
       open(IIN,file=trim(fileName),status='old',iostat=ier)
-      if (ier /= 0) call stopProgram( 'abort - readData File3   ')
+      if (ier /= 0) call stopProgram('Abort - readData File3   ')
 
       !print *,'getting voronoi cell neighbors...'
       numNeighbors = 0
@@ -114,8 +114,8 @@
         read(IIN,*) (cellNeighbors(i,k),k=1,6)
         numNeighbors = numNeighbors +1
       enddo
-      if (VERBOSE) print *,'   number of neighbors: ',numNeighbors
       close(IIN)
+      if (VERBOSE) print *,'    number of neighbors     : ',numNeighbors
 
       !prepare cellNeighbors info
       do i = 1, numNeighbors
@@ -132,7 +132,7 @@
       fileName = 'data/griddata/Dvface'//divString//ending
       if (VERBOSE) print *,'  ',trim(fileName)
       open(IIN,file=trim(fileName),status='old',iostat=ier)
-      if (ier /= 0) call stopProgram( 'abort - readData File4   ')
+      if (ier /= 0) call stopProgram('Abort - readData File4   ')
 
       !print *,'getting voronoi cell face indices...'
       numFaces = 0
@@ -140,8 +140,8 @@
         read(IIN,*) (cellFace(i,k),k=1,6)
         numFaces = numFaces +1
       enddo
-      if (VERBOSE) print *,'   number of faces: ',numFaces
       close(IIN)
+      if (VERBOSE) print *,'    number of faces         : ',numFaces
 
       !prepare cellNeighbors info
       do i = 1, numFaces
@@ -160,7 +160,7 @@
         fileName = 'data/griddata/Dtface'//divString//ending
         if (VERBOSE) print *,'  ',trim(fileName)
         open(IIN,file=trim(fileName),status='old', iostat=ier)
-        if (ier /= 0) call stopProgram( 'abort - readData Dtface file    ')
+        if (ier /= 0) call stopProgram('Abort - readData Dtface file    ')
 
         numTriangleFaces = 0
         do i = 1, MaxTriangles
@@ -170,8 +170,8 @@
           if (ier /= 0) exit
           numTriangleFaces = numTriangleFaces +1
         enddo
-        if (VERBOSE) print *,'   number of triangle faces: ',numTriangleFaces
         close(IIN)
+        if (VERBOSE) print *,'    number of triangle faces: ',numTriangleFaces
       endif
 
       end subroutine
@@ -196,9 +196,9 @@
       ! allocate arrays for mesh
       if (MAIN_PROCESS .and. VERBOSE) then
         print *,'  allocating vertices, cellNeighbors, cellFace and cellCorner arrays:'
-        print *,'    max vertices  : ',MaxVertices
-        print *,'    max triangles : ',MaxTriangles
-        print *,'    size                : ',(17*MaxVertices*WP+MaxTriangles*WP)/1024./1024.,'Mb'
+        print *,'    max vertices            : ',MaxVertices
+        print *,'    max triangles           : ',MaxTriangles
+        print *,'    size                    : ',(17*MaxVertices*WP+MaxTriangles*WP)/1024./1024.,'Mb'
       endif
       allocate(vertices(MaxVertices,3),cellNeighbors(MaxVertices,0:6), &
             cellFace(MaxVertices,0:6),cellCorners(MaxTriangles,3),stat=ier )
@@ -207,7 +207,7 @@
       if (STATION_CORRECTION .or. SIMULATIONOUTPUT) then
         if (MAIN_PROCESS .and. VERBOSE) then
           print *,'  allocating cellTriangleFace array:'
-          print *,'    size                : ',3*MaxTriangles*WP/1024./1024.,'Mb'
+          print *,'    size                    : ',3*MaxTriangles*WP/1024./1024.,'Mb'
         endif
         allocate( cellTriangleFace(MaxTriangles,3),stat=ier)
         if (ier /= 0) call stopProgram('error allocating cellTriangleFace')

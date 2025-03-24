@@ -32,9 +32,9 @@ module heterogeneousArrays
   real:: shift_min,shift_max
 end module
 
-  !-----------------------------------------------------------------------
+!-----------------------------------------------------------------------
   program heterogeneousPhaseshift
-  !-----------------------------------------------------------------------
+!-----------------------------------------------------------------------
   ! calculates the new synthetic data which can be used for a benchmark exercise
   ! the synthetic phase shifts for a heterogeneous background earth are plotted as
   ! a new data file similar as e.g. wei_sum.2.L0150.1.txt

@@ -301,11 +301,15 @@
       real(WP),dimension(:,:),allocatable:: window_signal
       integer::n,i,ier
       integer:: window_startindex,window_endindex,window_range
-      logical,parameter:: TAPER_SIGNAL = .true.
+      real(WP):: normFactor
 
       ! console output
       if (MAIN_PROCESS .and. VERBOSE) then
-        print *,'getting adjoint source...'
+        print *,'creating adjoint source...'
+        if (ADJOINT_TAPERSIGNAL) &
+          print *,'  using tapering'
+        if (WINDOWEDINTEGRATION) &
+          print *,'  using window  : start time =',WINDOW_START,' end time = ',WINDOW_END
       endif
 
       ! synchronize seismogram at receiver location
@@ -352,8 +356,8 @@
       ! determines the window for the cross-correlation ( Tromp et al, 2005: eq. 41, parameter w_r(t) )
       if (WINDOWEDINTEGRATION) call determineWindowsize(window_startindex,window_endindex,window_range)
 
-      ! apply hanning window  to smooth adjoint source ends
-      if (TAPER_SIGNAL) then
+      ! apply hanning window to smooth adjoint source ends
+      if (ADJOINT_TAPERSIGNAL) then
         if (WINDOWEDINTEGRATION) then
           ! cuts out a window of the adjoint signal
           !if (MAIN_PROCESS .and. VERBOSE) print *,'    allocating window...',window_startindex,window_endindex
@@ -366,7 +370,7 @@
 
           ! tapers window
           call taperSeismogram(window_signal,window_startindex-window_endindex-1, &
-                              window_startindex-window_endindex-1,.false.)
+                               window_startindex-window_endindex-1,.false.)
           adjointSource(2,window_endindex+1:window_startindex-1) = window_signal(2,:)
         else
           call taperSeismogram(adjointSource,numofTimeSteps,numofTimeSteps,.false.)
@@ -423,7 +427,7 @@
       ! console & file output
       if (MAIN_PROCESS .and. VERBOSE) then
         ! debug normalization output
-        print *,'    normalization factor: ',normFactor
+        print *,'  normalization factor: ',normFactor
 
         ! store adjoint source seismogram
         if (fileOutput) then
@@ -692,7 +696,7 @@
       endif
 
       ! calculate kernel value with actual available displacement values
-      if (BYSPLINE) then
+      if (ADJOINT_INTEGRALBYSPLINE) then
         ! time integral calculated as a sum of discrete rectangles with size dt
         !if ( (index > numofTimeSteps-2) .or. (index < 1)) then
         !  return
@@ -859,7 +863,7 @@
       ! initialize with time (dealing with newdisplacements means at time steps t+dt)
       do index = 1,numofTimeSteps
         seismo(1,index)=(firsttimestep+index-1)*dt+dt
-        seismoAdjoint(1,index)=(lasttimestep-index+1)*dt+dt
+        seismoAdjoint(1,index) = (lasttimestep-index+1)*dt+dt
       enddo
 
       ! calculate the reference travel time
@@ -873,19 +877,20 @@
       arrivalTime = distance*EARTHRADIUS/cphaseRef
 
       ! cell area
-      vertexCellArea=cellAreas(receiverVertex)
+      vertexCellArea = cellAreas(receiverVertex)
       ! convert cell area into [rad^2]
       vertexCellAreaRad = vertexCellArea/EARTHRADIUS_SQUARED
 
       ! console output
       if (MAIN_PROCESS .and. VERBOSE) then
-        print *,'    reference travel time [s]  : ',arrivalTime
+        print *,'    reference travel time [s]      : ',arrivalTime
         !for [rad2]: vertexCellArea/(EARTHRADIUS*EARTHRADIUS)
-        print *,'    receiver cell area [km2]  : ',vertexCellArea
+        print *,'    receiver cell area [km2]       : ',vertexCellArea
         print *,'    time integration:'
-        print *,'    starting seismogram at   :',seismo(1,1)
-        print *,'    ending seismogram at    :',seismo(1,numofTimeSteps)
-        if (WINDOWEDINTEGRATION) print *,'    windowed adjoint source between:',WINDOW_START,WINDOW_END
+        print *,'    starting seismogram at         : ',seismo(1,1)
+        print *,'    ending seismogram at           : ',seismo(1,numofTimeSteps)
+        if (WINDOWEDINTEGRATION) &
+        print *,'    windowed adjoint source between: ',WINDOW_START,WINDOW_END
         print *
       endif
 
@@ -932,7 +937,7 @@
         ! kernel value
         kernelVal = 0.0_WP
         seismoTmp(:) = 0.0_WP
-        if (BYSPLINE) then
+        if (ADJOINT_INTEGRALBYSPLINE) then
           ! compute second derivative of forward seismogram
           call getSecondDerivative(seismo(2,:),seismo(2,:),dt,numofTimeSteps)
 
@@ -951,7 +956,7 @@
 
             ! check & store temporary
             if (index > 1) then
-              if (val1 /= seismoTmp(index)) print *,'kernel values:',val1,seismoTmp(index)
+              if (val1 /= seismoTmp(index)) print *,'    kernel values:',val1,seismoTmp(index)
             endif
             seismoTmp(index) = val1
             seismoTmp(index+1) = val2
@@ -996,6 +1001,7 @@
         ! store in array
         adjointKernel(vertex) = kernelVal
       enddo
+
       end subroutine
 
 !-----------------------------------------------------------------------
@@ -1024,13 +1030,12 @@
         ! open kernel file
         kernelfile = trim(datadirectory)//trim(adjointKernelName)
         if (VERBOSE) then
-          print *,'    storing kernel values in file:'
-          print *,'      ',trim(kernelfile)
+          print *,'    storing kernel values in file  : ',trim(kernelfile)
         endif
         open(IOUT,file=trim(kernelfile),iostat=ier)
         if (ier /= 0) then
           print *,'Error: could not open '//trim(kernelfile)
-          call stopProgram( 'abort - storeAdjointKernel    ')
+          call stopProgram('Abort - storeAdjointKernel    ')
         endif
 
         ! file header
@@ -1049,8 +1054,8 @@
         close(IOUT)
 
         if (MAIN_PROCESS .and. VERBOSE) then
-          print *,'    integrated over sphere : ',sum_kern
-          print *,'    min/max               : ',minval(adjointKernel(:)),maxval(adjointKernel(:))
+          print *,'    integrated over sphere         : ',sum_kern
+          print *,'    kernel min/max                 : ',minval(adjointKernel(:)),'/',maxval(adjointKernel(:))
         endif
       endif
 

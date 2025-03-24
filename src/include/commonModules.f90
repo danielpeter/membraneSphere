@@ -276,23 +276,27 @@
         use precisions, only: PRECALCULATED_CELLS,DO_CHECKERBOARD,MAP_DEGREE_L,MAP_DEGREE_M
         implicit none
         ! adjoint parameters
-        ! onthefly: instead of integration at the end, after each time step
-        ! startatzero: start integration from zero, not for whole seismogram
-        ! precalculate derivatives: calculate derivatives after forward iteration has finished,
-        !                                         instead of just before integration
-        ! windowed integration: do integration between zero and arrivaltime for seismogram
+        ! ADJOINT_ONTHEFLY          - instead of integration at the end, after each time step
+        ! ADJOINT_STARTATZERO       - start integration from zero, not for whole seismogram
+        ! PRECALCULATE_DERIVATIVES  - calculate derivatives after forward iteration has finished,
+        !                             instead of just before integration
+        ! ADJOINT_INTEGRALBYSPLINE  - calculates kernel integral by spline representation
+        ! ADJOINT_TAPERSIGNAL       - apply tapering to adjoint source signal
+        !
+        ! from precisions:
+        ! WINDOWEDINTEGRATION       - do integration between zero and arrivaltime for seismogram
         logical,parameter:: ADJOINT_ONTHEFLY            = .false.
         logical,parameter:: ADJOINT_STARTATZERO         = .false.
         logical,parameter:: PRECALCULATE_DERIVATIVES    = .false.
-        logical,parameter:: BYSPLINE                    = .false.
+        logical,parameter:: ADJOINT_INTEGRALBYSPLINE    = .false.
+        logical,parameter:: ADJOINT_TAPERSIGNAL         = .true.
 
         ! adjoint variables
-        logical:: Adjoint_Program                        = .false.
-        logical:: Adjoint_InversionProgram               = .false.
+        logical:: Adjoint_Program                       = .false.
+        logical:: Adjoint_InversionProgram              = .false.
         logical:: kernelIteration,storeAsFile,Set_Antipode_Time
         integer:: adjointSourceVertex
         character(len=64):: adjointKernelName
-        real(WP):: normFactor
         real(WP),allocatable,dimension(:,:):: adjointSource
         real(WP),allocatable,dimension(:):: adjointKernel
         real(WP),allocatable,dimension(:):: backwardDisplacement, &
@@ -329,7 +333,8 @@
       ! propagationStartup module
       ! used for initialization startup process
         use constants, only: WP,IIN,IOUT,PI,EARTHRADIUS
-        use precisions, only: USE_OVERTIME,OVERTIME_PERCENT,WINDOWEDINTEGRATION, &
+        use precisions, only: USE_OVERTIME,OVERTIME_PERCENT, &
+          WINDOWEDINTEGRATION,WINDOW_START,WINDOW_END, &
           PRESCRIBED_SOURCE,FILTER_INITIALSOURCE, &
           FILTER_SEISMOGRAMS, &
           STATION_CORRECTION,timeParameterSigma,ROTATE_FRAME

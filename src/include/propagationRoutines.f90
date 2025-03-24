@@ -492,14 +492,14 @@
       endif
 
       ! output
-      if (MAIN_PROCESS .and. VERBOSE) print *,'seismogram output:'
+      if (MAIN_PROCESS .and. VERBOSE) print *,'  seismogram output:'
 
       ! just to remove unneccessary spaces
       filename = trim(filename)
 
       if (PARALLELSEISMO) then
         ! each process prints its own output to the current directory
-        if (MAIN_PROCESS .and. VERBOSE) print *,'    printing parallel simulation seismos'
+        if (MAIN_PROCESS .and. VERBOSE) print *,'    parallel simulation seismos'
 
         ! displacement at receiver
         if (manyReceivers) then
@@ -547,7 +547,7 @@
         endif
       else
         ! each process prints its own output to the current directory
-        if (MAIN_PROCESS .and. VERBOSE) print *,'    printing distributed simulation seismos'
+        if (MAIN_PROCESS .and. VERBOSE) print *,'    distributed simulation seismos'
 
         ! displacement at receiver
         if (manyReceivers) then

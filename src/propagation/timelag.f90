@@ -1,109 +1,122 @@
+!=====================================================================
+!
+!       m e m b r a n e S p h e r e
+!       --------------------------------------------------
+!
+!      Daniel Peter
+!      (c) 2025
+!
+!      Free for non-commercial academic research ONLY.
+!      This program is distributed WITHOUT ANY WARRANTY whatsoever.
+!
+!=====================================================================
+
 !-----------------------------------------------------------------------
-      program timelag
+  program timelag
 !-----------------------------------------------------------------------
 ! calculates the time lag between two seismograms
 !
 ! it reads in two (different) seismograms as input is given,
 ! then either filters or not the two and cross-correlates them.
 ! as result, the timelag (in sec) is printed to screen.
-      use verbosity;
-      use filterType, only: WindowSIZE
-      use traveltime, only: t_lag
-      use propagationStartup, only: lasttime,numofTimeSteps
-      use parallel; use precisions
-      implicit none
-      ! local parameters
-      real(WP):: startingTime,endingTime,amplification,analytict_lag
-      character(len=128):: fileDelta,fileReference
-      integer:: entries
-      logical,parameter:: DEBUG_OUTPUT = .false.  ! output debug files
-      !-----------------------------------------------------------------------
-      ! parameters
-      ! most parameters concerning timelag calculation are set in file Timelag_Input
-      ! (& default values in commonModules.f90)
-      !-----------------------------------------------------------------------
+  use verbosity;
+  use filterType, only: WindowSIZE
+  use traveltime, only: t_lag
+  use propagationStartup, only: lasttime,numofTimeSteps
+  use parallel; use precisions
+  implicit none
+  ! local parameters
+  real(WP):: startingTime,endingTime,amplification,analytict_lag
+  character(len=128):: fileDelta,fileReference
+  integer:: entries
+  logical,parameter:: DEBUG_OUTPUT = .false.  ! output debug files
+  !-----------------------------------------------------------------------
+  ! parameters
+  ! most parameters concerning timelag calculation are set in file Timelag_Input
+  ! (& default values in commonModules.f90)
+  !-----------------------------------------------------------------------
 
-      ! get input parameters
-      ! console output
-      print *,'Timelag'
-      print *,'-----------------------------------------------------'
-      call readInputParameters(fileDelta,fileReference,startingTime,endingTime)
+  ! get input parameters
+  ! console output
+  print *,'Timelag'
+  print *,'-----------------------------------------------------'
+  call readInputParameters(fileDelta,fileReference,startingTime,endingTime)
 
-      ! timelag executable should be run as single process only
-      MAIN_PROCESS = .true.
+  ! timelag executable should be run as single process only
+  MAIN_PROCESS = .true.
 
-      ! for debuging
-      fileOutput = DEBUG_OUTPUT
-      beVerbose = DEBUG_OUTPUT
+  ! for debuging
+  fileOutput = DEBUG_OUTPUT
+  beVerbose = DEBUG_OUTPUT
 
-      ! read in from startingTime
-      if (VERBOSE) then
-        print *
-        print *,'determine file length...'
-      endif
+  ! read in from startingTime
+  if (VERBOSE) then
+    print *
+    print *,'determine file length...'
+  endif
 
-      call determineFileLengthTaped(fileReference,startingTime,endingTime,entries,lasttime)
-      numofTimeSteps = entries
+  call determineFileLengthTaped(fileReference,startingTime,endingTime,entries,lasttime)
+  numofTimeSteps = entries
 
-      if (VERBOSE) then
-        print *
-        print *,'determine FFT parameters...'
-      endif
+  if (VERBOSE) then
+    print *
+    print *,'determine FFT parameters...'
+  endif
 
-      ! fft window size
-      call determineFFTWindowsize(numofTimeSteps,WindowSIZE)
+  ! fft window size
+  call determineFFTWindowsize(numofTimeSteps,WindowSIZE)
 
-      ! determine filter bandwidth parameters (waveperiod and frequency)
-      call determineFilterParameters()
+  ! determine filter bandwidth parameters (waveperiod and frequency)
+  call determineFilterParameters()
 
-      ! get time lag
-      if (VERBOSE) then
-        print *
-        print *,'calculating time lag...'
-      endif
+  ! get time lag
+  if (VERBOSE) then
+    print *
+    print *,'calculating time lag...'
+  endif
 
-      call getTimelagTaped(t_lag,fileDelta,fileReference,startingTime,endingTime)
+  call getTimelagTaped(t_lag,fileDelta,fileReference,startingTime,endingTime)
 
-      ! time lag is the subsample position times the time step size
-      ! if seismo lags seismoRef, i.e., is shifted to the right of it, then ans will
-      ! show a peak at positive lags
-      if (VERBOSE) print *
-      print *,'  numerical timelag          : ',t_lag
-      !print *,'  numerical phase anomaly (s):',t_lag/(2*PI/bw_waveperiod)
-      if (VERBOSE) print *
+  ! time lag is the subsample position times the time step size
+  ! if seismo lags seismoRef, i.e., is shifted to the right of it, then ans will
+  ! show a peak at positive lags
+  if (VERBOSE) print *
+  print *,'  numerical timelag          : ',t_lag
+  !print *,'  numerical phase anomaly (s):',t_lag/(2*PI/bw_waveperiod)
+  if (VERBOSE) print *
 
-      ! compare with analytical formula
-      if (ANALYTICAL_CORRELATION) then
-        fileOutput = DEBUG_OUTPUT
-        if (VERBOSE) then
-          print *,'calculating analytical time lag...'
-        endif
+  ! compare with analytical formula
+  if (ANALYTICAL_CORRELATION) then
+    fileOutput = DEBUG_OUTPUT
+    if (VERBOSE) then
+      print *,'calculating analytical time lag...'
+    endif
 
-        call getAnalyticalTimelagTaped(analytict_lag,fileDelta,fileReference,startingTime,endingTime)
+    call getAnalyticalTimelagTaped(analytict_lag,fileDelta,fileReference,startingTime,endingTime)
 
-        if (VERBOSE) print *
-        print *,'  analytic timelag           : ',analytict_lag
-        if (VERBOSE) print *
-        !print *,'  analytic phase anomaly (s):',t_lag/(2*PI/bw_waveperiod)
-      endif
+    if (VERBOSE) print *
+    print *,'  analytic timelag           : ',analytict_lag
+    if (VERBOSE) print *
+    !print *,'  analytic phase anomaly (s):',t_lag/(2*PI/bw_waveperiod)
+  endif
 
-      ! for debugging
-      fileOutput = DEBUG_OUTPUT
-      beVerbose = DEBUG_OUTPUT
+  ! for debugging
+  fileOutput = DEBUG_OUTPUT
+  beVerbose = DEBUG_OUTPUT
 
-      ! get time lag
-      if (VERBOSE) then
-        print *,'downhill simplex time lag...'
-      endif
+  ! get time lag
+  if (VERBOSE) then
+    print *,'downhill simplex time lag...'
+  endif
 
-      call getMinimized(t_lag,amplification,fileDelta,fileReference,startingTime,endingTime)
+  call getMinimized(t_lag,amplification,fileDelta,fileReference,startingTime,endingTime)
 
-      if (VERBOSE) print *
-      print *,'  nonlinear timelag          : ',t_lag
-      print *,'  nonlinear amplification    : ',amplification
-      if (VERBOSE) print *
+  if (VERBOSE) print *
+  print *,'  nonlinear timelag          : ',t_lag
+  print *,'  nonlinear amplification    : ',amplification
+  if (VERBOSE) print *
 
-      end program
+  end program
 
 
 !-----------------------------------------------------------------------

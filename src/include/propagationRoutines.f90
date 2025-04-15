@@ -491,9 +491,9 @@
   cphasetype = trim(cphasetype)
 
   if (DELTA) then
-    filename = trim(datadirectory)//'seismo.'//cphasetype(1:4)//'.'//latstr//'.'//lonstr//'.dat'
+    filename = trim(datadirectory)//'seismo.'//trim(cphasetype)//'.'//latstr//'.'//lonstr//'.dat'
   else
-    filename = trim(datadirectory)//'seismo.'//cphasetype(1:4)//'.withoutDelta.dat'
+    filename = trim(datadirectory)//'seismo.'//trim(cphasetype)//'.withoutDelta.dat'
   endif
 
   ! output
@@ -520,9 +520,9 @@
 
           ! create filename
           if (DELTA) then
-            filename = trim(datadirectory)//'seismo.'//cphasetype(1:4)//'.'//latstr//'.'//lonstr//'.'//recstr//'.dat'
+            filename = trim(datadirectory)//'seismo.'//trim(cphasetype)//'.'//latstr//'.'//lonstr//'.'//recstr//'.dat'
           else
-            filename = trim(datadirectory)//'seismo.'//cphasetype(1:4)//'.withoutDelta.'//recstr//'.dat'
+            filename = trim(datadirectory)//'seismo.'//trim(cphasetype)//'.withoutDelta.'//recstr//'.dat'
           endif
 
           ! write to file
@@ -565,9 +565,9 @@
 
         ! create filename
         if (DELTA) then
-          filename = trim(datadirectory)//'seismo.'//cphasetype(1:4)//'.'//latstr//'.'//lonstr//'.'//recstr//'.dat'
+          filename = trim(datadirectory)//'seismo.'//trim(cphasetype)//'.'//latstr//'.'//lonstr//'.'//recstr//'.dat'
         else
-          filename = trim(datadirectory)//'seismo.'//cphasetype(1:4)//'.withoutDelta.'//recstr//'.dat'
+          filename = trim(datadirectory)//'seismo.'//trim(cphasetype)//'.withoutDelta.'//recstr//'.dat'
         endif
 
         ! write to file

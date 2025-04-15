@@ -99,17 +99,17 @@ module precisions
   ! calculates also the analytically derived timelag kernel value
   logical,parameter :: ANALYTICAL_CORRELATION = .false.
 
-  ! filter the source around a new period
-  logical :: new_period                       = .false.
-  real(WP) :: newperiod                       = 150.919  ! (s)
+  ! filter the source around a new period (needs FILTER_INITIALSOURCE turned on)
+  logical,parameter :: FILTER_AT_NEWPERIOD    = .false.
+  real(WP),parameter :: BW_NEWPERIOD          = 150.919  ! (s)
 
   ! adjoint method
   ! time window of signal
   ! WINDOW_START: for major-arcs R150: 4700.;  R200: 4400.; R250: 4100.; R300: 3800.
-  ! 1. orbit:         0  to   4000   for L150
+  ! 1. orbit:      0  to   4000   for L150
   ! 2. orbit:   4000  to   8000
   ! 3. orbit:   8000  to  13500
-  ! 4. orbit:  13500 to  17000
+  ! 4. orbit:  13500  to  17000
   logical,parameter :: WINDOWEDINTEGRATION     = .false.
   real(WP) :: WINDOW_START                     = 0.0_WP    ! in seconds
   real(WP) :: WINDOW_END                       = 4300.0_WP ! in seconds
@@ -282,6 +282,7 @@ module adjointVariables
   !                             instead of just before integration
   ! ADJOINT_INTEGRALBYSPLINE  - calculates kernel integral by spline representation
   ! ADJOINT_TAPERSIGNAL       - apply tapering to adjoint source signal
+  ! ADJOINT_ANTIPODE_TIME     - simulation time ends at reference antipode time (overrides LASTTIME )
   !
   ! from precisions:
   ! WINDOWEDINTEGRATION       - do integration between zero and arrivaltime for seismogram
@@ -290,21 +291,19 @@ module adjointVariables
   logical,parameter:: PRECALCULATE_DERIVATIVES    = .false.
   logical,parameter:: ADJOINT_INTEGRALBYSPLINE    = .false.
   logical,parameter:: ADJOINT_TAPERSIGNAL         = .true.
+  logical,parameter:: ADJOINT_ANTIPODE_TIME       = .true.
 
   ! adjoint variables
   logical:: Adjoint_Program                       = .false.
   logical:: Adjoint_InversionProgram              = .false.
-  logical:: kernelIteration,storeAsFile,Set_Antipode_Time
+  logical:: kernelIteration,storeAsFile
   integer:: adjointSourceVertex
   character(len=64):: adjointKernelName
   real(WP),allocatable,dimension(:,:):: adjointSource
   real(WP),allocatable,dimension(:):: adjointKernel
-  real(WP),allocatable,dimension(:):: backwardDisplacement, &
-                                     backwardDisplacement_old, &
-                                     backwardNewdisplacement
-  real(WP),allocatable,dimension(:,:):: wavefieldForward, wavefieldAdjoint, &
-                                      seismoSecondDerivative
-  integer,parameter:: adjSourceFileID = 101,adjRecFileID = 102,adjMidpointFileID = 103
+  real(WP),allocatable,dimension(:):: backwardDisplacement, backwardDisplacement_old, backwardNewdisplacement
+  real(WP),allocatable,dimension(:,:):: wavefieldForward, wavefieldAdjoint, seismoSecondDerivative
+  integer,parameter:: adjSourceFileID = 301,adjRecFileID = 302,adjMidpointFileID = 303
 end module
 
 !-----------------------------------------------------------------------
@@ -339,17 +338,17 @@ module propagationStartup
     FILTER_SEISMOGRAMS, &
     STATION_CORRECTION,timeParameterSigma,ROTATE_FRAME
   implicit none
-  logical:: Phaseshift_Program = .false.
-  logical:: HetPhaseshift_Program = .false.
-  logical:: HETEROGENEOUS = .false.
-  logical:: DELTA = .false.
-  logical:: SECONDDELTA = .false.
-  logical:: MOVEDELTA = .false.
-  logical:: SIMULATIONOUTPUT = .false.
-  logical:: manyReceivers = .false.
-  logical:: manyKernels = .false.
+  logical:: Phaseshift_Program     = .false.
+  logical:: HetPhaseshift_Program  = .false.
+  logical:: HETEROGENEOUS          = .false.
+  logical:: DELTA                  = .false.
+  logical:: SECONDDELTA            = .false.
+  logical:: MOVEDELTA              = .false.
+  logical:: SIMULATIONOUTPUT       = .false.
+  logical:: manyReceivers          = .false.
+  logical:: manyKernels            = .false.
   logical:: importKernelsReceivers = .false.
-  logical:: referenceRun = .false.
+  logical:: referenceRun           = .false.
 
   integer:: startVertex,endVertex,firsttimestep,lasttimestep, &
            numofTimeSteps,midpointVertex
@@ -359,7 +358,7 @@ module propagationStartup
   integer,allocatable,dimension(:):: receivers
   integer,allocatable,dimension(:,:):: kernelsReceivers
   character(len=8):: DELTAfunction = ""
-  character(len=8):: cphasetype = ""
+  character(len=8):: cphasetype    = ""
   character(len=128):: datadirectory = ""
   real(WP):: FIRSTTIME,LASTTIME,DELTARADIUS
   real(WP):: sourceLat,sourceLon,receiverLat,receiverLon,cphaseRef, &

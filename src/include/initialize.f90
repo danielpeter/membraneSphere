@@ -349,7 +349,9 @@
   dt2 = dt*dt
 
   ! determines simulation time
-  if (Adjoint_Program .and. Set_Antipode_Time) then
+  if (Adjoint_Program .and. ADJOINT_ANTIPODE_TIME) then
+    if (MAIN_PROCESS .and. VERBOSE) &
+      print *,'  using antipode time as last time'
     call determineOrbitDistance(distance,iorbit)
     call setupNewSimulationtime(distance,iorbit)
   endif
@@ -555,12 +557,15 @@
   real(WP)::seismo(2,numofTimeSteps)
   real(WP)::min,max,originalT,originalf
 
+  ! checks if anything to do
+  if (.not. FILTER_INITIALSOURCE) return
+
   ! filter around a specified (different) period
-  if (new_period) then
+  if (FILTER_AT_NEWPERIOD) then
     originalf = bw_frequency
     originalT = bw_waveperiod
 
-    bw_waveperiod = newperiod
+    bw_waveperiod = BW_NEWPERIOD
 
     ! get (upper) half-bandwidth frequency for filtering
     if (BW_FIXFREQUENCY) then
@@ -573,6 +578,16 @@
   !console output
   if (MAIN_PROCESS .and. VERBOSE) then
     print *,'  filtering source...'
+    if (FILTER_AT_NEWPERIOD) then
+      print *,'    using filter at new period'
+    endif
+    if (BW_FIXFREQUENCY) then
+      print *,'    using fixed halfband-frequency'
+    else
+      print *,'    filter percent      : ',BW_PERCENT
+      print *,'    filter center period: ',bw_waveperiod
+    endif
+    print *,'    filter frequency    : ',bw_frequency
   endif
 
   ! initialize forces time
@@ -657,7 +672,7 @@
   enddo
 
   ! filter around a specified (different) period
-  if (new_period) then
+  if (FILTER_AT_NEWPERIOD) then
     bw_waveperiod = originalT
     bw_frequency = originalf
   endif
@@ -1411,7 +1426,7 @@
 
   ! console output
   if (MAIN_PROCESS .and. VERBOSE) then
-    print *,'    new simulation time will end at:',LASTTIME
+    print *,'    new simulation time will end at: ',LASTTIME
   endif
 
   end subroutine

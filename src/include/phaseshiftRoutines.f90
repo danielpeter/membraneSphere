@@ -130,7 +130,7 @@
     available = .false.
     if (.not. manyReceivers) then
       ! see if file is there
-      datafile = trim(datadirectory)//'seismo.'//cphasetype(1:4)//'.withoutDelta.dat'
+      datafile = trim(datadirectory)//'seismo.'//trim(cphasetype)//'.withoutDelta.dat'
       inquire(file=trim(datafile),exist=available)
       if (.not. available) then
         ! wait and poll until it exists
@@ -148,7 +148,7 @@
       endif
     endif
     !else
-      !datafile = trim(datadirectory)//'seismo.'//cphasetype(1:4)//'.withoutDelta.360.dat'
+      !datafile = trim(datadirectory)//'seismo.'//trim(cphasetype)//'.withoutDelta.360.dat'
     !endif
 
     ! both seismograms are available, get phaseshift
@@ -422,14 +422,14 @@
     latstr = trim(latstr)
     lonstr = trim(lonstr)
     cphasetype = trim(cphasetype)
-    filename = trim(datadirectory)//'seismo.'//cphasetype(1:4)//'.'//latstr//'.'//lonstr//'.dat'
+    filename = trim(datadirectory)//'seismo.'//trim(cphasetype)//'.'//latstr//'.'//lonstr//'.dat'
     filename = trim(filename)
-    fileReference = trim(datadirectory)//'seismo.'//cphasetype(1:4)//'.withoutDelta.dat'
+    fileReference = trim(datadirectory)//'seismo.'//trim(cphasetype)//'.withoutDelta.dat'
     fileReference = trim(fileReference)
   endif
 
   !if (manyReceivers) then
-  !  fileReference=datadirectory(1:length)//'seismo.'//cphasetype(1:4)//'.withoutDelta. 01.dat'
+  !  fileReference=datadirectory(1:length)//'seismo.'//trim(cphasetype)//'.withoutDelta.01.dat'
   !  fileReference=trim(fileReference)
   !  filenameBaseLength=len_trim(filename)-3
   !endif
@@ -676,7 +676,7 @@
   ! clean up reference files
   ! for all processes, they should be available in same directory
   !if (manyReceivers) then
-  !  fileReference=datadirectory(1:length)//'seismo.'//cphasetype(1:4)//'.withoutDelta. 01.dat'
+  !  fileReference=datadirectory(1:length)//'seismo.'//trim(cphasetype)//'.withoutDelta.01.dat'
   !  do i=1,size(receivers)
   !    ! determine filenames
   !    write(recstr,'(i3.2)') int(i)

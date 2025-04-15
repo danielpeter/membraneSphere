@@ -469,13 +469,13 @@
   if (MAIN_PROCESS .and. VERBOSE) print *,'precalculate time derivatives...'
 
   ! every vertex has its own seismogram to derive
-  seismo(1,:)=seismogramReceiver(1,:) ! time is the same as from the receiver station seismogram
+  seismo(1,:) = seismogramReceiver(1,:) ! time is the same as from the receiver station seismogram
   if (MAIN_PROCESS .and. VERBOSE .and. FILTER_SEISMOGRAMS) print *,'    using filtered forward seismograms...'
 
   do n = 1,numDomainVertices
     ! get cell vertex
     if (PARALLELSEISMO) then
-      vertex=domainVertices(n)
+      vertex = domainVertices(n)
     else
       vertex = n
     endif
@@ -486,7 +486,7 @@
     else
       seismoTmp(:) = wavefieldForward(n,:)
     endif
-    seismo(2,:)=seismoTmp(:)
+    seismo(2,:) = seismoTmp(:)
 
     ! filter seismogram
     if (FILTER_SEISMOGRAMS) then
@@ -543,7 +543,7 @@
 
     ! look for vertex in middle of source/receiver
     call findVertex(sourceLat+nint((receiverLat-sourceLat)/2.0), &
-            sourceLon+nint((receiverLon-sourceLon)/2.0),midpointVertex)
+                    sourceLon+nint((receiverLon-sourceLon)/2.0),midpointVertex)
 
     if (MAIN_PROCESS .and. VERBOSE) &
       print *,'   storing file: ',trim(datadirectory)//'seismo.integral_source.dat'
@@ -804,17 +804,17 @@
   ! output to files (timestep: correct +1 by back-propagation and to account
   ! for values stored in displacement() and not newdisplacement() )
   if (vertex == sourceVertex) then
-      write(adjSourceFileID,'(6e16.4e3)') (timestep+1)*dt,seismo(2), &
+    write(adjSourceFileID,'(6e16.4e3)') (timestep+1)*dt,seismo(2), &
         (timestep+1)*dt,seismoAdjoint(2),adjointKernel(vertex),kernelVal/kernelFactor
   endif
   ! debug output
   if (vertex == receiverVertex) then
-      write(adjRecFileID,'(6e16.4e3)') (timestep+1)*dt,seismo(2), &
+    write(adjRecFileID,'(6e16.4e3)') (timestep+1)*dt,seismo(2), &
         (timestep+1)*dt,seismoAdjoint(2),adjointKernel(vertex),kernelVal/kernelFactor
   endif
   ! debug output
   if (vertex == midpointVertex) then
-      write(adjMidpointFileID,'(6e16.4e3)') (timestep+1)*dt,seismo(2), &
+    write(adjMidpointFileID,'(6e16.4e3)') (timestep+1)*dt,seismo(2), &
         (timestep+1)*dt,seismoAdjoint(2),adjointKernel(vertex),kernelVal/kernelFactor
   endif
 
@@ -849,7 +849,9 @@
 
   ! free some memory
   deallocate(backwardDisplacement,backwardDisplacement_old,backwardNewdisplacement)
+
   end subroutine
+
 
 !-----------------------------------------------------------------------
   subroutine frechetKernel()
@@ -935,10 +937,9 @@
     ! filter (and taper) the seismograms
     if (FILTER_SEISMOGRAMS) then
       ! filter
-      if (beverbose) print *,'   filtering seismograms...'
+      if (beverbose) print *,'  filtering seismograms...'
       call dofilterSeismogram(seismo,numofTimeSteps)
       call dofilterSeismogram(seismoAdjoint,numofTimeSteps)
-
       ! be verbose only once
       beverbose = .false.
     endif

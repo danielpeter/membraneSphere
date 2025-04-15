@@ -235,9 +235,10 @@
     case('CPHAS')
       if (FILTER_SEISMOGRAMS) then
         read(line(istart:iend),*) cphasetype
-        cphasetype = trim(cphasetype)
         ! suppress leading white spaces, if any
         cphasetype = adjustl(cphasetype)
+        ! trim
+        cphasetype = trim(cphasetype)
         ! get corresponding phase velocity
         call determinePhaseRef(cphasetype,8,cphaseRef)
         if (Verbose) print *,'cphase         : ', cphasetype, cphaseRef

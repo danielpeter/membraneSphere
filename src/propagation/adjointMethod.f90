@@ -40,7 +40,6 @@
   ! (& commonModules.f90)
   ! initialize parameters
   Adjoint_Program                 = .true.   ! we calculate kernels by adjoint method
-  Set_Antipode_Time               = .true.   ! simulation time ends at reference antipode time (overrides LASTTIME )
   !-----------------------------------------------------------------------
   ! machine memory holds for 2 GB RAM:
   !   level 6: numVertices=122'882, numofTimeSteps~500,

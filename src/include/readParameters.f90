@@ -91,9 +91,10 @@
       if (VERBOSE) print *,'lasttimestep',LASTTIME
     case('CPHAS')
       read(line(istart:iend),*) cphasetype
-      cphasetype = trim(cphasetype)
       ! suppress leading white spaces, if any
       cphasetype = adjustl(cphasetype)
+      ! trim
+      cphasetype = trim(cphasetype)
       call determinePhaseRef(cphasetype,8,cphaseRef)
       if (VERBOSE) print *,'cphase    ', cphasetype, cphaseRef
     case('SOURC')

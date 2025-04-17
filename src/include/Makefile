@@ -29,7 +29,7 @@ include_OBJECTS = \
 	$O/signalModule.o \
 	$O/sphericalHarmonics.o \
 	$O/splineRoutines.o \
-	$O/syncRoutines.o \
+	$O/syncRoutines.mpi.o \
 	$O/timelagRoutines.o \
 	$O/vectorfunctions.o \
 	$(EMPTY_MACRO)
@@ -60,6 +60,9 @@ $O/%.module.o: $S/%.f90
 
 $O/%.o: $S/%.f90 $O/commonModules.module.o
 	$(F90) $(FFLAGS) -c -o $@ $<
+
+$O/%.mpi.o: $S/%.f90 $O/commonModules.module.o
+	$(MPIF90) $(FFLAGS) -c -o $@ $<
 
 $O/%.o: $S/%.c
 	$(CC) $(CFLAGS) -c -o $@ $<

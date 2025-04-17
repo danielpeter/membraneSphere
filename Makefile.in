@@ -5,13 +5,12 @@
 #######################################
 # @configure_input@
 
-
 FFLAGS = @FCFLAGS@ @FCFLAGS_f90@
 LDFLAGS = @LDFLAGS@
-F90 = @MPIFC@
+F90 = @FC@
+MPIF90 = @MPIFC@
 CFLAGS = @CFLAGS@
 CC = @CC@
-
 
 #######################################
 
@@ -96,6 +95,7 @@ S_TOP = @top_srcdir@
 
 # code subdirectories
 SUBDIRS = \
+	grid \
 	include \
 	propagation \
 	$(EMPTY_MACRO)
@@ -119,10 +119,17 @@ clean:
 help:
 	@echo "usage: make [executable]"
 	@echo ""
-	@echo "supported main executables:"
-	@echo "    adjointMethod"
+	@echo "main executables:"
 	@echo "    propagation"
+	@echo "    adjointMethod"
+	@echo ""
+	@echo "additionals:"
+	@echo "    heterogeneousePhaseshift"
 	@echo "    timelag"
+	@echo ""
+	@echo "grid tools: [make grid]"
+	@echo "    gridConstruction"
+	@echo "    gridAreaStatistics"
 	@echo ""
 
 .PHONY: all default clean help

@@ -48,7 +48,7 @@ OBJS_COMMON = \
 	$O/readPrecalculated.o \
 	$O/sphericalHarmonics.o \
 	$O/splineRoutines.o \
-	$O/syncRoutines.o \
+	$O/syncRoutines.mpi.o \
 	$O/timelagRoutines.o \
 	$O/vectorfunctions.o \
 	$(EMPTY_MACRO)
@@ -82,29 +82,29 @@ propagation: $E/propagation
 timelag: $E/timelag
 
 
-$E/propagation:$(OBJS_PROPAGATION)
+$E/propagation: $(OBJS_PROPAGATION)
 	@echo ""
 	@echo "building propagation"
 	@echo ""
-	$(F90) $(LDFLAGS) -o $@ $+
+	$(MPIF90) $(LDFLAGS) -o $@ $+
 
 $E/timelag: $(OBJS_TIMELAG)
 	@echo ""
 	@echo "building timelag"
 	@echo ""
-	$(F90) $(LDFLAGS) -o $@ $+
+	$(MPIF90) $(LDFLAGS) -o $@ $+
 
 $E/adjointMethod: $(OBJS_ADJOINT)
 	@echo ""
 	@echo "building adjointMethod"
 	@echo ""
-	$(F90) $(LDFLAGS) -o $@ $+
+	$(MPIF90) $(LDFLAGS) -o $@ $+
 
 $E/heterogeneousPhaseshift: $(OBJS_HETSHIFT)
 	@echo ""
 	@echo "building heterogeneousPhaseshift"
 	@echo ""
-	$(F90) $(LDFLAGS) -o $@ $+
+	$(MPIF90) $(LDFLAGS) -o $@ $+
 
 
 ################################################################

@@ -315,7 +315,6 @@
 ! return: prints output
   use cells
   implicit none
-  !include 'spherical.h'
   logical,intent(in):: statfile_output,plotfile_output
   ! local parameters
   real(WP):: centerDistances(0:6),edgesLength(0:6)
@@ -335,20 +334,21 @@
   real(WP):: fractionR
 
   !initialize
-  averageArea   = 0.0
-  averageLength = 0.0
+  averageArea   = 0.0_WP
+  averageLength = 0.0_WP
+  averageDist   = 0.0_WP
   areaCount     = 0
   lengthCount   = 0
   distCount     = 0
-  areaMin       = 1000000000.0
-  areaMax       = 0.0
-  distMin       = 1000000000.0
-  distMax       = 0.0
-  edgeMin       = 1000000000.0
-  edgeMax       = 0.0
-  fractionMin   = 1000000000.0
-  fractionMax   = 0.0
-  fractionR     = 0.0
+  areaMin       = 1000000000.0_WP
+  areaMax       = 0.0_WP
+  distMin       = 1000000000.0_WP
+  distMax       = 0.0_WP
+  edgeMin       = 1000000000.0_WP
+  edgeMax       = 0.0_WP
+  fractionMin   = 1000000000.0_WP
+  fractionMax   = 0.0_WP
+  fractionR     = 0.0_WP
 
   !for all vertices (cell centers)
   print *,'calculating averages for ',numVertices,'vertices...'
@@ -443,32 +443,33 @@
   print *
   print *,'AREAS'
   print *,'number of face areas: ',areaCount
-  print *,'average area: ',averageArea/areaCount, ' km2'
-  print *,'total areas: ',averageArea, ' km2'
-  print *,'  expected:',4*PI*EARTHRADIUS_SQUARED, ' km2'
-  print *,'a_min/a_max :', areaMin/areaMax
-  print *,'minimum area: ',areaMin, ' km2 ', areaMinIndex
-  print *,'maximum area: ',areaMax, ' km2 ',areaMaxIndex
+  print *,'average area        : ',averageArea/areaCount, ' km2'
+  print *,'total areas         : ',averageArea, ' km2'
+  print *,'            expected: ',4*PI*EARTHRADIUS_SQUARED, ' km2'
+  print *,'a_min/a_max         : ', areaMin/areaMax
+  print *,'minimum area        : ',areaMin, ' km2 ',areaMinIndex,'(min index)'
+  print *,'maximum area        : ',areaMax, ' km2 ',areaMaxIndex,'(max index)'
   print *
   print *,'CELL CENTER DISTANCES'
-  print *,'number of distances: ',distCount
-  print *,'average distances: ', averageDist/distCount, ' km'
-  print *,'d_min/d_max: ', distMin/distMax
-  print *,'minimum distance: ',distMin, ' km ',distMinIndex
-  print *,'maximum distance: ',distMax, ' km ',distMaxIndex
+  print *,'number of distances : ',distCount
+  print *,'average distances   : ', averageDist/distCount, ' km'
+  print *,'d_min/d_max         : ', distMin/distMax
+  print *,'minimum distance    : ',distMin, ' km ',distMinIndex,'(min index)'
+  print *,'maximum distance    : ',distMax, ' km ',distMaxIndex,'(max index)'
   print *
   print *,'CELL EDGES'
-  print *,'number of edges: ', lengthCount
-  print *,'average lengths: ',averageLength/lengthCount, ' km'
-  print *,'e_min/e_max: ', edgeMin/edgeMax
-  print *,'minimum edge length: ',edgeMin, &
-                ' km(',edgeMin/EarthRadius,') ',edgeMinIndex
-  print *,'maximum edge length: ',edgeMax, &
-                ' km(',edgeMax/EarthRadius,') ',edgeMaxIndex
+  print *,'number of edges     : ', lengthCount
+  print *,'average lengths     : ',averageLength/lengthCount, ' km'
+  print *,'e_min/e_max         : ', edgeMin/edgeMax
+  print *,'minimum edge length : ',edgeMin, ' km ',edgeMinIndex,'(min index)', &
+                ' (radius fraction',edgeMin/EarthRadius,')'
+  print *,'maximum edge length : ',edgeMax, ' km ',edgeMaxIndex,'(max index)', &
+                ' (radius fraction',edgeMax/EarthRadius,')'
   print *
   print *,'CELL DERIVATIVE FRACTIONS'
-  print *,'min/max fraction:',fractionMin,fractionMax,' - ',fractionMinIndex,fractionMaxIndex
-  print *,'global function R:',fractionR
+  print *,'min/max fraction    : ',fractionMin,fractionMax,' - ',fractionMinIndex,'(min index)',fractionMaxIndex,'(max index)'
+  print *,'global function R   : ',fractionR
+  print *
 
   end subroutine
 
@@ -488,7 +489,6 @@
 ! return: fractions
   use cells
   implicit none
-  !include 'spherical.h'
   integer,intent(in):: vertex
   real(WP),intent(out):: fractions(0:6),fractionavg
   logical,intent(in):: plotfile_output

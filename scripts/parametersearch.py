@@ -1,5 +1,5 @@
-#! /usr/bin/env python
-
+#!/usr/bin/env python
+#
 # script for parameter search
 #
 # varies either the delta location or the perturbation size in the 'Parameter_Input' file

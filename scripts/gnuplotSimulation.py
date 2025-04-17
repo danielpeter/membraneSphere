@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 from Numeric import *
 import Gnuplot, Gnuplot.funcutils
 

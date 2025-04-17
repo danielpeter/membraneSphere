@@ -1,5 +1,5 @@
-#! /usr/bin/env python
-
+#!/usr/bin/env python
+#
 # script for sorting a 'ttkernel.*' file to have increasing latitudes
 # arguments:
 #       $1 - filename e.g. 'Data/tmp/ttkernel.dat'

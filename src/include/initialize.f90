@@ -1597,7 +1597,7 @@
   call syncAbortMPI()
 
   ! stop process
-  stop 'Abort - program '
+  stop 'Abort - program'
 
   end subroutine
 

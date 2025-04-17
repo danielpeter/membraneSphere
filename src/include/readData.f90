@@ -32,7 +32,7 @@
   logical,intent(in):: VERBOSE
   ! local parameters
   integer::i,k,ier,ilocal
-  character(len=1):: divString
+  character(len=2):: strLev
   character(len=56):: fileName
   character(len=14):: ending
 
@@ -49,14 +49,17 @@
   endif
 
   numVertices = 0
-  write(divString,'(i1)') subdivisions
+
+  write(strLev,'(i0)') subdivisions
+  ! left adjust/trim
+  strLev = adjustl(strLev)
 
 !100  format(f16.14,2x,f16.14,2x,f16.8)
 !101  format(f16.10,2x,f16.10,2x,f16.10)
 
   ! read all voronoi cell centre vertices values from file
   !(voronoi cell centers are equal to triangle corners)
-  fileName = 'data/griddata/Dtvert'//divString//ending
+  fileName = 'data/griddata/Dtvert'//trim(strLev)//trim(ending)
   if (VERBOSE) print *,'  ',trim(fileName)
   open(IIN,file=trim(fileName),status='old',iostat=ier)
   if (ier /= 0) then
@@ -85,7 +88,7 @@
   !print *,'vertex',1,(vertices(1,k),k=1,3)
 
   !read in the corresponding cell corners
-  fileName = 'data/griddata/Dvvert'//divString//ending
+  fileName = 'data/griddata/Dvvert'//trim(strLev)//trim(ending)
   if (VERBOSE) print *,'  ',trim(fileName)
   open(IIN,file=trim(fileName),status='old',iostat=ier)
   if (ier /= 0) call stopProgram('Abort - readData File2   ')
@@ -103,7 +106,7 @@
   !print *,'vertex',1,(cellCorners(1,k),k=1,3)
 
   !read in the corresponding cell neighbors indices
-  fileName = 'data/griddata/Dnear'//divString//ending
+  fileName = 'data/griddata/Dnear'//trim(strLev)//trim(ending)
   if (VERBOSE) print *,'  ',trim(fileName)
   open(IIN,file=trim(fileName),status='old',iostat=ier)
   if (ier /= 0) call stopProgram('Abort - readData File3   ')
@@ -129,7 +132,7 @@
   !print *,'vertex',1,(cellNeighbors(1,k),k=0,6)
 
   !read in the corresponding cell face indices
-  fileName = 'data/griddata/Dvface'//divString//ending
+  fileName = 'data/griddata/Dvface'//trim(strLev)//trim(ending)
   if (VERBOSE) print *,'  ',trim(fileName)
   open(IIN,file=trim(fileName),status='old',iostat=ier)
   if (ier /= 0) call stopProgram('Abort - readData File4   ')
@@ -157,7 +160,7 @@
   ! allocate triangle face array
   if (STATION_CORRECTION .or. SIMULATIONOUTPUT) then
     !read in the corresponding triangle face indices
-    fileName = 'data/griddata/Dtface'//divString//ending
+    fileName = 'data/griddata/Dtface'//trim(strLev)//trim(ending)
     if (VERBOSE) print *,'  ',trim(fileName)
     open(IIN,file=trim(fileName),status='old', iostat=ier)
     if (ier /= 0) call stopProgram('Abort - readData Dtface file    ')

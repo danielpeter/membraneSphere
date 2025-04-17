@@ -69,13 +69,15 @@
   implicit none
   ! local parameters
   character(len=64):: fileName
-  character(len=1):: divString
+  character(len=2):: strLev
 
   ! parameters
-  write(divString,'(i1)') subdivisions  ! grid level
+  write(strLev,'(i0)') subdivisions  ! grid level
+  ! left adjust
+  strLev = adjustl(strLev)
 
   !filename of phase velocity map (values in absolute km/s)
-  fileName = 'data/phasedata/phase.'//divString//'.L150.dat'
+  fileName = 'data/phasedata/phase.'//trim(strLev)//'.L150.dat'
 
   ! read phase map
   call readPhaseVelocityMap(fileName)

@@ -22,7 +22,7 @@
 !
 ! input:
 !    vertex     - index of reference vertex
-!    area      - cell area
+!    area       - cell area
 !
 ! needs:
 !    vertices - voronoi cell center vertices array
@@ -49,11 +49,11 @@
   corner1 = vertex
   vectorA(:) = vertices(corner1,:)
 
-  area = 0.0
+  area = 0.0_WP
   do n = 1, cellFace(vertex,0)
     !determine triangles corner indices
-    corner2=cellFace(vertex,n)
-    corner3 = cellFace(vertex,(mod(n,cellFace(vertex,0))+1) )
+    corner2 = cellFace(vertex,n)
+    corner3 = cellFace(vertex,(mod(n,cellFace(vertex,0))+1))
 
     !get corner vectors
     vectorB(:) = cellCorners(corner2,:)
@@ -63,16 +63,18 @@
     a = haversine(vectorA, vectorB)
     b = haversine(vectorB, vectorC)
     c = haversine(vectorC, vectorA)
-    s = (a + b + c)*0.5_WP
+    s = (a + b + c) * 0.5_WP
 
     tanexcess4 = sqrt( tan(s*0.5_WP)*tan((s-a)*0.5_WP)*tan((s-b)*0.5_WP)*tan((s-c)*0.5_WP) )
-    excess = 4.0_WP*atan( tanexcess4)
+    excess = 4.0_WP * atan( tanexcess4)
 
-
-    area = area+EARTHRADIUS_SQUARED*excess
+    area = area + excess
   enddo
 
-  if (area < 1.0) then
+  ! dimensionalizes area
+  area = EARTHRADIUS_SQUARED * area
+
+  if (area <= 0.0_WP) then
     print *,'cellArea calculation has invalid area'
     print *,'  vertex:',vertex
     print *,'  infos:',n,a,b,c,s,excess,tanexcess4
@@ -106,7 +108,7 @@
   real(WP):: vectorA(3),vectorB(3)
 
   ! cell center reference
-  vectorA(:) = vertices(vertex, : )
+  vectorA(:) = vertices(vertex,:)
 
   ! check index
   if (cellNeighbors(vertex,0) > 6 .or. cellNeighbors(vertex,0) < 5) then
@@ -117,7 +119,7 @@
   distances(:) = 0.0_WP
 
   ! get distances
-  distance = 0.0
+  distance = 0.0_WP
   distances(0) = cellNeighbors(vertex,0)
   do n = 1, cellNeighbors(vertex,0)
     ! determine distance to neighbor
@@ -125,7 +127,9 @@
 
     ! calculate arc distance between these two
     call greatCircleDistance(vectorA,vectorB,distance)
-    distances(n) = EARTHRADIUS*distance
+
+    ! dimensionalizes distance
+    distances(n) = EARTHRADIUS * distance
   enddo
 
   end subroutine
@@ -182,7 +186,9 @@
 
     !calculate arc distance between these two
     call greatCircleDistance(vectorA,vectorB,distance)
-    lengths(n) = EARTHRADIUS*distance
+
+    ! dimensionalizes length
+    lengths(n) = EARTHRADIUS * distance
 
     !print an output file for gnuplot
     !write(11,'(3f12.8,f12)') vectorA(1),vectorA(2),vectorA(3),
@@ -236,7 +242,7 @@
   area = 0.0_WP
   do n = 1, cellFace(vertex,0)
     !determine triangles corner indices
-    corner2=cellFace(vertex,n)
+    corner2 = cellFace(vertex,n)
     corner3 = cellFace(vertex,(mod(n,cellFace(vertex,0))+1) )
 
     !get corner vectors
@@ -252,8 +258,11 @@
     !print *,'angleB',angleB/PI*180
     !print *,'angleC',angleC/PI*180
 
-    area = area+EARTHRADIUS_SQUARED*(angleA + angleB + angleC - PI)
+    area = area + (angleA + angleB + angleC - PI)
   enddo
+
+  ! dimensionalizes area
+  area = EARTHRADIUS_SQUARED * area
 
   end subroutine
 
@@ -272,7 +281,7 @@
   ! writes precalculated values to files
   if (statfile_output) then
     if (timestep < 0) then
-      charstep=""
+      charstep = ""
     else
       write(charstep,*) timestep
     endif
@@ -313,15 +322,15 @@
 ! and cell edge lengths
 !
 ! return: prints output
-  use cells
+  use precisions, only: WP,PI,EARTHRADIUS,EARTHRADIUS_SQUARED
+  use cells, only: numVertices
   implicit none
   logical,intent(in):: statfile_output,plotfile_output
   ! local parameters
   real(WP):: centerDistances(0:6),edgesLength(0:6)
   real(WP):: area
   integer::  n,k
-  real(WP):: averageArea, averageLength
-  real(WP):: averageDist
+  double precision:: averageArea, averageLength, averageDist
   integer::  areaCount, lengthCount, distCount
   real(WP):: areaMin, areaMax
   real(WP):: distMin, distMax
@@ -334,9 +343,9 @@
   real(WP):: fractionR
 
   !initialize
-  averageArea   = 0.0_WP
-  averageLength = 0.0_WP
-  averageDist   = 0.0_WP
+  averageArea   = 0.d0
+  averageLength = 0.d0
+  averageDist   = 0.d0
   areaCount     = 0
   lengthCount   = 0
   distCount     = 0
@@ -369,7 +378,7 @@
       areaMinIndex = n
     endif
 
-    averageArea = averageArea + area
+    averageArea = averageArea + real(area,kind=8)
     areaCount = areaCount + 1
 
     !get arc distances from center to neighbors
@@ -390,7 +399,7 @@
          distMinIndex = n
       endif
 
-      averageDist = averageDist + centerDistances(k)
+      averageDist = averageDist + real(centerDistances(k),kind=8)
       distCount = distCount + 1
     enddo
 
@@ -406,15 +415,15 @@
         edgeMaxIndex = n
       endif
       if (edgesLength(k) < edgeMin) then
-        edgeMin =edgesLength(k)
+        edgeMin = edgesLength(k)
         edgeMinIndex = n
       endif
 
-      averageLength = averageLength+edgesLength(k)
-      lengthCount = lengthCount +1
+      averageLength = averageLength + real(edgesLength(k),kind=8)
+      lengthCount = lengthCount + 1
     enddo
 
-    !get cell derivative fractions
+    ! get cell derivative fractions
     call cellDerivativeFractions(n,fractions,fractionavg,plotfile_output)
 
     ! output to cellFractionAverage.dat
@@ -428,14 +437,13 @@
 
       ! min / max
       if (fractions(k) > fractionMax) then
-        fractionMax =fractions(k)
+        fractionMax = fractions(k)
         fractionMaxIndex = n
       endif
       if (fractions(k) < fractionMin) then
-        fractionMin =fractions(k)
+        fractionMin = fractions(k)
         fractionMinIndex = n
       endif
-
     enddo
   enddo !n
 
@@ -443,28 +451,28 @@
   print *
   print *,'AREAS'
   print *,'number of face areas: ',areaCount
-  print *,'average area        : ',averageArea/areaCount, ' km2'
+  print *,'average area        : ',averageArea/dble(areaCount), ' km2'
   print *,'total areas         : ',averageArea, ' km2'
-  print *,'            expected: ',4*PI*EARTHRADIUS_SQUARED, ' km2'
+  print *,'            expected: ',4.d0*PI*EARTHRADIUS_SQUARED, ' km2'
   print *,'a_min/a_max         : ', areaMin/areaMax
   print *,'minimum area        : ',areaMin, ' km2 ',areaMinIndex,'(min index)'
   print *,'maximum area        : ',areaMax, ' km2 ',areaMaxIndex,'(max index)'
   print *
   print *,'CELL CENTER DISTANCES'
   print *,'number of distances : ',distCount
-  print *,'average distances   : ', averageDist/distCount, ' km'
-  print *,'d_min/d_max         : ', distMin/distMax
+  print *,'average distances   : ',averageDist/dble(distCount), ' km'
+  print *,'d_min/d_max         : ',distMin/distMax
   print *,'minimum distance    : ',distMin, ' km ',distMinIndex,'(min index)'
   print *,'maximum distance    : ',distMax, ' km ',distMaxIndex,'(max index)'
   print *
   print *,'CELL EDGES'
-  print *,'number of edges     : ', lengthCount
-  print *,'average lengths     : ',averageLength/lengthCount, ' km'
-  print *,'e_min/e_max         : ', edgeMin/edgeMax
+  print *,'number of edges     : ',lengthCount
+  print *,'average lengths     : ',averageLength/dble(lengthCount), ' km'
+  print *,'e_min/e_max         : ',edgeMin/edgeMax
   print *,'minimum edge length : ',edgeMin, ' km ',edgeMinIndex,'(min index)', &
-                ' (radius fraction',edgeMin/EarthRadius,')'
+                ' (radius fraction',edgeMin/EARTHRADIUS,')'
   print *,'maximum edge length : ',edgeMax, ' km ',edgeMaxIndex,'(max index)', &
-                ' (radius fraction',edgeMax/EarthRadius,')'
+                ' (radius fraction',edgeMax/EARTHRADIUS,')'
   print *
   print *,'CELL DERIVATIVE FRACTIONS'
   print *,'min/max fraction    : ',fractionMin,fractionMax,' - ',fractionMinIndex,'(min index)',fractionMaxIndex,'(max index)'

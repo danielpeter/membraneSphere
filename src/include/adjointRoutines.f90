@@ -205,7 +205,7 @@
     !endif
 
     ! output to file for each process
-    write(timestepstr,'(i8.7)')timestep
+    write(timestepstr,'(i8.7)') timestep
     write(rankstr,'(i3.3)') myrank
     open(IOUT,file=trim(datadirectory)//'wavefield_'//timestepstr//'.rank'//rankstr//'.dat', &
          access='direct',recl=WP,iostat=ier)
@@ -262,7 +262,7 @@
 
   if (storeAsFile) then
     ! output to file for each process
-    write(timestepstr,'(i8.7)')timestep
+    write(timestepstr,'(i8.7)') timestep
     write(rankstr,'(i3.3)') myrank
     open(IOUT,file=trim(datadirectory)//'wavefieldAdj_'//timestepstr//'.rank'//rankstr//'.dat', &
           access='direct',recl=WP,iostat=ier)
@@ -1057,7 +1057,7 @@
     sum_kern = 0.0_WP
     do i = 1,numVertices
       call getSphericalCoord_Lat(i,lat,lon)
-      write(IOUT,'(2f8.2,e18.6e3,i12)') lon,lat,adjointKernel(i),i
+      write(IOUT,'(2f8.2,e18.6e3,i18)') lon,lat,adjointKernel(i),i
 
       ! summate values
       sum_kern = sum_kern+adjointKernel(i)*cellAreas(i)/EARTHRADIUS_SQUARED
@@ -1094,7 +1094,7 @@
   i = 0
   do timestep = firsttimestep, lasttimestep
     i = i+1
-    write(timestepstr,'(i8.7)')timestep
+    write(timestepstr,'(i8.7)') timestep
     !if (rank == 1) print *,'    open timestep:',i,timestep
     open(IIN,file=trim(datadirectory)//'wavefield_'//timestepstr//'.rank'//rankstr//'.dat', &
         access='direct',recl=WP,iostat=ier)
@@ -1133,7 +1133,7 @@
   i = 0
   do timestep = firsttimestep, lasttimestep
     i = i+1
-    write(timestepstr,'(i8.7)')timestep
+    write(timestepstr,'(i8.7)') timestep
     open(IOUT,file=trim(datadirectory)//'wavefield_'//timestepstr//'.rank'//rankstr//'.dat', &
         access='direct',recl=WP,iostat=ier)
     if (ier /= 0) call stopProgram('could not open for output, file wavefield_'//&
@@ -1168,7 +1168,7 @@
   write(rankstr,'(i3.3)') myrank
   i = numofTimeSteps
   do timestep = firsttimestep, lasttimestep
-    write(timestepstr,'(i8.7)')timestep
+    write(timestepstr,'(i8.7)') timestep
     open(IIN,file=trim(datadirectory)//'wavefieldAdj_'//timestepstr//'.rank'//rankstr//'.dat', &
         access='direct',recl=WP,iostat=ier)
     if (ier /= 0) call stopProgram('could not open for input, file wavefieldAdj_'//&
@@ -1203,7 +1203,7 @@
   ! get rid of files
   write(rankstr,'(i3.3)') myrank
   do timestep = firsttimestep, lasttimestep
-    write(timestepstr,'(i8.7)')timestep
+    write(timestepstr,'(i8.7)') timestep
     ! forward wavefield files
     open(IOUT,file=trim(datadirectory)//'wavefield_'//timestepstr//'.rank'//rankstr//'.dat', &
         access='direct',recl=WP,iostat=ier)

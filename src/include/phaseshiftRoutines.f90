@@ -124,7 +124,6 @@
     print *
   endif
 
-
   if (.not. referenceRun) then
     ! see if the reference seismogram is available
     available = .false.
@@ -283,30 +282,30 @@
 
     ! get actual vertex position
     call getSphericalCoord_Lat(deltaVertex,realdeltaLat,realdeltaLon)
-    if (realdeltaLon > 180.0_WP) realdeltaLon= -(360.0_WP-realdeltaLon)
+    if (realdeltaLon > 180.0_WP) realdeltaLon = -(360.0_WP-realdeltaLon)
 
     call getSphericalCoord_Lat(receiverVertex,recvLat,recvLon)
 
     ! output
-    write(80,'(2f8.2, 2e16.6, i10,5f12.6)') real(realdeltaLon), &
-              real(realdeltaLat),kernel,kernelAnalytic, &
-              receiverVertex, t_lag,t_lagAnalytic,vperturbation,recvLat,recvLon
+    write(80,'(2f8.2, 2e16.6, i18, 5f12.6)') real(realdeltaLon),real(realdeltaLat), &
+                                             kernel,kernelAnalytic, &
+                                             receiverVertex, &
+                                             t_lag,t_lagAnalytic,vperturbation,recvLat,recvLon
     ! rotate into equatorial plane
     if (ROTATE_FRAME) then
       call getVector( realdeltaLat,realdeltaLon,vdelta(1),vdelta(2),vdelta(3) )
       call rotateVector(mat,vdelta,vdelta)
       call getSphericalCoordinates(vdelta,realdeltaLat,realdeltaLon)
-
       ! print to file
-      !print '(2f8.2, f12.6, i10)',real(realdeltaLon),real(realdeltaLat),kernel, deltaVertex
-      write(81,'(2f8.2, 2e16.6, i10,5f12.6)') real(realdeltaLon),real(realdeltaLat), &
-                  kernel,kernelAnalytic, &
-                  receiverVertex, t_lag,t_lagAnalytic,vperturbation,recvLat,recvLon
+      write(81,'(2f8.2, 2e16.6, i18, 5f12.6)') real(realdeltaLon),real(realdeltaLat), &
+                                               kernel,kernelAnalytic, &
+                                               receiverVertex, &
+                                               t_lag,t_lagAnalytic,vperturbation,recvLat,recvLon
     endif
   else
     ! get actual perturbation vertex position
     call getSphericalCoord_Lat(deltaVertex,realdeltaLat,realdeltaLon)
-    if (realdeltaLon > 180.0_WP) realdeltaLon= -(360.0_WP-realdeltaLon)
+    if (realdeltaLon > 180.0_WP) realdeltaLon = -(360.0_WP-realdeltaLon)
     !if (VERBOSE .and. MAIN_PROCESS) print *,'delta vertex:',deltaVertex,realdeltaLat,realdeltaLon
 
     ! get phase shifts for each receiver location
@@ -337,7 +336,7 @@
 
       ! kernel value term
       kernel = getKernelValue(deltaVertex,heterogeneous,t_lag,phaseVelocityRef, &
-                            arrivalTime,vperturbation)
+                              arrivalTime,vperturbation)
 
       !if (ANALYTICAL_CORRELATION) then
       !  ! analytic time lag
@@ -356,21 +355,19 @@
 
       ! relativ position of delta towards receiver
       correctedLon = realdeltaLon - recvLon + 360.0_WP
-      if (correctedLon >= 360.0_WP) correctedLon=correctedLon-360.0_WP
+      if (correctedLon >= 360.0_WP) correctedLon = correctedLon-360.0_WP
       correctedLat = realdeltaLat
 
       ! output
       if (manyKernels) then
-        recvVertex=kernelsReceivers(currentKernel,n)
+        recvVertex = kernelsReceivers(currentKernel,n)
       else
-        recvVertex=receivers(n)
+        recvVertex = receivers(n)
       endif
-
-      !print '(2f8.2,2f12.6,i10,5f12.6)',real(correctedLon),real(correctedLat), &
-      !  kernel,kernelAnalytic,recvVertex,t_lag,t_lagAnalytic,vperturbation,recvLat,recvLon
-      write(80,'(2f8.2, 2e16.6, i10,5f12.6)',iostat=ier) &
-          real(correctedLon),real(correctedLat),kernel,kernelAnalytic, &
-          recvVertex,t_lag,t_lagAnalytic,vperturbation,recvLat,recvLon
+      write(80,'(2f8.2, 2e16.6, i18, 5f12.6)',iostat=ier) real(correctedLon),real(correctedLat), &
+                                                          kernel,kernelAnalytic, &
+                                                          recvVertex, &
+                                                          t_lag,t_lagAnalytic,vperturbation,recvLat,recvLon
       if (ier /= 0) then
         print *,'Error: writing to file ',ier
         call stopProgram( 'abort - calculatePhaseshifts   ')
@@ -382,10 +379,10 @@
         call rotateVector(mat,vdelta,vdelta)
         call getSphericalCoordinates(vdelta,correctedLat,correctedLon)
         ! print to file
-        !print '(2f8.2, f12.6, i10)',real(realdeltaLon),real(realdeltaLat),kernel, deltaVertex
-        write(81,'(2f8.2, 2e16.6, i10,5f12.6)') &
-          real(correctedLon),real(correctedLat),kernel,kernelAnalytic, &
-          recvVertex,t_lag,t_lagAnalytic,vperturbation,recvLat,recvLon
+        write(81,'(2f8.2, 2e16.6, i18, 5f12.6)') real(correctedLon),real(correctedLat), &
+                                                 kernel,kernelAnalytic, &
+                                                 recvVertex, &
+                                                 t_lag,t_lagAnalytic,vperturbation,recvLat,recvLon
       endif
     enddo
   endif
@@ -515,19 +512,19 @@
 
   ! arrival time
   if (manyKernels) then
-      ! calculate the analytical arrival time
+    ! calculate the analytical arrival time
+    call greatCircleDistance(vertices(sourceVertex,:), &
+                             vertices(kernelsReceivers(currentKernel,1),:),distance)
+    arrivalTime = distance*EARTHRADIUS/cphaseRef
+    ! output
+    if (MAIN_PROCESS .and. beVerbose) then
       call greatCircleDistance(vertices(sourceVertex,:), &
                                vertices(kernelsReceivers(currentKernel,1),:),distance)
-      arrivalTime = distance*EARTHRADIUS/cphaseRef
-      ! output
-      if (MAIN_PROCESS .and. beVerbose) then
-        call greatCircleDistance(vertices(sourceVertex,:), &
-                                 vertices(kernelsReceivers(currentKernel,1),:),distance)
-        print *,'kernel distance: ',distance*180.0/PI
-        print *,'    arrival time:',arrivalTime
-        print *,'    start time for fourier transformation:',startTime
-        print *
-      endif
+      print *,'kernel distance  : ',distance*180.0/PI
+      print *,'    arrival time : ',arrivalTime
+      print *,'    start time for fourier transformation: ',startTime
+      print *
+    endif
   else
     ! calculate the analytical arrival time
     call greatCircleDistance(vertices(sourceVertex,:),vertices(receiverVertex,:), &
@@ -535,8 +532,8 @@
     arrivalTime = distance*EARTHRADIUS/cphaseRef
     ! output
     if (MAIN_PROCESS .and. beVerbose) then
-      print *,'    arrival time:',arrivalTime
-      print *,'    start time for fourier transformation:',startTime
+      print *,'    arrival time : ',arrivalTime
+      print *,'    start time for fourier transformation: ',startTime
       print *
     endif
   endif
@@ -645,17 +642,19 @@
 
       ! collect data
       do while (ier == 0)
-        read(70,'(2f8.2, 2e16.6, i10,5f12.6)',iostat=ier) &
-          lon,lat,kernelfromFile,kernelAnalyticFromFile, &
-          recvVertex, t_lagfromFile,t_lagAnalyticfromFile, &
-          vperturbation,recvLat,recvLon
+        read(70,'(2f8.2, 2e16.6, i18, 5f12.6)',iostat=ier) lon,lat, &
+                                                           kernelfromFile,kernelAnalyticFromFile, &
+                                                           recvVertex, &
+                                                           t_lagfromFile,t_lagAnalyticfromFile, &
+                                                           vperturbation,recvLat,recvLon
         if (ier == 0) then
           n = n+1
           !phaseshifts(n,1)=lon
           !phaseshifts(n,2)=lat
           !phaseshifts(n,3)=kernel
-          write(80,'(2f8.2,e16.6,2e12.4)') lon,lat,kernelfromFile, &
-            t_lagfromFile/arrivalTime,t_lagfromFile
+          write(80,'(2f8.2,e16.6,2e12.4)') lon,lat, &
+                                           kernelfromFile, &
+                                           t_lagfromFile/arrivalTime,t_lagfromFile
         endif
       enddo
       close(70)
@@ -670,7 +669,7 @@
 
   print *,'  wrote to ',kernelfile(1:(len_trim(kernelfile)-8))//'***.dat'
   print *,'  entries read: ',n
-  if (n == 65160) print *,'  kernel full...'
+  !if (n == 65160) print *,'  kernel full...'
   print *,'ended successfully!'
 
   ! clean up reference files

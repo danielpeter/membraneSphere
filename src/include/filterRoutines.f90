@@ -31,8 +31,9 @@
   !WindowSize = 2 * WindowSize
 
   if (MAIN_PROCESS .and. VERBOSE) then
-    print *,'    FFT window size          = ',WindowSIZE
-    print *,'        number of time steps = ',numofTimeSteps
+    print *,'    FFT:'
+    print *,'      window size         : ',WindowSIZE
+    print *,'      number of time steps: ',numofTimeSteps
   endif
 
   end subroutine

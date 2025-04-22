@@ -118,6 +118,19 @@ end module dodeco
   ! local parameters
   integer :: ier
 
+  ! checks integer overflow
+  !   - 32-bit integer < 2,147,483,647
+  !   - 64-bit integer < 9,223,372,036,854,775,807
+  !
+  ! for 32-bit integers: MAXTRIANGLES limit is reached at MAXLEVELS == 12
+  !                      that is, for levels == 13 MAXTRIANGLES will overflow
+  if (levels > 12) then
+    print *,'Error: the maximum of supported subdivision levels is equal to 12.'
+    print *,'       This is due to integer overflow (of the number of triangles) beyond these levels.'
+    print *,'Please choose a subdivision level <= 12, exiting...'
+    stop 'Invalid subdivisions requested, mnaximum of subdivisions == 12'
+  endif
+
   ! maximum values
   MAXLEVELS    = levels
   MAXTRIANGLES = 20 * (4**(MAXLEVELS + 1) - 1)
@@ -170,8 +183,7 @@ end module dodeco
 ! indexpoly(6,j) is equal to indexpoly(1,j), completing the pentagon
 ! by repeating the first vertex.
 !
-! xcNormal(j), ycNormal(j), zcNormal(j) are the components of the
-! faces' unit normals.
+! xc(j), yc(j), zc(j) are the components of the faces' unit centers.
 
   use dodeco
   implicit none
@@ -179,7 +191,7 @@ end module dodeco
   double precision :: a72,a36,c72,s72,c36,s36
   double precision :: xsid2,xsid,xv,zv
   double precision :: a,vx,vy,tx,ty,tz,ta,ts,s,ss
-  double precision :: alph,ph,th
+  double precision :: alph
   integer :: i,j,i2,i3,i4,ip,iv
 
   ! alternative views (was equivalence in f77)
@@ -187,12 +199,12 @@ end module dodeco
   ! will use reshape for x1/y1/z1
   double precision, dimension(5,4) :: x, y, z
   double precision, dimension(20) :: x1, y1, z1
+!  double precision, dimension(5,4), target :: x, y, z     ! pointer mapping - not working...
+!  double precision, dimension(:), pointer :: x1, y1, z1
 
   ! polygon
   integer :: indexpoly(6, 12)
-  double precision :: xcNormal(12), ycNormal(12), zcNormal(12)
-  double precision :: vec1(3, 12)
-  double precision :: vec2(2, 12)
+  double precision :: xc(12), yc(12), zc(12)
 
   double precision, parameter :: pi  = 4.0*datan(1.d0)
 
@@ -206,22 +218,22 @@ end module dodeco
   c36 = dcos(a36)
   s36 = dsin(a36)
 
-  xsid2 = (1.0 - c72)**2 + s72**2
+  xsid2 = (1.d0 - c72)**2 + s72**2
   xsid = dsqrt(xsid2)
-  xv = c72 * xsid2 / (1.0 - c72)
+  xv = c72 * xsid2 / (1.d0 - c72)
   zv = dsqrt(xsid2 - xv**2)
 
   ! get vertices of dodecahedron
   do i = 1,5
-    a = (i - 1.d0)*a72
+    a = dble(i - 1) * a72
     x(i,1) = dcos(a)
     y(i,1) = dsin(a)
     z(i,1) = 0.d0
   enddo
 
   do i = 1,5
-    x(i,2) = x(i,1)*(1.d0 + xv)
-    y(i,2) = y(i,1)*(1.d0 + xv)
+    x(i,2) = x(i,1) * (1.d0 + xv)
+    y(i,2) = y(i,1) * (1.d0 + xv)
     z(i,2) = zv
   enddo
 
@@ -257,6 +269,7 @@ end module dodeco
     z(i,4) = z(i,3) + tz
   enddo
 
+  ! dodecahedron center position
   tx = 0.d0
   ty = 0.d0
   tz = 0.d0
@@ -267,11 +280,12 @@ end module dodeco
       tz = tz + z(i,j)
     enddo
   enddo
+  tx = tx / 20.d0
+  ty = ty / 20.d0
+  tz = tz / 20.d0
 
-  tx = tx/20.d0
-  ty = ty/20.d0
-  tz = tz/20.d0
-
+  ! moves vertex points to have solid center at (0,0,0)
+  ! and all vertices on unit sphere (normalized position vectors)
   do i = 1,5
     do j = 1,4
       x(i,j) = x(i,j) - tx
@@ -289,6 +303,19 @@ end module dodeco
   x1 = reshape(x, [20])
   y1 = reshape(y, [20])
   z1 = reshape(z, [20])
+  ! same as
+  !do i = 1,5
+  !  do j = 1,4
+  !    i2 = (j-1)*5 + i
+  !    x1(i2) = x(i,j)
+  !    y1(i2) = y(i,j)
+  !    z1(i2) = z(i,j)
+  !  enddo
+  !enddo
+  ! pointer remapping x(5,4) -> x1(20) - not working, will have different memory layout
+  !x1(1:20) => x
+  !y1(1:20) => y
+  !z1(1:20) => z
 
   print *,'  vertex coordinates done'
 
@@ -377,62 +404,26 @@ end module dodeco
   indexpoly(5,12) = 19
   indexpoly(6,12) = 18
 
-
-  ! determine for each dodecahedron face its normal which
+  ! determine for each dodecahedron face its center which
   ! projected to the sphere is the new midpoint of this face
   do ip = 1,12
-    xcNormal(ip) = 0.d0
-    ycNormal(ip) = 0.d0
-    zcNormal(ip) = 0.d0
+    xc(ip) = 0.d0
+    yc(ip) = 0.d0
+    zc(ip) = 0.d0
     do iv = 1,5
-      xcNormal(ip) = xcNormal(ip) + x1(indexpoly(iv,ip))
-      ycNormal(ip) = ycNormal(ip) + y1(indexpoly(iv,ip))
-      zcNormal(ip) = zcNormal(ip) + z1(indexpoly(iv,ip))
+      xc(ip) = xc(ip) + x1(indexpoly(iv,ip))
+      yc(ip) = yc(ip) + y1(indexpoly(iv,ip))
+      zc(ip) = zc(ip) + z1(indexpoly(iv,ip))
     enddo
 
-    ! normalize vector xcNormal,ycNormal,zcNormal
-    ss = dsqrt(xcNormal(ip)**2 + ycNormal(ip)**2 + zcNormal(ip)**2)
-    xcNormal(ip) = xcNormal(ip)/ss
-    ycNormal(ip) = ycNormal(ip)/ss
-    zcNormal(ip) = zcNormal(ip)/ss
-
-    ! determine Cartesian coordinates of each midpont of a face
-    if (ip == 1) then
-      ! the first must lie on this position
-      vec1(1,ip) = 1.d0
-      vec1(2,ip) = 0.d0
-      vec1(3,ip) = 0.d0
-      vec2(1,ip) = 0.d0
-      vec2(2,ip) = 1.d0
-    else if (ip >= 2 .and. ip <= 6) then
-      ph = datan2(ycNormal(ip), xcNormal(ip))
-      th = dacos(zcNormal(ip))
-      vec1(1,ip) = - dcos(th)*dcos(ph)
-      vec1(2,ip) = - dcos(th)*dsin(ph)
-      vec1(3,ip) = dsin(th)
-      vec2(1,ip) = - dsin(ph)
-      vec2(2,ip) = dcos(ph)
-    else if (ip >= 7.and. ip <= 11) then
-      ph = datan2(ycNormal(ip), xcNormal(ip))
-      th = dacos(zcNormal(ip))
-      vec1(1,ip) = dcos(th)*dcos(ph)
-      vec1(2,ip) = dcos(th)*dsin(ph)
-      vec1(3,ip) = -dsin(th)
-      vec2(1,ip) = dsin(ph)
-      vec2(2,ip) = -dcos(ph)
-    else if (ip == 12) then
-      !the last must lie on opposite position to first one
-      vec1(1,ip) = -1.d0
-      vec1(2,ip) = 0.d0
-      vec1(3,ip) = 0.d0
-      vec2(1,ip) = 0.d0
-      vec2(2,ip) = 1.d0
-    else
-      stop 'dodec: poly error'
-    endif
+    ! normalize vector
+    ss = dsqrt(xc(ip)**2 + yc(ip)**2 + zc(ip)**2)
+    xc(ip) = xc(ip)/ss
+    yc(ip) = yc(ip)/ss
+    zc(ip) = zc(ip)/ss
   enddo
 
-  print *,'  normals done'
+  print *,'  centers done'
 
   ! fill common vertices array with all vertex vectors
   ! and the new midpoints of each polygon face
@@ -444,12 +435,12 @@ end module dodeco
     tvertices(2,nv) = y1(i)
     tvertices(3,nv) = z1(i)
   enddo
-  ! fill in normal vectors
+  ! fill in center vectors
   do i = 1,12
     nv = nv + 1
-    tvertices(1,nv) = xcNormal(i)
-    tvertices(2,nv) = ycNormal(i)
-    tvertices(3,nv) = zcNormal(i)
+    tvertices(1,nv) = xc(i)
+    tvertices(2,nv) = yc(i)
+    tvertices(3,nv) = zc(i)
   enddo
 
   print *,'  common vertices done'
@@ -460,7 +451,7 @@ end module dodeco
   do i = 1,12
     do j = 1,5
       nt = nt + 1
-      indexTriangleVert(1,nt) = 20+i
+      indexTriangleVert(1,nt) = 20 + i
       indexTriangleVert(2,nt) = indexpoly(j,i)
       indexTriangleVert(3,nt) = indexpoly(j+1,i)
     enddo
@@ -479,11 +470,11 @@ end module dodeco
 
   ! local parameters
   double precision :: vvMidpoint(3,3),vvec(3),azms(6)
+  double precision :: vec1(3),vec2(3),vec3(3)
   double precision :: ss,svvec
-  double precision, external :: dazimv,ddot3ScalarProduct
   integer :: indv(3),idx(6),itmp(6)
   integer :: i,k,is,is1,ic,iv,it,il,iv1,iv2,iv3
-  integer :: ii,jj,kk,ii1,it0,it1,ivgot,itc,nlevel
+  integer :: ii,jj,kk,ii1,it0,it1,ivgot,itc,nlevel,ntri
   integer :: index1,index2,indexTmp
   logical :: is_done
   ! hash table
@@ -500,6 +491,7 @@ end module dodeco
   double precision :: start_time,end_time
   ! tolerance (machine precision for double precision)
   double precision, parameter :: TOL_EPS = 1.0d-12
+  double precision, external :: dazimv,ddot3ScalarProduct
 
   print *,'subdividing grid'
 
@@ -702,28 +694,42 @@ end module dodeco
       iv3 = indexTriangleVert(3,it)
 
       ! finds the voronoi center of the three vertices by the equation
-      !vvMidpoint = v1 x v2 + v2 x v1 + v3 x v2
+      ! vvMidpoint = v1 x v2 + v2 x v3 + v3 x v1
 
-      vvec(1) = + tvertices(2,iv1) * tvertices(3,iv2) &
-                - tvertices(3,iv1) * tvertices(2,iv2) &
-                + tvertices(2,iv2) * tvertices(3,iv3) &
-                - tvertices(3,iv2) * tvertices(2,iv3) &
-                + tvertices(2,iv3) * tvertices(3,iv1) &
-                - tvertices(3,iv3) * tvertices(2,iv1)
+      vec1(:) = tvertices(:,iv1)
+      vec2(:) = tvertices(:,iv2)
+      vec3(:) = tvertices(:,iv3)
 
-      vvec(2) = + tvertices(3,iv1) * tvertices(1,iv2) &
-                - tvertices(1,iv1) * tvertices(3,iv2) &
-                + tvertices(3,iv2) * tvertices(1,iv3) &
-                - tvertices(1,iv2) * tvertices(3,iv3) &
-                + tvertices(3,iv3) * tvertices(1,iv1) &
-                - tvertices(1,iv3) * tvertices(3,iv1)
+      ! vvMidpoint = (T3 - T2) x (T1 - T2) (see Tape thesis, eq. (4.3), pp. 38) but with T2 as reference/origin
+      !            = T3 x T1 - T3 x T2 - T2 x T1   with A x A == 0
+      !            = T1 x T2 + T2 x T3 + T3 x T1   with A x B == - (B x A)
+      vvec(1) = + vec1(2) * vec2(3) - vec1(3) * vec2(2) &
+                + vec2(2) * vec3(3) - vec2(3) * vec3(2) &
+                + vec3(2) * vec1(3) - vec3(3) * vec1(2)
 
-      vvec(3) = + tvertices(1,iv1) * tvertices(2,iv2) &
-                - tvertices(2,iv1) * tvertices(1,iv2) &
-                + tvertices(1,iv2) * tvertices(2,iv3) &
-                - tvertices(2,iv2) * tvertices(1,iv3) &
-                + tvertices(1,iv3) * tvertices(2,iv1) &
-                - tvertices(2,iv3) * tvertices(1,iv1)
+      vvec(2) = + vec1(3) * vec2(1) - vec1(1) * vec2(3) &
+                + vec2(3) * vec3(1) - vec2(1) * vec3(3) &
+                + vec3(3) * vec1(1) - vec3(1) * vec1(3)
+
+      vvec(3) = + vec1(1) * vec2(2) - vec1(2) * vec2(1) &
+                + vec2(1) * vec3(2) - vec2(2) * vec3(1) &
+                + vec3(1) * vec1(2) - vec3(2) * vec1(1)
+
+      ! vvMidpoint = (T3 - T1) x (T2 - T1) (Tape thesis, eq. (4.3), pp. 38)
+      !            = T3 x T2 - T3 x T1 - T1 x T2      with A x A == 0
+      !            = T3 x T2 + T1 x T3 + T2 x T1      with A x B == - (B x A)
+      !            = T1 x T3 + T3 x T2 + T2 x T1      (Tape thesis, eq. (4.3), pp. 38)
+      !vvec(1) = + vec1(2) * vec3(3) - vec1(3) * vec3(2) &
+      !          + vec3(2) * vec2(3) - vec3(3) * vec2(2) &
+      !          + vec2(2) * vec1(3) - vec2(3) * vec1(2)
+      !
+      !vvec(2) = + vec1(3) * vec3(1) - vec1(1) * vec3(3) &
+      !          + vec3(3) * vec2(1) - vec3(1) * vec2(3) &
+      !          + vec2(3) * vec1(1) - vec2(1) * vec1(3)
+      !
+      !vvec(3) = + vec1(1) * vec3(2) - vec1(2) * vec3(1) &
+      !          + vec3(1) * vec2(2) - vec3(2) * vec2(1) &
+      !          + vec2(1) * vec1(2) - vec2(2) * vec1(1)
 
       ! normalize
       svvec = 1.d0 / dsqrt(ddot3ScalarProduct(vvec,vvec))
@@ -768,26 +774,40 @@ end module dodeco
     print *,'  arrange vertex orders'
 
     do iv = 1, numVertices(il)
-      if (nTrianglesContainVertex(iv) /= 5 .and. nTrianglesContainVertex(iv) /= 6) &
+      ! number of triangles that contain this vertex iv
+      ntri = nTrianglesContainVertex(iv)
+
+      ! check
+      if (ntri /= 5 .and. ntri /= 6) &
         stop 'unexpected vertex order'
 
-      do itc = 1, nTrianglesContainVertex(iv)
+      ! initializes
+      azms(:) = 0.d0
+      itmp(:) = 0
+      idx(:) = 0
+
+      ! gets azimuths of triangle midpoints for all triangles that contain this vertex tvertices(:,iv)
+      do itc = 1, ntri
         it = indexTriContainVertex(itc,iv)
+        ! azimuths
         azms(itc) = dazimv(tvertices(1,iv), voronoiVertices(1,it))
       enddo  ! itc
 
       ! sorting routine
-      call drsoinc(azms, nTrianglesContainVertex(iv), idx)
+      call drsoinc(azms, ntri, idx)
 
-      do itc = 1, nTrianglesContainVertex(iv)
+      do itc = 1, ntri
         itmp(itc) = indexTriContainVertex(itc,iv)
       enddo  ! itc
-      do itc = 1, nTrianglesContainVertex(iv)
+      do itc = 1, ntri
         indexTriContainVertex(itc,iv) = itmp(idx(itc))
-      enddo  ! itc
-      do itc = nTrianglesContainVertex(iv) + 1, 6
-        indexTriContainVertex(itc,iv) = 0
-      enddo  !itc
+      enddo
+      ! sets last to zero for vertex that is a pentagon midpoint
+      if (ntri < 6) then
+        do itc = ntri + 1, 6
+          indexTriContainVertex(itc,iv) = 0
+        enddo  !itc
+      endif
     enddo  ! iv
 
     !  We want to use info in ictv to figure out vertices
@@ -798,27 +818,30 @@ end module dodeco
       ! voronoi vertices around this vertex are indexed by
       !   indexTriContainVertex(,iv)
       ! and these can be used to access the triangles involved
-      do ii = 1,nTrianglesContainVertex(iv)
-        ii1 = 1 + mod(ii,nTrianglesContainVertex(iv))
+      ntri = nTrianglesContainVertex(iv)
+
+      do ii = 1,ntri
+        ii1 = 1 + mod(ii,ntri)
         it0 = indexTriContainVertex(ii,iv)
         it1 = indexTriContainVertex(ii1,iv)
 
         ! find which point these triangles have in common, other than iv
         ivgot = 0
         do jj = 1,3
-          do kk = 1,3
-            if (indexTriangleVert(jj,it0) == indexTriangleVert(kk,it1) .and. &
-                indexTriangleVert(jj,it0) /= iv) then
-              if (ivgot /= 0) stop 'There should only be one'
-              ivgot = indexTriangleVert(jj,it0)
-            endif
-          enddo
+          if (indexTriangleVert(jj,it0) /= iv) then
+            do kk = 1,3
+              if (indexTriangleVert(jj,it0) == indexTriangleVert(kk,it1)) then
+                if (ivgot /= 0) stop 'There should only be one'
+                ivgot = indexTriangleVert(jj,it0)
+              endif
+            enddo
+          endif
         enddo
         if (ivgot == 0) stop 'No common vertex found'
         indexvnear(ii,iv) = ivgot
       enddo
 
-      nvnear(iv) = nTrianglesContainVertex(iv)
+      nvnear(iv) = ntri
     enddo  ! iv
 
     ! file output for this level
@@ -902,11 +925,14 @@ contains
     key = (sum_v * (sum_v + 1)) / 2 + min_v      ! using integer kind=8
 
     ! checks integer overflow
-    ! 32-bit integer < 2,147,483,647
+    !   - 32-bit integer < 2,147,483,647
+    !   - 64-bit integer < 9,223,372,036,854,775,807
+
+    ! 32-bit keys
     !if (dble(sum_v)/2.d0 > (2147483646.d0 - dble(min_v)) / ((dble(sum_v) + 1.d0)/2.d0)) &
     !  stop 'Error hash key might exceed integer limit'
 
-    ! 64-bit integer < 9,223,372,036,854,775,807
+    ! 64-bit keys
     if (dble(sum_v)/2.d0 > (9223372036854775806.d0 - dble(min_v)) / ((dble(sum_v) + 1.d0)/2.d0)) &
       stop 'Error hash key might exceed integer limit'
 
@@ -1145,7 +1171,7 @@ contains
     if (nvnear(iv) == 5) indexvnear(6,iv) = indexvnear(1,iv)
   enddo
   do iv = 1, numVertices(il)
-    write(93, '(6i8)') (indexvnear(kk,iv), kk = 1,6)
+    write(93, '(6i18)') (indexvnear(kk,iv), kk = 1,6)
   enddo
   close(93)
 
@@ -1159,10 +1185,10 @@ contains
   do iv = 1, numVertices(il)
     ! if not a pentagon
     if (indexTriContainVertex(6,iv) /= 0) then
-      write(93,'(6i8)') (indexTriContainVertex(i,iv) - numTriangles(il), i=1,6)
+      write(93,'(6i18)') (indexTriContainVertex(i,iv) - numTriangles(il), i=1,6)
     else
-      write(93,'(6i8)') (indexTriContainVertex(i,iv) - numTriangles(il), i=1,5), &
-                         indexTriContainVertex(1,iv) - numTriangles(il)
+      write(93,'(6i18)') (indexTriContainVertex(i,iv) - numTriangles(il), i=1,5), &
+                          indexTriContainVertex(1,iv) - numTriangles(il)
     endif
   enddo
   close(93)
@@ -1194,7 +1220,7 @@ contains
     close(93)
 
     open(93,file = 'OUTPUT/' // 'Dtface'//trim(strLev)//'.dat')
-    write(93,'(3i8)') ((indexTriangleVert(i,it),i=1,3), it=numTriangles(il)+1,numTriangles(il+1))
+    write(93,'(3i18)') ((indexTriangleVert(i,it),i=1,3), it=numTriangles(il)+1,numTriangles(il+1))
     close(93)
   enddo
 
@@ -1206,7 +1232,7 @@ contains
 ! performs an indirect heapsort in decreasing order such that: a(idx(1)) >= a(idx(2)) >= ... >= a(idx(n))
   implicit none
   integer, intent(in) :: n
-  integer, intent(inout) :: idx(n)
+  integer, intent(out) :: idx(n)
   double precision, intent(inout) :: a(n)
   ! local parameters
   integer :: i, ict, n1, n2, n21, np2, nn, ik, jk, ic, it
@@ -1337,9 +1363,64 @@ contains
   implicit none
   double precision, intent(in) :: v1(3),v2(3)
   double precision, parameter :: pi = 3.1415926535897931d0
+  ! local parameters
+  !double precision :: vn1(3),vn2(3),norm,X,Y
+  !double precision, parameter :: TOL_ZERO = 1.d-12
 
+  !original
   dazimv = pi + datan2(v1(2)*v2(1) - v1(1)*v2(2), &
                        v1(1)*v1(3)*v2(1) + v1(2)*v1(3)*v2(2) - (v1(1)*v1(1) + v1(2)*v1(2))*v2(3) )
+
+  ! alternative way
+  !
+  !! determine normal to plane v1 - z-axis (v=[0,0,1])
+  !! cross product v1 x [0,0,1]
+  !vn1(1) =  v1(2)   !     v1(2)*1 - v1(3)*0
+  !vn1(2) = -v1(1)   !  - (v1(1)*1 - v1(3)*0)
+  !vn1(3) =   0.d0    !     v1(2)*0 - v1(1)*0
+  !
+  !! normalized: v / || v ||
+  !norm = sqrt(vn1(1)*vn1(1) + vn1(2)*vn1(2))
+  !if (abs(norm) > TOL_ZERO) then
+  !  vn1(1) = vn1(1) / norm
+  !  vn1(2) = vn1(2) / norm
+  !else
+  !  ! in case v1 == z-axis or - z-axis
+  !  vn1(1) = 1.d0
+  !  vn1(2) = 0.d0
+  !  vn1(3) = 0.d0
+  !endif
+  !
+  !! normal to vn1 normal
+  !! cross product v1 x vn1
+  !vn2(1) =   v1(2)*vn1(3) - v1(3)*vn1(2)
+  !vn2(2) = -(v1(1)*vn1(3) - v1(3)*vn1(1))
+  !vn2(3) =   v1(1)*vn1(2) - v1(2)*vn1(1)
+  !! normalized: v / || v ||
+  !norm = sqrt(vn1(1)*vn1(1) + vn1(2)*vn1(2) + vn1(3)*vn1(3))
+  !if (abs(norm) > TOL_ZERO) then
+  !  vn2(1) = vn2(1) / norm
+  !  vn2(2) = vn2(2) / norm
+  !  vn2(3) = vn2(3) / norm
+  !else
+  !  ! in case v == 0
+  !  vn2(1) = 0.d0
+  !  vn2(2) = 1.d0
+  !  vn2(3) = 0.d0
+  !  ! v == 0 should not occur
+  !  stop 'azimuth with zero vector'
+  !endif
+  !! for positive reference system, takes -vn2
+  !vn2(:) = - vn2(:)
+  !
+  !! plane reference vectors { vn1, vn2 }
+  !! coordinates of v2 in plane {vn1,vn2}
+  !! X-coordinate component == dot product v2 * vn1
+  !X = vn1(1) * v2(1) + vn1(2) * v2(2) + vn1(3) * v2(3)
+  !! Y-coordinate component == dot product v2 * vn2
+  !Y = vn2(1) * v2(1) + vn2(2) * v2(2) + vn2(3) * v2(3)
+  !
+  !dazimv = pi + datan2(Y,X)
 
   return
   end function

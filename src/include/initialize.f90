@@ -553,7 +553,7 @@
   implicit none
   ! local parameters
   integer:: vertex,timestep,index,i,n,ier,jrec
-  character(len=8)::vertexstr
+  character(len=9)::vertexstr
   real(WP)::seismo(2,numofTimeSteps)
   real(WP)::min,max,originalT,originalf
 
@@ -618,7 +618,7 @@
 
     ! file output for sourceVertex
     if (vertex == sourceVertex .and. beVerbose .and. .not. sourceOnFile) then
-      write(vertexstr,'(i8.8)') vertex
+      write(vertexstr,'(i9.9)') vertex
       print *,'    writing to file: ',trim(datadirectory)//'source2Prescribed.'//vertexstr//'.dat'
       open(IOUT,file=trim(datadirectory)//'source2Prescribed.'//vertexstr//'.dat',iostat=ier)
       if (ier /= 0) &
@@ -660,7 +660,7 @@
 
     ! file output
     if (vertex == sourceVertex .and. beVerbose .and. .not. sourceOnFile) then
-      write(vertexstr,'(i8.8)') vertex
+      write(vertexstr,'(i9.9)') vertex
       open(IOUT,file=trim(datadirectory)//'source2Prescribed.filtered.'//vertexstr//'.dat',iostat=ier)
       if (ier /= 0) &
         call stopProgram('error opening file: '//trim(datadirectory)//'source2Prescribed.filtered'//vertexstr//'.dat   ')
@@ -1446,9 +1446,10 @@
   integer:: ier,isteps
 
   ! stepings
-  firsttimestep = int( FIRSTTIME/dt) !default: -6500/ almost same results for -800
-  lasttimestep = int( LASTTIME/dt) !default: 22000
-  isteps = lasttimestep-firsttimestep+1
+  firsttimestep = int(FIRSTTIME/dt) !default: -6500/ almost same results for -800
+  lasttimestep  = int(LASTTIME/dt)  !default: 22000
+
+  isteps = lasttimestep - firsttimestep + 1
 
   if (MAIN_PROCESS .and. VERBOSE) then
     print *,'    number of time steps  : ',isteps

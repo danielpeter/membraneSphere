@@ -1117,16 +1117,16 @@ end module
   call readData(.true.)
 
   ! new arrays for precalculated cell attributes
-  allocate( cellAreas(numVertices), &
-            cellEdgesLength(numVertices,0:6), &
-            cellCenterDistances(numVertices,0:6), stat=ier )
+  allocate(cellAreas(numVertices), &
+           cellEdgesLength(numVertices,0:6), &
+           cellCenterDistances(numVertices,0:6), stat=ier )
   if (ier /= 0) then
     print *,'Error: in allocating arrays for cell area,..'
     call stopProgram( 'abort - getGridvalues    ')
   endif
 
   if (CORRECT_RATIO) then
-    allocate( cellFractions(numVertices,0:6),stat=ier)
+    allocate(cellFractions(numVertices,0:6),stat=ier)
     if (ier /= 0) call stopProgram('error allocating cellFractions')
   endif
 

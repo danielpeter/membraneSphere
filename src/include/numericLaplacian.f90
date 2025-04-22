@@ -24,7 +24,7 @@
   real(WP):: discreteLaplacian
   integer:: i,count
   real(WP):: centerDistances(0:6),edgesLength(0:6), &
-            laplace,area,sumNeighbors, sumFactor
+             laplace,area,sumNeighbors, sumFactor
 
   !get spherical area of vertex's cell
   call getCellArea(vertex,area)

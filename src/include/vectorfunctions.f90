@@ -1338,24 +1338,28 @@
   ! timestep width relation
   ! (Tape, chap. 5, (5.9), p. 66) with space steps (table 4.4) [averageCellDistance in km]
   select case(subdivisions)
+  case (10)
+    averageCellDistance = 4.346505_WP
+  case (9)
+    averageCellDistance = 8.693010_WP
   case (8)
-    averageCellDistance = 17.3860147304427_WP
+    averageCellDistance = 17.386014_WP
   case (7)
-    averageCellDistance = 34.7719816287154444_WP
+    averageCellDistance = 34.771981_WP
   case (6)
-    averageCellDistance = 69.5435806022331491_WP
+    averageCellDistance = 69.543580_WP
   case (5)
-    averageCellDistance = 139.084100036946921_WP
+    averageCellDistance = 139.084100_WP
   case (4)
-    averageCellDistance = 278.143713101840262_WP
+    averageCellDistance = 278.143713_WP
   case (3)
-    averageCellDistance = 556.091606162381709_WP
+    averageCellDistance = 556.091606_WP
   case (2)
-    averageCellDistance = 1110.61907020550302_WP
+    averageCellDistance = 1110.619070_WP
   case (1)
-    averageCellDistance = 2208.80170795688991_WP
+    averageCellDistance = 2208.801707_WP
   case (0)
-    averageCellDistance = 4320.48077165147788_WP
+    averageCellDistance = 4320.480771_WP
   case default
     call stopProgram('subdivisions not supported yet in routine determineTimeStep()    ')
   end select
@@ -1394,6 +1398,55 @@
   dt = averageCellDistance/(cphaseRef*sqrt2)
 
   !if (cphaseref > 4.78) dt = dt/2.0
+
+  ! cut at a significant number of digits (2 digits)
+  ! example: 0.0734815 -> lpow = (2 - (-1) = 3 -> 0.0730
+  call get_timestep_limit_significant_digit(dt)
+
+contains
+
+  subroutine get_timestep_limit_significant_digit(time_step)
+
+  ! cut at a significant number of digits (e.g., 2 digits) using 1/2 rounding
+  ! example: 0.0734815 -> 0.0730
+  !      and 0.0737777 -> 0.0735
+  !
+  ! also works with different magnitudes of time step sizes (0.118, 0.00523, ..). always cut of after 2 significant digits:
+  ! example: 0.118749999 -> 0.115
+
+  use precisions, only: WP
+
+  implicit none
+  real(WP),intent(inout) :: time_step
+
+  ! rounding
+  integer :: lpow,ival
+  double precision :: fac_pow,dt_cut
+
+  ! initializes
+  dt_cut = real(time_step,kind=8)
+
+  ! cut at a significant number of digits (2 digits)
+  ! example: 0.0734815 -> lpow = (2 - (-1) = 3
+  lpow = int(2.d0 - log10(dt_cut))
+
+  ! example: -> factor 10**3
+  fac_pow = 10.d0**(lpow)
+
+  ! example: -> 73
+  ival = int(fac_pow * dt_cut)
+
+  ! adds .5-digit (in case): 73.0 -> 0.073
+  if ( (fac_pow * dt_cut - ival) >= 0.5 ) then
+    dt_cut = (dble(ival) + 0.5d0) / fac_pow
+  else
+    dt_cut = dble(ival) / fac_pow
+  endif
+
+  time_step = real(dt_cut,kind=WP)
+
+  end subroutine get_timestep_limit_significant_digit
+
 
   end subroutine
 

@@ -23,6 +23,12 @@
   real(WP),dimension(0:6) :: tmp_vertex
   character(len=2):: strLev
   character(len=14):: ending
+  character(len=128):: fileName
+
+  if (VERBOSE) then
+    print *,'  reading precalculated grid data:'
+    print *,'    subdivisions            : ',subdivisions
+  endif
 
   !initialize
   if (RELAXED_GRID) then
@@ -38,7 +44,9 @@
 ! 100  format(f16.14,2x,f16.14,2x,f16.8)
 
   ! read cellArea
-  open(IIN,file='data/griddata/cellAreas.'//trim(strLev)//trim(ending),status='old',iostat=ier)
+  fileName = 'data/griddata/cellAreas.'//trim(strLev)//trim(ending)
+  if (VERBOSE) print *,'    ',trim(fileName)
+  open(IIN,file=trim(filename),status='old',iostat=ier)
   if (ier /= 0) call stopProgram( 'abort - readPrecalculated cellAreas    ')
 
   do i = 1, numVertices
@@ -51,7 +59,9 @@
   close(IIN)
 
   ! read cellEdgesLength
-  open(IIN,file='data/griddata/cellEdgesLength.'//trim(strLev)//trim(ending),status='old',iostat=ier)
+  fileName = 'data/griddata/cellEdgesLength.'//trim(strLev)//trim(ending)
+  if (VERBOSE) print *,'    ',trim(fileName)
+  open(IIN,file=trim(filename),status='old',iostat=ier)
   if (ier /= 0) call stopProgram( 'abort - readPrecalculated cellEdgesLength   ')
 
   do i = 1, numVertices
@@ -65,7 +75,9 @@
   close(IIN)
 
   ! read cellCenterDistances
-  open(IIN,file='data/griddata/cellCenterDistances.'//trim(strLev)//trim(ending),status='old',iostat=ier)
+  fileName = 'data/griddata/cellCenterDistances.'//trim(strLev)//trim(ending)
+  if (VERBOSE) print *,'    ',trim(fileName)
+  open(IIN,file=trim(filename),status='old',iostat=ier)
   if (ier /= 0) call stopProgram( 'abort - readPrecalculated cellEdgesLength   ')
 
   do i = 1, numVertices
@@ -80,7 +92,9 @@
 
   ! get heikes&randall ratios for each hexagonal cell edge
   if (CORRECT_RATIO) then
-    open(IIN,file='data/griddata/cellFractions.'//trim(strLev)//trim(ending),status='old',iostat=ier)
+    fileName = 'data/griddata/cellFractions.'//trim(strLev)//trim(ending)
+    if (VERBOSE) print *,'    ',trim(fileName)
+    open(IIN,file=trim(filename),status='old',iostat=ier)
     if (ier /= 0) call stopProgram( 'abort - readPrecalculated cellFractions   ')
 
     do i = 1, numVertices
@@ -96,6 +110,8 @@
     !print *,'cellFractions',1,(cellFractions(1,k),k=0,6)
     !print *
   endif
+
+  if (VERBOSE) print *
 
   end subroutine
 

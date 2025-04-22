@@ -236,6 +236,9 @@
   !if (VERBOSE) print *,'delta location(lat/lon):',deltaLat,deltaLon
   close(IIN)
 
+  ! check parameters
+  call checkParameters()
+
   end subroutine
 
 
@@ -319,6 +322,33 @@
   if (cphase < 0.0) then
     print *,'Error: phase speed not recognized:',trim(ctype)
     call stopProgram('abort - readParameters')
+  endif
+
+  end subroutine
+
+!-----------------------------------------------------------------------
+  subroutine checkParameters()
+!-----------------------------------------------------------------------
+! checks parameters read in from file 'Parameter_Input'
+  use propagationStartup;use loop;use phaseBlockData;use parallel
+  use verbosity; use adjointVariables; use cells
+  implicit none
+
+  ! for now, only checks subdivision level
+
+  ! checks integer overflow
+  !   - 32-bit integer < 2,147,483,647
+  !   - 64-bit integer < 9,223,372,036,854,775,807
+  !
+  ! for 32-bit integers: MAXTRIANGLES limit is reached at MAXLEVELS == 12
+  !                      that is, for levels == 13 MAXTRIANGLES will overflow
+  if (subdivisions > 12) then
+    print *,'Error: the maximum of supported subdivision levels is equal to 12.'
+    print *,'       This is due to integer overflow (of the number of triangles) beyond these levels.'
+    print *
+    print *,'Please choose a subdivision level <= 12 in your Parameter_Input file, exiting...'
+    print *
+    call stopProgram('Invalid subdivisions requested, maximum of subdivisions == 12')
   endif
 
   end subroutine

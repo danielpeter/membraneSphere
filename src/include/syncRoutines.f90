@@ -647,6 +647,10 @@
   real(WP), allocatable, dimension(:):: tmpExchange
   integer, parameter:: SLICE = 1000000 ! assuming MPI has a limited buffer size
 
+  if (MAIN_PROCESS .and. VERBOSE) then
+    print *,'  using precalculated cell data'
+  endif
+
   ! debug check arrays
   !  ! arrays
   !  if (.not. allocated(cellAreas)) then

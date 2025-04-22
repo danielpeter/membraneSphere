@@ -33,8 +33,8 @@
   ! local parameters
   integer::i,k,ier,ilocal
   character(len=2):: strLev
-  character(len=56):: fileName
   character(len=14):: ending
+  character(len=128):: fileName
 
   if (VERBOSE) then
     print *,'  reading grid data:'
@@ -60,7 +60,7 @@
   ! read all voronoi cell centre vertices values from file
   !(voronoi cell centers are equal to triangle corners)
   fileName = 'data/griddata/Dtvert'//trim(strLev)//trim(ending)
-  if (VERBOSE) print *,'  ',trim(fileName)
+  if (VERBOSE) print *,'    ',trim(fileName)
   open(IIN,file=trim(fileName),status='old',iostat=ier)
   if (ier /= 0) then
     print *,'Error: could not open file ',trim(fileName)
@@ -89,7 +89,7 @@
 
   !read in the corresponding cell corners
   fileName = 'data/griddata/Dvvert'//trim(strLev)//trim(ending)
-  if (VERBOSE) print *,'  ',trim(fileName)
+  if (VERBOSE) print *,'    ',trim(fileName)
   open(IIN,file=trim(fileName),status='old',iostat=ier)
   if (ier /= 0) call stopProgram('Abort - readData File2   ')
 
@@ -107,7 +107,7 @@
 
   !read in the corresponding cell neighbors indices
   fileName = 'data/griddata/Dnear'//trim(strLev)//trim(ending)
-  if (VERBOSE) print *,'  ',trim(fileName)
+  if (VERBOSE) print *,'    ',trim(fileName)
   open(IIN,file=trim(fileName),status='old',iostat=ier)
   if (ier /= 0) call stopProgram('Abort - readData File3   ')
 
@@ -133,7 +133,7 @@
 
   !read in the corresponding cell face indices
   fileName = 'data/griddata/Dvface'//trim(strLev)//trim(ending)
-  if (VERBOSE) print *,'  ',trim(fileName)
+  if (VERBOSE) print *,'    ',trim(fileName)
   open(IIN,file=trim(fileName),status='old',iostat=ier)
   if (ier /= 0) call stopProgram('Abort - readData File4   ')
 
@@ -161,7 +161,7 @@
   if (STATION_CORRECTION .or. SIMULATIONOUTPUT) then
     !read in the corresponding triangle face indices
     fileName = 'data/griddata/Dtface'//trim(strLev)//trim(ending)
-    if (VERBOSE) print *,'  ',trim(fileName)
+    if (VERBOSE) print *,'    ',trim(fileName)
     open(IIN,file=trim(fileName),status='old', iostat=ier)
     if (ier /= 0) call stopProgram('Abort - readData Dtface file    ')
 

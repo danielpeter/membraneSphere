@@ -158,12 +158,14 @@ module precisions
   ! instead of reading in a heterogeneous phase velocity map, it creates
   ! a checkerboard map with corresponding parameters
   logical,parameter :: DO_CHECKERBOARD           = .false.
-  integer,parameter :: MAP_DEGREE_L              = 13     ! or: 9, 13, 20
-  integer,parameter :: MAP_DEGREE_M              = 7      ! or: 5, 7, 10
-  real(WP),parameter :: MAP_PERCENT_AMPLITUDE    = 2.0    !given in percent, i.e. 5% = 5.0
+  integer,parameter :: MAP_DEGREE_L              = 13       ! or: 9, 13, 20
+  integer,parameter :: MAP_DEGREE_M              = 7        ! or: 5, 7, 10
+  real(WP),parameter :: MAP_PERCENT_AMPLITUDE    = 2.0      ! given in percent, i.e. 5% = 5.0
 
   ! simulation output
-  integer,parameter :: SIMULATION_TIMESTEPPING   = 4  ! takes every fifth timestep for output
+  integer,parameter :: SIMULATION_TIMESTEPPING   = 4        ! takes every fifth timestep for output
+  real(WP),parameter :: SIMULATION_STARTTIME     = -50.0    ! starts outputting for times after this t0
+  logical,parameter :: SIMULATION_OUTPUT_VTK     = .true.   ! outputs as vtk file, otherwise as .dat file
 
   ! rotate source&receiver locations / heterogeneous phase map to equatorial plane (by default)
   logical,parameter :: ROTATE_FRAME              = .false.

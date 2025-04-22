@@ -610,15 +610,14 @@
   integer:: n,k
   character(len=5):: timestr
   real(WP):: lat,lon
-  logical,parameter:: FORMAT_VTK         = .true.  ! outputs as vtk file
-  real,parameter:: SIMULATION_STARTTIME = -50.0
 
   ! only main process writes to files
-  if (mod(timestep,SIMULATION_TIMESTEPPING) == 0 &
-        .and. time >= SIMULATION_STARTTIME .and. MAIN_PROCESS) then
+  if (mod(timestep,SIMULATION_TIMESTEPPING) == 0 .and. &
+      time >= SIMULATION_STARTTIME .and. &
+      MAIN_PROCESS) then
     write(timestr,'(i5.5)') index
 
-    if (.not. FORMAT_VTK) then
+    if (.not. SIMULATION_OUTPUT_VTK) then
       open(IOUT,file=trim(datadirectory)//'simulation.'//timestr//'.dat')
       do n = 1, numVertices
         ! #format: x, y, z, displacement  ( in Cartesian coordinates )

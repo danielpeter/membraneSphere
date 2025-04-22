@@ -50,4 +50,4 @@
 !!-----------------------------------------------------------
 ! radius measured in km
   real(WP), parameter :: EARTHRADIUS         = 6371.0_WP
-  real(WP), parameter :: EARTHRADIUS_SQUARED = 40589641.0_WP
+  real(WP), parameter :: EARTHRADIUS_SQUARED = EARTHRADIUS**2    ! 6371.0**2 == 40589641.0

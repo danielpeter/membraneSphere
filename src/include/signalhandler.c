@@ -3,15 +3,11 @@
 !
 !       m e m b r a n e S p h e r e
 !       --------------------------------------------------
-!
-!      Daniel Peter
 !      (c) 2025
-!
-!      Free for non-commercial academic research ONLY.
-!      This program is distributed WITHOUT ANY WARRANTY whatsoever.
 !
 !=====================================================================
 */
+
 /* signal handling (easiest within c-codes)
 
 when jobs are in a queue and the walltime limit is reached, they receive a warning signal

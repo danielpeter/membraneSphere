@@ -2,12 +2,7 @@
 !
 !       m e m b r a n e S p h e r e
 !       --------------------------------------------------
-!
-!      Daniel Peter
 !      (c) 2025
-!
-!      Free for non-commercial academic research ONLY.
-!      This program is distributed WITHOUT ANY WARRANTY whatsoever.
 !
 !=====================================================================
 
@@ -1437,7 +1432,7 @@ contains
   ival = int(fac_pow * dt_cut)
 
   ! adds .5-digit (in case): 73.0 -> 0.073
-  if ( (fac_pow * dt_cut - ival) >= 0.5 ) then
+  if ( (fac_pow * dt_cut - ival) >= 0.5) then
     dt_cut = (dble(ival) + 0.5d0) / fac_pow
   else
     dt_cut = dble(ival) / fac_pow

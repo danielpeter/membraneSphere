@@ -2,12 +2,7 @@
 !
 !       m e m b r a n e S p h e r e
 !       --------------------------------------------------
-!
-!      Daniel Peter
 !      (c) 2025
-!
-!      Free for non-commercial academic research ONLY.
-!      This program is distributed WITHOUT ANY WARRANTY whatsoever.
 !
 !=====================================================================
 !
@@ -15,7 +10,9 @@
 !   calculations for the analytic solutions by
 !   Carl Tape (2003, chap. 3)
 !
+!-----------------------------------------------------------------------
 module ray_orbits
+!-----------------------------------------------------------------------
   use precisions
   implicit none
   integer:: ray_orbit

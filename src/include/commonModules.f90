@@ -2,12 +2,7 @@
 !
 !       m e m b r a n e S p h e r e
 !       --------------------------------------------------
-!
-!      Daniel Peter
 !      (c) 2025
-!
-!      Free for non-commercial academic research ONLY.
-!      This program is distributed WITHOUT ANY WARRANTY whatsoever.
 !
 !=====================================================================
 !
@@ -163,8 +158,8 @@ module precisions
   real(WP),parameter :: MAP_PERCENT_AMPLITUDE    = 2.0      ! given in percent, i.e. 5% = 5.0
 
   ! simulation output
-  integer,parameter :: SIMULATION_TIMESTEPPING   = 4        ! takes every fifth timestep for output
-  real(WP),parameter :: SIMULATION_STARTTIME     = -50.0    ! starts outputting for times after this t0
+  integer,parameter :: SIMULATION_TIMESTEPPING   = 1        ! saves every N timestep a file output (4==every fourth)
+  real(WP),parameter :: SIMULATION_STARTTIME     = -1000.0  ! starts outputting files after this time
   logical,parameter :: SIMULATION_OUTPUT_VTK     = .true.   ! outputs as vtk file, otherwise as .dat file
 
   ! rotate source&receiver locations / heterogeneous phase map to equatorial plane (by default)
@@ -264,9 +259,9 @@ end module
 module verbosity
 !-----------------------------------------------------------------------
   implicit none
-  logical:: VERBOSE     = .true.         !for console verbosity
+  logical:: VERBOSE     = .true.          !for console verbosity
   logical:: beVerbose   = .false.         !for getTimelag verbosity
-  logical:: fileOutput  = .false.        !for debuging: outputs to file 'tmp*.dat'
+  logical:: fileOutput  = .false.         !for debuging: outputs to file 'tmp*.dat'
 end module
 
 !-----------------------------------------------------------------------
@@ -340,6 +335,7 @@ module propagationStartup
     FILTER_SEISMOGRAMS, &
     STATION_CORRECTION,timeParameterSigma,ROTATE_FRAME
   implicit none
+  ! Parameter_file inputs
   logical:: Phaseshift_Program     = .false.
   logical:: HetPhaseshift_Program  = .false.
   logical:: HETEROGENEOUS          = .false.
@@ -351,27 +347,30 @@ module propagationStartup
   logical:: manyKernels            = .false.
   logical:: importKernelsReceivers = .false.
   logical:: referenceRun           = .false.
+  real(WP):: FIRSTTIME,LASTTIME
+  real(WP):: DELTARADIUS
+  real(WP):: sourceLat,sourceLon
+  real(WP):: receiverLat,receiverLon
+  real(WP):: cphaseRef
+  real(WP):: deltaLat,deltaLon,deltaPerturbation,deltaMoveIncrement
+  real(WP):: kernelStartDistance,kernelEndDistance
+  character(len=8):: DELTAfunction = ""
+  character(len=8):: cphasetype    = ""
+  character(len=128):: datadirectory = ""
 
+  ! simulation parameters
   integer:: startVertex,endVertex,firsttimestep,lasttimestep, &
-           numofTimeSteps,midpointVertex
+            numofTimeSteps,midpointVertex
   integer:: sourceVertex,receiverVertex,deltaVertex,originSourceVertex, &
             originReceiverVertex
   integer:: numofReceivers,numofKernels,currentKernel
   integer,allocatable,dimension(:):: receivers
   integer,allocatable,dimension(:,:):: kernelsReceivers
-  character(len=8):: DELTAfunction = ""
-  character(len=8):: cphasetype    = ""
-  character(len=128):: datadirectory = ""
-  real(WP):: FIRSTTIME,LASTTIME,DELTARADIUS
-  real(WP):: sourceLat,sourceLon,receiverLat,receiverLon,cphaseRef, &
-             desiredSourceLat,desiredSourceLon,muSquare,muTwo
-  real(WP):: deltaLat,deltaLon,deltaPerturbation,deltaMoveIncrement, &
-             desiredReceiverLat,desiredReceiverLon
-
+  real(WP):: desiredSourceLat,desiredSourceLon,muSquare,muTwo
+  real(WP):: desiredReceiverLat,desiredReceiverLon
   real(WP):: dt = 0.0_WP
   real(WP):: dt2,cphase2
-
-  real(WP):: kernelStartDistance,kernelEndDistance,distanceQuit
+  real(WP):: distanceQuit
   real(WP):: benchAllStart,benchAllEnd,benchstart,benchend
   real(WP),allocatable,dimension(:,:):: seismogramReceiver, &
                                         receiversSeismogram, &
@@ -475,9 +474,9 @@ module filterType
   use constants, only: WP
   implicit none
   ! window size for fft
-  integer:: WindowSIZE
+  integer:: WindowSIZE = 0
   ! full bandwidth (in frequency domain)
-  integer:: bw_width
+  integer:: bw_width = 0
   ! half-bandwidth frequency, wave period used for bandwidth filtering
   real(WP):: bw_frequency,bw_waveperiod
 end module

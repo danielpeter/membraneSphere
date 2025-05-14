@@ -2,12 +2,7 @@
 !
 !       m e m b r a n e S p h e r e
 !       --------------------------------------------------
-!
-!      Daniel Peter
 !      (c) 2025
-!
-!      Free for non-commercial academic research ONLY.
-!      This program is distributed WITHOUT ANY WARRANTY whatsoever.
 !
 !=====================================================================
 !
@@ -16,7 +11,6 @@
 !
 ! Peter, D., C. Tape, L. Boschi and J. H. Woodhouse, 2007. Surface wave tomography:
 ! global membrane waves and adjoint methods, Geophys. J. Int., , 171: p. 1098-1117.
-
 
 ! heterogeneousPhaseshift.f90
 !

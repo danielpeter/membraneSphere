@@ -2,15 +2,9 @@
 !
 !       m e m b r a n e S p h e r e
 !       --------------------------------------------------
-!
-!      Daniel Peter
 !      (c) 2025
 !
-!      Free for non-commercial academic research ONLY.
-!      This program is distributed WITHOUT ANY WARRANTY whatsoever.
-!
 !=====================================================================
-
 
 !-----------------------------------------------------------------------
   subroutine correlation_traces(trace1,trace2,correl,N)

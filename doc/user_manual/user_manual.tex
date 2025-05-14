@@ -385,7 +385,7 @@ in the file include/commonModules.f90 file.)
 
 Main program output is the seismogram (format: time / displacement, with the
 time given in seconds),
-written in the data directory DATADIRECTORY specified in Parameter\_Input.
+written in the data directory DATADIRECTORY specified in \texttt{Parameter\_Input}.
 \\
 \\
 For checking purposes, it also outputs the used phase map
@@ -440,11 +440,11 @@ and output cross-sections at different longitudes as well.
 \chapter{Utilities}
 %---------------------------------------------------------------------------------------------
 
-The source timelag.f90 calculates the phase shift/time shift of two seismograms.
+The source \texttt{timelag.f90} calculates the phase shift/time shift of two seismograms.
 This utility program calculates the time lag between two seismograms.
 
-It reads only the input file Timelag\_Input. Other parameters (especially
-the filter parameters) are taken from commonModules.f90.
+It reads only the input file \texttt{Timelag\_Input}. Other parameters (especially
+the filter parameters) are taken from \texttt{commonModules.f90}.
 
 The time shift result is written to the console.
 
@@ -459,14 +459,14 @@ directory \texttt{scripts/}.
 \begin{itemize}
   \item
 The \textit{gmtplot} scripts use the GMT
-(Generic Mapping Tools) data processing and display software package Version 4.0.
+(Generic Mapping Tools) data processing and display software package Version 4+
 They also make use of the color table files in the directory.
 
   \item
-The \textit{gnuplot} scripts use the Gnuplot plotting utility Version 4.0.
+The \textit{gnuplot} scripts use the Gnuplot plotting utility Version 4+
 
   \item
-The shell scripts employ the utilities Gawk Version 3.1 and Python Version 2.3.
+The shell scripts employ the utilities Gawk Version 3+ and Python Version 2+
 
 \end{itemize}
 
@@ -476,14 +476,27 @@ The shell scripts employ the utilities Gawk Version 3.1 and Python Version 2.3.
 %---------------------------------------------------------------------------------------------
 %\addcontentsline{toc}{chapter}{Copyright}
 
-The software shall be used for scientific purposes only, excluding industrial or commercial purposes.
+The MIT License (MIT)
 
-The software is furnished on an "as is" basis and the copyright holder in no way warrants
-the software or any of its results and is in no way liable for any use made of the software.
-The copyright holder disclaims all warranties, representations, and statements, express or implied, statutory or otherwise, including, without limitation, any implied warranties of
-merchantability or fitness for a particular purpose.
+Copyright (c) 2025 Daniel Peter
 
-In no event shall the copyright holder be liable for any actual, direct, indirect, special, consequential, or incidental damages, however caused, including, without limitation, any damages arising out of the use or operation of the software, loss of use of the software, or damage of any sort to the user.
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
 
 
 %---------------------------------------------------------------------------------------------

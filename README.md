@@ -1,9 +1,11 @@
 
-# membraneSphere
+# membraneSphere - membrane waves on a spherical Earth
 
-![membrane wave simulation](doc/wave-simulation.gif "membrane wave simulation")
+---
 
-membraneSphere is a software package to simulate waves on a spherical membrane.
+![membrane wave simulation](doc/wave-simulation2.gif "membrane wave simulation")
+
+*membraneSphere* is a software package to simulate waves on a spherical membrane.
 It implements the membrane wave method introduced by Tanimoto (1990).
 Membrane waves are an analogue for seismic surface waves.
 The zero-thickness sphere is discretized by a geodesic grid (Tape, 2003).
@@ -48,6 +50,23 @@ $ ./configure FC=ifort MPIFC=mpiifort
 ```
 You can also modify the Makefile according to your specific needs.
 
+### Run a membrane wave simulation
+
+Go to the `examples/Love_waves_150s/` folder:
+```
+$ cd examples/Love_waves_150s/
+```
+and run the simulation script:
+```
+$ ./run_this_example.sh
+```
+
+This will run two membrane wave simulations, one for a homogeneous phase-velocity map and another one with a heterogeneous phase-velocity map. It then computes the cross-correlation time lag between the two resulting traces.
+
+
+---
+
+## Details
 
 ### Infos about the repository folders
 
@@ -153,4 +172,3 @@ You can also modify the Makefile according to your specific needs.
 
   The program `timelag` reads in parameters from file `Timelag_Input`.
   You would want to specify two traces and a window size to compute the time lag between those trace sections.
-

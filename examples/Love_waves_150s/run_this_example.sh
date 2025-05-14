@@ -21,7 +21,7 @@ echo
 sed "s:^HETEROGENEOUS .*:HETEROGENEOUS                    = .false.:" Parameter_Input.org > Parameter_Input
 
 # run simulation
-./bin/propagation | tee OUTPUT/output_propagation.hom.txt
+mpirun -np 1 ./bin/propagation | tee OUTPUT/output_propagation.hom.txt
 
 # checks exit code
 if [[ $? -ne 0 ]]; then exit 1; fi
@@ -41,7 +41,7 @@ echo
 sed "s:^HETEROGENEOUS .*:HETEROGENEOUS                    = .true.:" Parameter_Input.org > Parameter_Input
 
 # run simulation
-./bin/propagation | tee OUTPUT/output_propagation.het.txt
+mpirun -np 1 ./bin/propagation | tee OUTPUT/output_propagation.het.txt
 
 # checks exit code
 if [[ $? -ne 0 ]]; then exit 1; fi
@@ -57,7 +57,7 @@ echo "***********************************************"
 echo "running timelag..."
 echo "***********************************************"
 echo
-./bin/timelag | tee OUTPUT/output_timlag.txt
+./bin/timelag | tee OUTPUT/output_timelag.txt
 
 # checks exit code
 if [[ $? -ne 0 ]]; then exit 1; fi

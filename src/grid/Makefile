@@ -84,6 +84,6 @@ $(grid_OBJECTS): S := ${S_TOP}/src/grid
 ## rule for each .o file below
 ##
 
-$O/%.o: $S/%.f90
+$O/%.o: $S/%.f90 $O/commonModules.module.o
 	$(F90) $(FFLAGS) -c -o $@ $<
 

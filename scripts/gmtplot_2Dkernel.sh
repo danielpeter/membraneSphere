@@ -27,7 +27,7 @@ fi
 interpolate=yes
 
 # close-ups
-Plotregion=-R-10/100/-60/60
+#Plotregion=-R-10/100/-60/60
 #Plotregion=-R-10/150/-60/60
 #Plotregion=-R-60/150/-90/90
 #Plotregion=-R35/175/-10/85 # tibet kernels
@@ -71,8 +71,9 @@ if [ ! -e $colormap ]; then
 fi
 echo "using color map: " $colormap
 
-title='travel time anomaly kernel - Love 150 s'
+#title='travel time sensitivity kernel'
 #perspective=-E175/35
+
 ps_filename=$datafilename.ps
 pdf_filename=$datafilename.pdf
 jpg_filename=$datafilename.jpg
@@ -106,7 +107,7 @@ fi
 # GMT
 # ---------------------------------------------------------------------------------------------------------
 
-gmt gmtset HEADER_FONT_SIZE 14 MAP_ANNOT_OBLIQUE 0 BASEMAP_TYPE plain GMT_HISTORY false
+gmt gmtset PS_MEDIA letter HEADER_FONT_SIZE 14 MAP_ANNOT_OBLIQUE 0 BASEMAP_TYPE plain GMT_HISTORY false
 
 # checks exit code
 if [[ $? -ne 0 ]]; then exit 1; fi
@@ -194,7 +195,7 @@ echo "converting image..."
 #open $pdf_filename
 
 # jpg
-magick -density 300 $ps_filename -quality 90 $jpg_filename
+magick -density 300 $ps_filename -quality 90 -crop 2200x1200+0+2000 $jpg_filename
 
 # checks exit code
 if [[ $? -ne 0 ]]; then exit 1; fi

@@ -32,10 +32,10 @@ offsets=  #'-X1.5 -Y14'
 portrait=-P
 colormap=seis.L150.4.cpt
 coastoffset=-Y8  #-Y13.85
-zdepth=-Jz1.0        #-Jz0.732
+zdepth=-Jz0.22   #-Jz1.0 #-Jz0.732
 perspective=-E175/35
 
-title='travel time anomaly kernel - Love 150 s'
+#title='travel time sensitivity kernel'
 
 # check if colormap file exists in ../../scripts/ folder
 if [ -e ../../scripts/$colormap ]; then colormap=../../scripts/$colormap; fi
@@ -67,7 +67,7 @@ fi
 # GMT
 # ---------------------------------------------------------------------------------------------------------
 
-gmt gmtset HEADER_FONT_SIZE 14 MAP_ANNOT_OBLIQUE 0 BASEMAP_TYPE plain GMT_HISTORY false
+gmt gmtset PS_MEDIA letter HEADER_FONT_SIZE 14 MAP_ANNOT_OBLIQUE 0 BASEMAP_TYPE plain GMT_HISTORY false
 
 # checks exit code
 if [[ $? -ne 0 ]]; then exit 1; fi

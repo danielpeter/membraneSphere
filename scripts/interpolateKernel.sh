@@ -60,7 +60,7 @@ if [[ $? -ne 0 ]]; then exit 1; fi
 # GMT
 # ---------------------------------------------------------------------------------------------------------
 
-gmt gmtset HEADER_FONT_SIZE 14 MAP_ANNOT_OBLIQUE 0 BASEMAP_TYPE plain GMT_HISTORY false
+gmt gmtset PS_MEDIA letter HEADER_FONT_SIZE 14 MAP_ANNOT_OBLIQUE 0 BASEMAP_TYPE plain GMT_HISTORY false
 
 # checks exit code
 if [[ $? -ne 0 ]]; then exit 1; fi

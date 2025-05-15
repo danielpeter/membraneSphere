@@ -1,4 +1,4 @@
-# Phasedata - Trampert & Woodhouse GJI 95
+# Phasedata - Trampert & Woodhouse GRL 96
 
 
 global phase velocity maps from reference:

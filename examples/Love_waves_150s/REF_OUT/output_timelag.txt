@@ -1,0 +1,25 @@
+ Timelag
+ -----------------------------------------------------
+ reference file   : OUTPUT/seismo.hom.dat
+ perturbation file: OUTPUT/seismo.het.dat
+ firsttime        :   -1000.00000
+ endtime          :    5000.00000
+ data output      : OUTPUT/
+ -----------------------------------------------------
+
+ determine file length...
+
+ determine FFT parameters...
+     FFT:
+       window size         :         1024
+       number of time steps:          519
+
+ calculating time lag...
+
+   numerical timelag          :   -13.3986206
+
+ downhill simplex time lag...
+
+   nonlinear timelag          :   -13.4306898
+   nonlinear amplification    :    1.00162244
+

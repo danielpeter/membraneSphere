@@ -1,0 +1,203 @@
+ adjointMethod - computes kernel values
+ -----------------------------------------------------------------------
+ level                    6
+ firsttimestep   -1000.00000
+ lasttimestep     4000.00000
+ cphase        R80        4.01859999
+ source           0.00000000       0.00000000
+ receiver         0.00000000       90.0000000
+ many receiver stations F
+ many kernels           F
+ delta  F
+ heterogeneous  T
+   phaseBlockFile used: data/phasedata/TrampertWoodhouse/grl96/model.r80.abs.gsh
+   maximum degree expansion           40
+   phaseBlock VelocityReference   4.01859999
+ data output directory : OUTPUT/
+ adjoint kernel name : adjointKernel.dat
+ verbose  T
+ simulationoutput  F
+ parallelize single simulation  T
+
+ adjoint calculation (done without delta scatterers)
+
+ number of processes            :            2
+ number of subdivisions used    :            6
+ phase map                      : heterogeneous map used
+ -----------------------------------------------------------------------
+
+ parameters ok
+   allocating vertices, cellNeighbors, cellFace and cellCorner arrays:
+     max vertices            :       122882
+     max triangles           :       245760
+     size                    :    8.90637970     Mb
+   allocating cellTriangleFace array:
+     size                    :    2.81250000     Mb
+   reading grid data:
+     subdivisions            :            6
+     data/griddata/Dtvert6.dat
+     number of vertices      :       122882
+     data/griddata/Dvvert6.dat
+     number of corners       :       245760
+     data/griddata/Dnear6.dat
+     number of neighbors     :       122882
+     data/griddata/Dvface6.dat
+     number of faces         :       122882
+     data/griddata/Dtface6.dat
+     number of triangle faces:       245760
+
+ source(lat/lon) desired   :    0.00000000       0.00000000
+                 got       :  -0.299932152      -0.00000000
+                 index     :        19454
+ receiver(lat/lon) desired :    0.00000000       90.0000000
+                   got     :    0.00000000       90.0000000
+                   index   :           59
+ distance source-receiver  :    90.0000000
+
+ interpolation receiver station:
+   triangle              :        60417
+   corners               :           59       53357       52863
+   side lengths (deg)    :   0.612355590      0.612356901      0.687772334
+   receiverdistance (deg):    2.50447783E-06  0.612354517      0.612354338
+
+
+ initializing data arrays...
+   allocating displacement, cell and phase velocity arrays:
+   displacements array size  :     1.40627289     Mb
+   cells array size          :     7.03136444     Mb
+   phase velocity array size :    0.468757629     Mb
+
+   using precalculated cell data
+   reading precalculated grid data:
+     subdivisions            :            6
+     data/griddata/cellAreas.6.dat
+     data/griddata/cellEdgesLength.6.dat
+     data/griddata/cellCenterDistances.6.dat
+
+ initializing phase map...
+   initializing heterogeneous phase map...
+   reading phase map file-type: gsh
+   reading gsh model:
+     file: data/phasedata/TrampertWoodhouse/grl96/model.r80.abs.gsh
+     values given in absolute range
+     maximum expansion     : l =           40
+     interrupt expansion at: l =           40
+     total points readin   :       122882
+     values minimum/maximum:   -3.39804292E-02   5.42716458E-02
+     phase map stored as   : OUTPUT/PhaseMap.percent.dat
+
+   initializing parallelized maps...
+   allocating parallel domain arrays:
+     vertexDomain size   :    0.468757629     Mb
+     domainVertices size :    0.235355377     Mb
+   allocating boundary array:
+     size :     9.76562500E-03 Mb
+   allocating domainNeighbors array:
+     size :     1.52587891E-05 Mb
+   initializing phase velocities...
+   writing to file: OUTPUT/PhaseMap.dat
+   main process info: vertex from           1 to       61697
+   meshing ok
+
+ world parameters:
+   using antipode time as last time
+     new simulation time will end at:    4980.61230
+     number of time steps  :          499
+     FFT:
+       window size         :          512
+       number of time steps:          499
+   simulation:
+     reference phase velocity          :    4.01859999     km/s
+               wave period             :    78.1289978     s
+               wave length             :    313.969177     km
+     average cell center distance      :    69.5435791     km
+             gridpoints per wavelength :    4.51471138
+     time step dt                      :    12.0000000
+     time range                        :   -996.000000       4980.00000
+     time iteration steps              :          499
+   allocating adjointKernel array...
+     size:   0.468757629     Mb
+   allocating wavefieldForward array...
+     vertices   :        61697
+     time steps :          499
+     size       :    117.442337     Mb
+   allocating wavefieldAdjoint array...
+     size       :    117.442337     Mb
+   world ok
+
+ initializing source...
+   source parameters:
+     time parameter sigma  :   40.0000000
+     width parameter mu    :   8.89999978E-03
+     empirical spectral maximum around period:   1108.96680
+
+   prescribing source...
+   allocating prescribedForce array:
+       vertices            :        61697
+       steps               :          499
+       size                :    117.442337     (MB)
+   filtering source...
+     using fixed halfband-frequency
+     filter frequency    :    2.49999994E-03
+            as period    :    400.000000
+   defaultStart time:  -1000.00000
+     captured seismogram:
+       dt                  :    12.0000000
+       time first entry    :   -996.000000
+       time last entry     :    4980.00000
+       entries read        :          499
+       last time readin    :    4980.00000
+     hanning window applied:           1         499 window width:          49
+
+   filter parameter:
+     sampling frequency    :    1.62760422E-04
+     wave period           :    78.1289978
+       initial period      :    78.1289978
+       membrane correction :    0.00000000
+     center frequency      :    1.27993450E-02
+       index               :           79
+     bandwidth (full/half) :           30          15
+         as frequency      :    4.88281250E-03   2.44140625E-03
+         period band       :    65.6135635       96.5443039
+     windowsize            :          512
+     bandpass filter
+     original source amplitude min/max :   -1.61795151     /   1.61795151
+     filtered source amplitude min/max :   -7.02960268E-02 /   7.02960268E-02
+   source ok
+
+ initialization ok
+ initialization running time:            0 min    11.7124634     sec
+
+
+ running reference simulation...
+
+   forward simulation...
+   seismogram output:
+     parallel simulation seismos
+     printing to file: OUTPUT/seismo.R80.withoutDelta.dat
+   benchmark seconds    3.03834534
+
+ creating adjoint source...
+   using tapering
+   normalization factor:   -366.378448
+
+ running adjoint simulation...
+
+   backward iteration...
+   benchmark seconds    3.01507378
+
+   calculating kernel values...
+     reference travel time [s]      :    2490.30615
+     receiver cell area [km2]       :    4187.17139
+     time integration:
+     starting seismogram at         :   -984.000000
+     ending seismogram at           :    4992.00000
+
+   writing values to kernel file...
+     storing kernel values in file  : OUTPUT/adjointKernel.dat
+     integrated over sphere         :   -1.26876187
+     kernel min/max                 :   -42.9437370     /   21.2763729
+
+ running time:            0 min    18.1051369     sec
+
+ all kernels done

@@ -1,0 +1,115 @@
+ propagation - membrane wave simulation
+ -----------------------------------------------------------------------
+ level                    6
+ firsttimestep   -1000.00000
+ lasttimestep     4180.00000
+ cphase        L150       4.78619003
+ source           0.00000000       0.00000000
+ receiver         0.00000000       90.0000000
+ many receiver stations F
+ many kernels           F
+ delta  F
+ heterogeneous  F
+ data output directory : OUTPUT/
+ verbose  T
+ simulationoutput  F
+ parallelize single simulation  F
+
+ number of processes            :            1
+ number of subdivisions used    :            6
+ phase map                      :    4.78619003      (homogeneous map)
+ -----------------------------------------------------------------------
+
+ parameters ok
+   allocating vertices, cellNeighbors, cellFace and cellCorner arrays:
+     max vertices            :       122882
+     max triangles           :       245760
+     size                    :    8.90637970     Mb
+   allocating cellTriangleFace array:
+     size                    :    2.81250000     Mb
+   reading grid data:
+     subdivisions            :            6
+     data/griddata/Dtvert6.dat
+     number of vertices      :       122882
+     data/griddata/Dvvert6.dat
+     number of corners       :       245760
+     data/griddata/Dnear6.dat
+     number of neighbors     :       122882
+     data/griddata/Dvface6.dat
+     number of faces         :       122882
+     data/griddata/Dtface6.dat
+     number of triangle faces:       245760
+
+ source(lat/lon) desired   :    0.00000000       0.00000000
+                 got       :  -0.299932152      -0.00000000
+                 index     :        19454
+ receiver(lat/lon) desired :    0.00000000       90.0000000
+                   got     :    0.00000000       90.0000000
+                   index   :           59
+ distance source-receiver  :    90.0000000
+
+ interpolation receiver station:
+   triangle              :        60417
+   corners               :           59       53357       52863
+   side lengths (deg)    :   0.612355590      0.612356901      0.687772334
+   receiverdistance (deg):    2.50447783E-06  0.612354517      0.612354338
+
+
+ initializing data arrays...
+   allocating displacement, cell and phase velocity arrays:
+   displacements array size  :     1.40627289     Mb
+   cells array size          :     7.03136444     Mb
+   phase velocity array size :    0.468757629     Mb
+
+   using precalculated cell data
+   reading precalculated grid data:
+     subdivisions            :            6
+     data/griddata/cellAreas.6.dat
+     data/griddata/cellEdgesLength.6.dat
+     data/griddata/cellCenterDistances.6.dat
+
+ initializing phase map...
+   initializing parallelized maps...
+   initializing phase velocities...
+   writing to file: OUTPUT/PhaseMap.dat
+   meshing ok
+
+ world parameters:
+     number of time steps  :          519
+     FFT:
+       window size         :         1024
+       number of time steps:          519
+   simulation:
+     reference phase velocity          :    4.78619003     km/s
+               wave period             :    153.462006     s
+               wave length             :    734.498352     km
+     average cell center distance      :    69.5435791     km
+             gridpoints per wavelength :    10.5616989
+     time step dt                      :    10.0000000
+     time range                        :   -1000.00000       4180.00000
+     time iteration steps              :          519
+   world ok
+
+ initializing source...
+   source parameters:
+     time parameter sigma  :   60.0000000
+     width parameter mu    :   3.99999991E-02
+     empirical spectral maximum around period:   2640.00000
+
+   prescribing source...
+   allocating prescribedForce array:
+       vertices            :       122882
+       steps               :          519
+       size                :    243.285217     (MB)
+   source ok
+
+ initialization ok
+ initialization running time:            0 min    2.95313883     sec
+
+ starting time loop...
+   seismogram output:
+     distributed simulation seismos
+     printing to file: OUTPUT/seismo.L150.withoutDelta.dat
+
+ benchmark seconds    5.64577818
+

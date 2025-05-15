@@ -14,9 +14,9 @@
 ! subfolding level
 LEVEL                            = 6
 
-! time iteration limits 
+! time iteration limits
 ! (default: firsttime=-1000 to have a "good" source; lasttime=4188 seconds
-!           for L150 to reach antipode) 
+!           for L150 to reach antipode)
 ! e.g. inversions/kernels for minor arcs: LASTTIME = 4180.0
 FIRSTTIME                        = -1000.0
 LASTTIME                         = 4180.0            ! L100: 4310, L50: 4460, L35: 4550
@@ -27,13 +27,13 @@ CPHASE                           = L150
 
 ! Geometry
 ! ----------------------------------------------------------------
-! locations: source & receiver location 
+! locations: source & receiver location
 ! (source latitude/longitude in degree, e.g. north pole 90/0, tibetian 0/60)
-! (receiver latitude/longitude in degree, e.g. tibetian 60/150)     
+! (receiver latitude/longitude in degree, e.g. tibetian 60/150)
 ! (!!source will be rotated to equator at 0 degree latitude/ 0 degree longitude when only 1 receiver station used!!)
 ! (!!receiver will be rotated into equatorial plane with 0 degree latitude when only 1 receiver station used!!)
 SOURCE                           = 0.0 0.0
-RECEIVER                         = 0.0 90.0     
+RECEIVER                         = 0.0 90.0
 
 ! many receivers: use many receiver stations & number of receiver stations (e.g. 360 stations, located around the same latitude)
 MANYRECEIVERS                    = .false.
@@ -45,20 +45,56 @@ MANYKERNELS                      = .false.
 KRNEPI                           = 20.0 24.0
 IMPORTKERNELSRECEIVERS           = .false.
 
+! Source
+! ----------------------------------------------------------------
+! Time Parameter Sigma: determines source time function
+! (level 4: 164.6128 , L150: 41.1795264700414 , L75: 42.9967494824469)
+! (good other values: q4: 204.5, q6: 51.125, L150: 42.0216)
+! (default: 60.0)
+SOURCE_TIME_SIGMA                = 60.0
+
+! Width Parameter Mu: determines source point spread
+! (level 4: 7.1343616E-02, L150: 1.783786819208144E-002, L75: 1.783786819208144E-002)
+! (good other values q4: 0.0713 (20 degree), q6: 0.017826 (5 degree), 0.017968 (factor 8x))
+! (default: 0.04)
+SOURCE_WIDTH_MU                  = 0.04
+
+! filter initial prescribed source
+! (useful when calculating kernels to filter out spurious frequency artefacts)
+FILTER_INITIALSOURCE             = .false.
+
+! adjoint source
+! apply tapering to adjoint source signal
+ADJOINT_TAPERSIGNAL              = .true.
+
+! do integration between zero and arrivaltime for seismogram
+! time window of signal
+! WINDOW_START: for major-arcs R150: 4700.;  R200: 4400.; R250: 4100.; R300: 3800.
+! 1. orbit:      0  to   4000   for L150
+! 2. orbit:   4000  to   8000
+! 3. orbit:   8000  to  13500
+! 4. orbit:  13500  to  17000
+WINDOWED_INTEGRATION             = .false.
+WINDOW_START                     = 0.0       ! in seconds
+WINDOW_END                       = 4300.0    ! in seconds
+
+! for adjoint kernel simulation, time ends at reference antipode time (overrides LASTTIME )
+ADJOINT_ANTIPODE_TIME            = .true.
+
 ! Scatterer
 ! ----------------------------------------------------------------
 ! delta phase velocity map: (use it: true/false), location radius (in km) & type,
 ! (remember: mean cell center distance for grid level 6 is about 70 km, delta shape type (gaussian/plateau) )
 ! delta peturbation size (to reference phase velocity in km/s: positive-higher velocity, negative-lower velocity),
-! starting location of delta location center (latitude/longitude in degree: f.e. -60 45) 
-! (notice: heterogeneous map will always rotate the world such that source/receiver are on equator) 
+! starting location of delta location center (latitude/longitude in degree: f.e. -60 45)
+! (notice: heterogeneous map will always rotate the world such that source/receiver are on equator)
 DELTA                            = .false.
 DRADIUS                          = 1000.
 DTYPE                            = plateau
 DPERTURBATION                    = -1.5
 DLOCATION                        = 33.0 80.0
 
-! looping delta locations,starting latitude when moving to next longitude / ending latitude (incrementing by +1 degree), 
+! looping delta locations,starting latitude when moving to next longitude / ending latitude (incrementing by +1 degree),
 ! afterwards move to next longitude / end loop after last longitude;
 ! increment step (in degrees) of moving the delta location in latitude and longitude
 MOVEDELTA                        = .false.
@@ -73,16 +109,16 @@ SECONDDELTA                      = .false.
 
 ! heterogeneous model
 ! ----------------------------------------------------------------
-! heterogeneous phase velocity map 
+! heterogeneous phase velocity map
 ! (notice: for non-adjoint simulations, a heterogeneous map will rotate the world such that source/receiver are on equator)
 HETEROGENEOUS                    = .true.
 
 ! crustal phase map (values in percent): you have two possiblities
 !   (a) choose a block file e.g. 'L150.crust.2degree.3.pcn.blk'
 !   then blk/inv_pixelsize must be set to the size of the blocks (e.g. 3 for a 3x3 degree pixel size)
-!   (b) choose a general spherical harmonics file e.g. 'L150.crust.2degree.gsh' (of CRUST 2x2degree) 
+!   (b) choose a general spherical harmonics file e.g. 'L150.crust.2degree.gsh' (of CRUST 2x2degree)
 !   then blk/inv_pixelsize must be set to the degree of expansion you want (e.g. 12 for expansion up to degree 12)
-! wave reference to which the crustal phase map refers to 
+! wave reference to which the crustal phase map refers to
 ! (e.g. 'data/phasedata/TrampertWoodhouse/gji95/model.l150.abs.gsh' and 40 )
 ! (e.g. 'data/phasedata/L0150.born.3.lsqr.mod-0.-0.800.pcn' and 3 )
 BLKFILE                          = 'data/phasedata/TrampertWoodhouse/gji95/model.l150.abs.gsh'
@@ -101,13 +137,13 @@ INV_VOXELSIZE                    = 3
 
 ! file output & misc
 ! ----------------------------------------------------------------
-! data directory for seismogram files 
-DATADIRECTORY                    = 'OUTPUT/' 
+! data directory for seismogram files
+DATADIRECTORY                    = 'OUTPUT/'
 
 ! optional adjoint kernel file name
-ADJOINTKERNEL                    = 'adjointKernel.dat' 
+ADJOINTKERNEL                    = 'adjointKernel.dat'
 
-! verbosity: console output 
+! verbosity: console output
 VERBOSE                          = .true.
 
 ! simulation: displacement data outputted to files for distinct timesteps

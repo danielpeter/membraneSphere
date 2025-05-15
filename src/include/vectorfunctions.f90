@@ -1333,6 +1333,10 @@
   ! timestep width relation
   ! (Tape, chap. 5, (5.9), p. 66) with space steps (table 4.4) [averageCellDistance in km]
   select case(subdivisions)
+  case (12)
+    averageCellDistance = 4.346505_WP / 2.0 / 2.0  ! empirically each refinement halfs the previous average distance
+  case (11)
+    averageCellDistance = 4.346505_WP / 2.0
   case (10)
     averageCellDistance = 4.346505_WP
   case (9)
@@ -1360,7 +1364,7 @@
   end select
 
   ! for routine findVertex
-  distanceQuit = averageCellDistance*0.5/EARTHRADIUS
+  distanceQuit = averageCellDistance * 0.5/EARTHRADIUS
 
   ! calculate mean cphase velocity for delta phase map
   !if (DELTA) then
@@ -1390,7 +1394,7 @@
   !endif
 
   ! time step - trial'n error formula (5.8)
-  dt = averageCellDistance/(cphaseRef*sqrt2)
+  dt = averageCellDistance / (cphaseRef*sqrt2)
 
   !if (cphaseref > 4.78) dt = dt/2.0
 

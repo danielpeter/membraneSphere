@@ -169,13 +169,16 @@ Peter, D., C. Tape, L. Boschi and J. H. Woodhouse, 2007.
 %---------------------------------------------------------------------------------------------
 \chapter{Getting started}
 %---------------------------------------------------------------------------------------------
-The codes are written in Fortan90. You should use the appropriate compiler flags
-in the \texttt{Makefile} by setting \textsf{F90}, \textsf{FFLAGS} and \textsf{LDFLAGS}
-to fit your installation.
+The codes are written in Fortran90 and require MPI compiler and libraries.
+Before compilation with \textsf{make}, you should run the configuration \textsf{./configure}
+and use the appropriate compiler flags for your system
+(such as \textsf{FC}, \textsf{MPIFC}, \textsf{FCFLAGS} or \textsf{LDFLAGS}).
+If you want to use double precision instead of the default single precision
+in the package, you would add \texttt{--enable-double-precision} to the configuration.
+After the configuration, you can always modify the \texttt{Makefile} settings as well directly to fit your installation.
 
 
-In \texttt{src/include/commonModules.f90} you have to choose the precision (single
-precision is default), the source parameters explained in {Tape} (2003)
+In \texttt{src/include/commonModules.f90} you can choose further details about the source
 and the filtering parameters prior to compilation. To create the binaries, use
 the command \textsf{make}.
 
@@ -184,7 +187,7 @@ In \texttt{Parameter\_Input} choose the physical model (grid refinement level,
 simulation times and wave type) and set the source/receiver geometry. You can also place
 a single scatterer and/or use a heterogeneous background phase-velocity model. These
 parameters are read in when the program starts. They can be changed without
-the need of recompilation of the programs.
+the need of recompilation of the program.
 
 
 
@@ -213,8 +216,11 @@ It calculates a simulation of membrane waves propagating over a sphere.
 It reads the main input file \texttt{Parameter\_Input}:
 \\
 \begin{itemize}
+
+%% Physical model
+
 \item{\textbf{LEVEL}}
-sets the subfolding level of the hexagonal grid. It can be an integer value
+sets the refinement level of the hexagonal grid. It can be an integer value
 between $0$ (coarsest) to $6$ (finest grid).
 
 \item \textbf{FIRSTTIME}
@@ -229,6 +235,8 @@ will determine the background phase-velocity in (km/s) set on the membrane.
 
 It is given in as a combination format, first of the type, either Rayleigh (R) or Love (L) wave, and the wave period (available wave periods in seconds are: 35, 37, 40, 45, 50, 60, 75, 100, 150, 200, 250 or 300), e.g. if one wants Love waves at 150 s period it is set to \textit{L150}.
 
+%% Geometry
+
 \item \textbf{SOURCE}
 sets latitude and longitude (in degrees) for the source location.
 
@@ -242,8 +250,6 @@ The simulation will output the wave displacements calculated for this location.
 \hspace{-1cm}
 \includegraphics[width=1.0\textwidth]{figures/homheterogeneousL35.jpg}
 %\end{center}
-
-
 
 
 \item \textbf{MANYRECEIVERS}
@@ -262,6 +268,42 @@ sets the range of epicentral distances, i.e. the minimum and maximum distance (i
 \item \textbf{IMPORTKERNELSRECEIVERS}
 can be either \textit{true} or \textit{false}. It reads the different receiver locations from
 a file. The file name must be called "tmpReceiverStations***.dat"
+
+
+%% Source
+
+\item \textbf{SOURCE\_TIME\_SIGMA}
+sets the source time function parameter, see the source parameters explained in {Tape} (2003).
+
+\item \textbf{SOURCE\_WIDTH\_MU}
+sets the source width parameter, see the source parameters explained in {Tape} (2003).
+
+\item \textbf{FILTER\_INITIALSOURCE}
+can be either \textit{true} or \textit{false}. It is used to filter the initial prescribed source,
+which can be useful when calculating kernels to filter out spurious frequency artefacts.
+
+\item \textbf{ADJOINT\_TAPERSIGNAL}
+can be either \textit{true} or \textit{false}, applies tapering to the adjoint source.
+
+\item \textbf{WINDOWED\_INTEGRATION}
+can be either \textit{true} or \textit{false}, does apply a time window to seismograms
+for adjoint kernel integrations.
+
+\item \textbf{WINDOW\_START}
+start time of time window (requires WINDOWED\_INTEGRATION being turned on).
+For major-arcs, good start times are R150: 4700.0;  R200: 4400.0; R250: 4100.0; R300: 3800.0.
+Time window examples for L150 are 1. orbit: 0 to 4000; 2. orbit: 4000 to 8000; 3. orbit: 8000 to 13500; 4. orbit:  13500 to 17000.
+
+\item \textbf{WINDOW\_END}
+end time of time window (requires WINDOWED\_INTEGRATION being turned on).
+
+\item \textbf{ADJOINT\_ANTIPODE\_TIME}
+can be either \textit{true} or \textit{false}.
+For adjoint kernel simulations, if turned on the simulation time ends at the reference antipode time
+(overrides LASTTIME setting).
+
+
+%% Scatterer
 
 \item \textbf{DELTA}
 can be either \textit{true} or \textit{false}. It is used if one want to place a single scatterer
@@ -311,6 +353,9 @@ can be either \textit{true} or \textit{false}. If set, a second scatterer is pla
 can be set in the file commonModules.f90) on the membrane
 together with the delta scatterer set above. It is only considered in case DELTA is set.
 
+
+%% heterogeneous model
+
 \item \textbf{HETEROGENEOUS}
 can be either \textit{true} or \textit{false}. If set to true, a heterogeneous phase-velocity distribution must be specified which will be set as background map on the membrane.
 If not set, the membrane will have a uniform, constant phase-velocity over the whole sphere, with a value set to the wave type and period specified by parameter CPHASE.
@@ -355,6 +400,9 @@ not required.
 \item \textbf{INV\_VOXELSIZE}
 not required.
 
+
+%% file output & misc
+
 \item \textbf{DATADIRECTORY}
 sets the name of the direction where output files are written to.
 
@@ -377,8 +425,7 @@ can be either \textit{true} or \textit{false}. If set to true, the code runs in 
 to communicate. The executable must be run either by mpirun or mpiexec.
 \\
 \\
-(Additional detailed parameters can be set
-in the file include/commonModules.f90 file.)
+(Additional detailed parameters can be set in the file \texttt{include/commonModules.f90}.)
 
 \end{itemize}
 
@@ -412,8 +459,9 @@ Then it makes a time-reversed simulation and computes the kernel values.
 \\
 \\
 It reads the main input file \texttt{Parameter\_Input}. For details, look in the former
-section. More specified parameters can be set
-in the file \texttt{commonModules.f90} which is located in the \texttt{includes/} source directory.
+section such as parameters regarding filtering and time windowing.
+More detailed and specific parameters related to the adjoint method can also be found
+in the file \texttt{commonModules.f90}, located in the \texttt{src/includes/} source directory.
 
 \vspace{2cm}
 \begin{center}

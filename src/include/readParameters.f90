@@ -10,8 +10,11 @@
   subroutine readParameters()
 !-----------------------------------------------------------------------
 ! read in parameters from file 'Parameter_Input'
-  use propagationStartup;use loop;use phaseBlockData;use parallel
-  use verbosity; use adjointVariables; use cells
+  use constants, only: IIN
+  use parameter_inputs
+  use adjointVariables, only: Adjoint_Program,Adjoint_InversionProgram
+  use propagationStartup, only: HetPhaseshift_Program
+  use precisions, only: DO_CHECKERBOARD,MAP_DEGREE_L,MAP_DEGREE_M
   implicit none
   ! local parameters
   integer:: ier,tmpInteger,istart,iend
@@ -76,6 +79,7 @@
 
     ! read in parameter
     select case(trim(parName))
+    ! Physical model
     case('LEVEL')
       read(line(istart:iend),*) subdivisions
     case('FIRSTTIME')
@@ -87,6 +91,8 @@
       ! trim & suppress leading white spaces, if any
       cphasetype = trim(adjustl(cphasetype))
       call determinePhaseRef(cphasetype,8,cphaseRef)
+
+    ! Geometry
     case('SOURCE')
       read(line(istart:iend),*) sourceLat,sourceLon
     case('RECEIVER')
@@ -101,6 +107,27 @@
       read(line(istart:iend),*) kernelStartDistance,kernelEndDistance
     case('IMPORTKERNELSRECEIVERS')
       read(line(istart:iend),*) importKernelsReceivers
+
+    ! Source
+    case('SOURCE_TIME_SIGMA')
+      read(line(istart:iend),*) TimeParameterSigma
+    case('SOURCE_WIDTH_MU')
+      read(line(istart:iend),*) WidthParameterMu
+    case('FILTER_INITIALSOURCE')
+      read(line(istart:iend),*) FILTER_INITIALSOURCE
+    ! adjoint source
+    case('ADJOINT_TAPERSIGNAL')
+      read(line(istart:iend),*) ADJOINT_TAPERSIGNAL
+    case('WINDOWED_INTEGRATION')
+      read(line(istart:iend),*) WINDOWED_INTEGRATION
+    case('WINDOW_START')
+      read(line(istart:iend),*) WINDOW_START
+    case('WINDOW_END')
+      read(line(istart:iend),*) WINDOW_END
+    case('ADJOINT_ANTIPODE_TIME')
+      read(line(istart:iend),*) ADJOINT_ANTIPODE_TIME
+
+    ! Scatterer
     case('DELTA')
       read(line(istart:iend),*) DELTA
     case('DRADIUS')
@@ -124,6 +151,8 @@
       read(line(istart:iend),*) deltaMoveIncrement
     case('SECONDDELTA')
       read(line(istart:iend),*) SECONDDELTA
+
+    ! heterogeneous model
     case('HETEROGENEOUS')
       read(line(istart:iend),*) HETEROGENEOUS
     case('BLKFILE')
@@ -161,6 +190,8 @@
         endif
       endif
       heterogeneousPixelsize = tmpInteger
+
+    ! file output & misc
     case('DATADIRECTORY')
       read(line(istart:iend),*) datadirectory
       ! trim & suppress leading white spaces, if any
@@ -272,6 +303,8 @@
     cphase = PHASEVELOCITY_R60
   case('R75')
     cphase = PHASEVELOCITY_R75
+  case('R80')
+    cphase = PHASEVELOCITY_R80
   case('R100')
     cphase = PHASEVELOCITY_R100
   case('R150')
@@ -298,6 +331,8 @@
     cphase = PHASEVELOCITY_L60
   case('L75')
     cphase = PHASEVELOCITY_L75
+  case('L80')
+    cphase = PHASEVELOCITY_L80
   case('L100')
     cphase = PHASEVELOCITY_L100
   case('L150')
@@ -329,8 +364,7 @@
   subroutine checkParameters()
 !-----------------------------------------------------------------------
 ! checks parameters read in from file 'Parameter_Input'
-  use propagationStartup;use loop;use phaseBlockData;use parallel
-  use verbosity; use adjointVariables; use cells
+  use parameter_inputs
   implicit none
 
   ! for now, only checks subdivision level

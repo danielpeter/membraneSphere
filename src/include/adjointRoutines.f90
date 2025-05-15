@@ -309,7 +309,7 @@
     print *,'creating adjoint source...'
     if (ADJOINT_TAPERSIGNAL) &
       print *,'  using tapering'
-    if (WINDOWEDINTEGRATION) &
+    if (WINDOWED_INTEGRATION) &
       print *,'  using window  : start time =',WINDOW_START,' end time = ',WINDOW_END
   endif
 
@@ -355,11 +355,11 @@
   enddo
 
   ! determines the window for the cross-correlation ( Tromp et al, 2005: eq. 41, parameter w_r(t) )
-  if (WINDOWEDINTEGRATION) call determineWindowsize(window_startindex,window_endindex,window_range)
+  if (WINDOWED_INTEGRATION) call determineWindowsize(window_startindex,window_endindex,window_range)
 
   ! apply hanning window to smooth adjoint source ends
   if (ADJOINT_TAPERSIGNAL) then
-    if (WINDOWEDINTEGRATION) then
+    if (WINDOWED_INTEGRATION) then
       ! cuts out a window of the adjoint signal
       !if (MAIN_PROCESS .and. VERBOSE) print *,'    allocating window...',window_startindex,window_endindex
       allocate(window_signal(2,window_startindex-window_endindex-1),stat=ier)
@@ -391,7 +391,7 @@
       write(IOUT,*) seismogramReceiver(1,n),seismo(n)
     enddo
     close(IOUT)
-    if (WINDOWEDINTEGRATION) then
+    if (WINDOWED_INTEGRATION) then
       print *,'  printing to file: ',trim(datadirectory)//'seismo.window.dat'
       open(IOUT,file=trim(datadirectory)//'seismo.window.dat')
       do n = 1,numofTimeSteps
@@ -403,7 +403,7 @@
 
   ! normalization factor is the time integral
   normFactor = 0.0
-  if (WINDOWEDINTEGRATION) then
+  if (WINDOWED_INTEGRATION) then
     ! windows signal ( index = numofTimeSteps-i+1 )
     seismoDisplacement(1:numofTimeSteps-window_startindex+1) = 0.0
     seismoDisplacement(numofTimeSteps-window_endindex+1:numofTimeSteps) = 0.0
@@ -679,7 +679,7 @@
   index = timestep - firsttimestep  + 1
 
   ! time window for integration
-  if (WINDOWEDINTEGRATION) then
+  if (WINDOWED_INTEGRATION) then
     if (timestep*dt < WINDOW_START .or. timestep*dt > WINDOW_END) then
       return
     endif
@@ -895,7 +895,7 @@
     print *,'    time integration:'
     print *,'    starting seismogram at         : ',seismo(1,1)
     print *,'    ending seismogram at           : ',seismo(1,numofTimeSteps)
-    if (WINDOWEDINTEGRATION) &
+    if (WINDOWED_INTEGRATION) &
     print *,'    windowed adjoint source between: ',WINDOW_START,WINDOW_END
     print *
   endif

@@ -74,12 +74,12 @@ end module
 ! (solution by Tape, 2003: eq. 3.34)
 !
 ! inputs:
-!   epiDelta                  - epicentral distance of receiver/position of displacement
-!                                    location (in radian)
-!   time                       - given time step
-!   cphase                  - phase velocity
-!   sigma                     - timeparametersigma
-!   mu                          - widthparametermu
+!   epiDelta                 - epicentral distance of receiver/position of
+!                              displacement location (in radian)
+!   time                     - given time step
+!   cphase                   - phase velocity
+!   sigma                    - timeparametersigma
+!   mu                       - widthparametermu
 !
 ! returns: displacement u_f2
   use precisions
@@ -221,11 +221,11 @@ end module
 !
 ! inputs:
 !   epiDelta                 - epicentral distance of receiver/position of
-!                             displacement location (in radian)
-!   time                       - given time step
-!   cphase                  - phase velocity
-!   sigma                     - timeparametersigma
-!   mu                          - widthparametermu
+!                              displacement location (in radian)
+!   time                     - given time step
+!   cphase                   - phase velocity
+!   sigma                    - timeparametersigma
+!   mu                       - widthparametermu
 !
 ! returns: displacement u_f2
   use precisions
@@ -423,11 +423,11 @@ end module
 !
 ! inputs:
 !   epiDelta                 - epicentral distance of receiver/position of
-!                             displacement location (in radian)
-!   time                       - given time step
-!   cphase                  - phase velocity
-!   sigma                     - timeparametersigma
-!   mu                          - widthparametermu
+!                              displacement location (in radian)
+!   time                     - given time step
+!   cphase                   - phase velocity
+!   sigma                    - timeparametersigma
+!   mu                       - widthparametermu
 !
 ! returns: displacement u_f2
   use precisions
@@ -716,11 +716,11 @@ end module
 !
 ! inputs:
 !   epiDelta                 - epicentral distance of receiver/position of
-!                               displacement location (in radian)
-!   time                       - given time step
-!   cphase                  - phase velocity
-!   sigma                     - timeparametersigma
-!   mu                          - widthparametermu
+!                              displacement location (in radian)
+!   time                     - given time step
+!   cphase                   - phase velocity
+!   sigma                    - timeparametersigma
+!   mu                       - widthparametermu
 !
 ! returns: displacement u_f2
   use precisions
@@ -826,11 +826,11 @@ end module
 !
 ! inputs:
 !   epiDelta                 - epicentral distance of receiver/position of
-!                               displacement location (in radian)
-!   time                       - given time step
-!   cphase                  - phase velocity
-!   sigma                     - timeparametersigma
-!   mu                          - widthparametermu
+!                              displacement location (in radian)
+!   time                     - given time step
+!   cphase                   - phase velocity
+!   sigma                    - timeparametersigma
+!   mu                       - widthparametermu
 !
 ! returns: displacement u_f2
   use precisions
@@ -936,11 +936,11 @@ end module
 !
 ! inputs:
 !   epiDelta                 - epicentral distance of receiver/position of
-!                               displacement location (in radian)
-!   time                       - given time step
-!   cphase                  - phase velocity
-!   sigma                     - timeparametersigma
-!   mu                          - widthparametermu
+!                              displacement location (in radian)
+!   time                     - given time step
+!   cphase                   - phase velocity
+!   sigma                    - timeparametersigma
+!   mu                       - widthparametermu
 !
 ! returns: displacement u_f2
   use precisions

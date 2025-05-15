@@ -470,7 +470,7 @@ end module
     call dofilterSeismogram(seismo,WindowSIZE)
     call dofilterSeismogram(seismoRef,WindowSIZE)
 
-    ! apply hanning window  to smooth seismograms ends
+    ! apply hanning window to smooth seismograms ends
     if (TAPER_FILTERED) then
       if (beVerbose) print *,'    taper seismogram ends'
       call taperSeismogram(seismo,WindowSIZE,WindowSIZE,beVerbose)
@@ -1605,7 +1605,7 @@ end module
     call dofilterSeismogram(seismoRef,seismoLength)
     call dofilterSeismogram(seismo,seismoLength)
 
-    ! apply hanning window  to smooth seismograms ends
+    ! apply hanning window to smooth seismograms ends
     if (TAPER_FILTERED) then
       call taperSeismogram(seismo,seismoLength,seismoLength,beVerbose)
       call taperSeismogram(seismoRef,seismoLength,seismoLength,beVerbose)

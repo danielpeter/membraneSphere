@@ -26,7 +26,7 @@
   implicit none
   logical,intent(in):: VERBOSE
   ! local parameters
-  integer::i,k,ier,ilocal
+  integer:: i,k,ier,ilocal
   character(len=2):: strLev
   character(len=14):: ending
   character(len=128):: fileName
@@ -199,7 +199,7 @@
     print *,'    size                    : ',(17*MaxVertices*WP+MaxTriangles*WP)/1024./1024.,'Mb'
   endif
   allocate(vertices(MaxVertices,3),cellNeighbors(MaxVertices,0:6), &
-        cellFace(MaxVertices,0:6),cellCorners(MaxTriangles,3),stat=ier )
+           cellFace(MaxVertices,0:6),cellCorners(MaxTriangles,3),stat=ier)
   if (ier /= 0) call stopProgram('error in allocating arrays for cell face,..')
 
   if (STATION_CORRECTION .or. SIMULATIONOUTPUT) then
@@ -207,7 +207,7 @@
       print *,'  allocating cellTriangleFace array:'
       print *,'    size                    : ',3*MaxTriangles*WP/1024./1024.,'Mb'
     endif
-    allocate( cellTriangleFace(MaxTriangles,3),stat=ier)
+    allocate(cellTriangleFace(MaxTriangles,3),stat=ier)
     if (ier /= 0) call stopProgram('error allocating cellTriangleFace')
   endif
 
@@ -234,22 +234,22 @@
   endif
 
   allocate(displacement(numVertices),displacement_old(numVertices), &
-          newdisplacement(numVertices), stat=ier )
+           newdisplacement(numVertices), stat=ier )
   if (ier /= 0) call stopProgram('error in allocating displacement arrays   ')
   displacement_old(:) = 0.0_WP
   displacement(:)     = 0.0_WP
   newdisplacement(:)  = 0.0_WP
 
   ! allocate new arrays for precalculated cell attributes
-  allocate( cellAreas(numVertices),cellEdgesLength(numVertices,0:6),cellCenterDistances(numVertices,0:6), &
-          stat=ier )
+  allocate(cellAreas(numVertices),cellEdgesLength(numVertices,0:6),cellCenterDistances(numVertices,0:6), &
+           stat=ier )
   if (ier /= 0) call stopProgram('error in allocating arrays for cell area,..   ')
-  cellAreas(:)        = 0.0_WP
+  cellAreas(:)             = 0.0_WP
   cellEdgesLength(:,:)     = 0.0_WP
   cellCenterDistances(:,:) = 0.0_WP
 
   ! allocates phase velocity
-  allocate( phaseVelocitySquare(numVertices),stat=ier )
+  allocate(phaseVelocitySquare(numVertices),stat=ier)
   if (ier /= 0) call stopProgram('error allocating phaseVelocitySquare   ')
   phaseVelocitySquare(:)   = 0.0_WP
 
@@ -265,7 +265,7 @@
       print *,'  size: ',7*numVertices*WP/1024./1024.,'Mb'
       print *
     endif
-    allocate( cellFractions(numVertices,0:6),stat=ier)
+    allocate(cellFractions(numVertices,0:6),stat=ier)
     if (ier /= 0) call stopProgram('error allocating cellFractions')
     ! initialize
     cellFractions(:,:) = 0.0_WP

@@ -10,8 +10,7 @@
   subroutine syncParameters(rankid,nproc)
 !-----------------------------------------------------------------------
 ! synchronizes parameters from 'Parameter_Input'
-  use propagationStartup;use parallel;use phaseBlockData
-  use loop;use verbosity;use cells
+  use parameter_inputs; use parallel
   implicit none
   integer,intent(in):: rankid,nproc
   ! local parameters
@@ -38,6 +37,16 @@
       call MPI_Send(DELTAfunction,8,MPI_CHARACTER,n,n,MPI_COMM_WORLD,ier)
       call MPI_Send(sourceLat,1,MPI_CUSTOM,n,n,MPI_COMM_WORLD,ier)
       call MPI_Send(sourceLon,1,MPI_CUSTOM,n,n,MPI_COMM_WORLD,ier)
+
+      call MPI_Send(TimeParameterSigma,1,MPI_CUSTOM,n,n,MPI_COMM_WORLD,ier)
+      call MPI_Send(WidthParameterMu,1,MPI_CUSTOM,n,n,MPI_COMM_WORLD,ier)
+      call MPI_Send(FILTER_INITIALSOURCE,1,MPI_LOGICAL,n,n,MPI_COMM_WORLD,ier)
+      call MPI_Send(ADJOINT_TAPERSIGNAL,1,MPI_LOGICAL,n,n,MPI_COMM_WORLD,ier)
+      call MPI_Send(WINDOWED_INTEGRATION,1,MPI_LOGICAL,n,n,MPI_COMM_WORLD,ier)
+      call MPI_Send(WINDOW_START,1,MPI_CUSTOM,n,n,MPI_COMM_WORLD,ier)
+      call MPI_Send(WINDOW_END,1,MPI_CUSTOM,n,n,MPI_COMM_WORLD,ier)
+      call MPI_Send(ADJOINT_ANTIPODE_TIME,1,MPI_LOGICAL,n,n,MPI_COMM_WORLD,ier)
+
       call MPI_Send(receiverLat,1,MPI_CUSTOM,n,n,MPI_COMM_WORLD,ier)
       call MPI_Send(receiverLon,1,MPI_CUSTOM,n,n,MPI_COMM_WORLD,ier)
       call MPI_Send(deltaMoveIncrement,1,MPI_CUSTOM,n,n,MPI_COMM_WORLD,ier)
@@ -78,6 +87,16 @@
       call MPI_Recv(DELTAfunction,8,MPI_CHARACTER,0,rankid,MPI_COMM_WORLD,status,ier)
       call MPI_Recv(sourceLat,1,MPI_CUSTOM,0,rankid,MPI_COMM_WORLD,status,ier)
       call MPI_Recv(sourceLon,1,MPI_CUSTOM,0,rankid,MPI_COMM_WORLD,status,ier)
+
+      call MPI_Recv(TimeParameterSigma,1,MPI_CUSTOM,0,rankid,MPI_COMM_WORLD,status,ier)
+      call MPI_Recv(WidthParameterMu,1,MPI_CUSTOM,0,rankid,MPI_COMM_WORLD,status,ier)
+      call MPI_Recv(FILTER_INITIALSOURCE,1,MPI_LOGICAL,0,rankid,MPI_COMM_WORLD,status,ier)
+      call MPI_Recv(ADJOINT_TAPERSIGNAL,1,MPI_LOGICAL,0,rankid,MPI_COMM_WORLD,status,ier)
+      call MPI_Recv(WINDOWED_INTEGRATION,1,MPI_LOGICAL,0,rankid,MPI_COMM_WORLD,status,ier)
+      call MPI_Recv(WINDOW_START,1,MPI_CUSTOM,0,rankid,MPI_COMM_WORLD,status,ier)
+      call MPI_Recv(WINDOW_END,1,MPI_CUSTOM,0,rankid,MPI_COMM_WORLD,status,ier)
+      call MPI_Recv(ADJOINT_ANTIPODE_TIME,1,MPI_LOGICAL,0,rankid,MPI_COMM_WORLD,status,ier)
+
       call MPI_Recv(receiverLat,1,MPI_CUSTOM,0,rankid,MPI_COMM_WORLD,status,ier)
       call MPI_Recv(receiverLon,1,MPI_CUSTOM,0,rankid,MPI_COMM_WORLD,status,ier)
       call MPI_Recv(deltaMoveIncrement,1,MPI_CUSTOM,0,rankid,MPI_COMM_WORLD,status,ier)
@@ -1531,6 +1550,63 @@
 
   end subroutine
 
+!-----------------------------------------------------------------------
+  subroutine syncMin(value)
+!-----------------------------------------------------------------------
+! determines minimum value between all processes
+  use mpi
+  use constants, only: WP
+  use parallel, only: nprocesses,myrank,MPI_CUSTOM
+  implicit none
+  real(WP),intent(inout):: value
+  ! local parameters
+  real(kind=WP) :: sendbuf, recvbuf
+  integer :: ier
+
+  ! nothing to do for single processor job
+  if (nprocesses < 2) return
+
+  ! determines minimum
+  sendbuf = value
+  call MPI_ALLREDUCE(sendbuf,recvbuf,1,MPI_CUSTOM,MPI_MIN,MPI_COMM_WORLD,ier)
+  if (ier /= 0) then
+    print *,'Error: rank ',myrank,' failed in allReduce'
+    call stopProgram("syncMin error  " )
+  endif
+
+  ! returns overall minimum value
+  value = recvbuf
+
+  end subroutine
+
+!-----------------------------------------------------------------------
+  subroutine syncMax(value)
+!-----------------------------------------------------------------------
+! determines maximum value between all processes
+  use mpi
+  use constants, only: WP
+  use parallel, only: nprocesses,myrank,MPI_CUSTOM
+  implicit none
+  real(WP),intent(inout):: value
+  ! local parameters
+  real(kind=WP) :: sendbuf, recvbuf
+  integer :: ier
+
+  ! nothing to do for single processor job
+  if (nprocesses < 2) return
+
+  ! determines minimum
+  sendbuf = value
+  call MPI_ALLREDUCE(sendbuf,recvbuf,1,MPI_CUSTOM,MPI_MAX,MPI_COMM_WORLD,ier)
+  if (ier /= 0) then
+    print *,'Error: rank ',myrank,' failed in allReduce'
+    call stopProgram("syncMax error  " )
+  endif
+
+  ! returns overall minimum value
+  value = recvbuf
+
+  end subroutine
 
 !-----------------------------------------------------------------------
 !

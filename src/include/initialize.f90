@@ -31,6 +31,9 @@
   ! prescribe source
   call initializeSource()
 
+  ! wait until all processes reached this point
+  call syncProcesses()
+
   ! console output
   if (MAIN_PROCESS .and. VERBOSE) then
     print *,'initialization ok'
@@ -159,7 +162,7 @@
     print *
     print *,'number of processes            : ',nprocesses
     if (.not. FIXED_SOURCEPARAMETER) &
-      print *,'wave parameters                : ',THETA_WID,' theta_wid factor'
+      print *,'wave parameters                : ',THETA_WIDTH,' theta_width factor'
     if (DELTA) &
       print *,'delta phase velocity increment : ', deltaPerturbation
     print *,'number of subdivisions used    : ', subdivisions
@@ -221,7 +224,7 @@
   ! find triangle where receiver lies
   if (STATION_CORRECTION) then
     call getClosestTriangle(desiredReceiverlat,desiredReceiverlon,interpolation_triangleIndex, &
-                          interpolation_distances,interpolation_corners,interpolation_triangleLengths)
+                            interpolation_distances,interpolation_corners,interpolation_triangleLengths)
     ! triangle array no more needed
     !deallocate(cellTriangleFace)
 
@@ -241,7 +244,7 @@
 
     !second delta
     if (SECONDDELTA) call placeSecondDelta(deltaLat,deltaLon,deltaSecondLat, &
-                        deltaSecondLon,deltaSecondVertex,deltaSecondDistance)
+                                           deltaSecondLon,deltaSecondVertex,deltaSecondDistance)
   endif
 
   ! console output
@@ -331,7 +334,7 @@
   use filterType;use verbosity; use adjointVariables
   implicit none
   ! local parameters
-  real(WP):: distance
+  real(WP):: distance,wavelength,gridpoints_per_wavelength
   integer:: iorbit
 
   ! console output
@@ -354,24 +357,34 @@
   ! sets number of time steps
   call determineSimulationsteps()
 
-  ! check for sampling rate and wave period (nyquist frequency limitation )
-  if (bw_waveperiod < dt*2 .or. bw_waveperiod*cphaseRef < averageCellDistance) then
-    print *,'sampling rate is too low compared to wave period length!'
-    print *,'    wave period           : ',bw_waveperiod
-    print *,'    wave length           : ',bw_waveperiod*cphaseRef
-    print *,'    sampling rate         : ',dt
-    print *,'    cell length           : ',averageCellDistance
-    !call stopProgram('abort initializeWorld() - sampling too low   ')
+  ! reference wavelength (in km)
+  wavelength = bw_waveperiod * cphaseRef
+  ! grid sampling
+  gridpoints_per_wavelength = wavelength / averageCellDistance
+
+  ! console output
+  if (MAIN_PROCESS .and. VERBOSE) then
+    print *,'  simulation:'
+    print *,'    reference phase velocity          : ',cphaseRef,'km/s'
+    print *,'              wave period             : ',bw_waveperiod,'s'
+    print *,'              wave length             : ',wavelength,'km'
+    print *,'    average cell center distance      : ',averageCellDistance,'km'
+    print *,'            gridpoints per wavelength : ',gridpoints_per_wavelength
+    print *,'    time step dt                      : ',dt
+    print *,'    time range                        : ',firsttimestep*dt,lasttimestep*dt
+    print *,'    time iteration steps              : ',numofTimeSteps
+    if (DELTA) &
+      print *,'    delta heterogeneity - radius      : ',DELTARADIUS
   endif
 
-  !console output
-  if (MAIN_PROCESS .and. VERBOSE) then
-    print *,'    time step dt          : ',dt
-    print *,'    time range            : ',firsttimestep*dt,lasttimestep*dt
-    print *,'    time iteration steps  : ',numofTimeSteps
-    print *,'    phase velocity        : ',cphaseRef
-    if (DELTA) &
-      print *,'    delta heterogeneity - radius = ',DELTARADIUS
+  ! check for sampling rate and wave period (nyquist frequency limitation )
+  if (bw_waveperiod < dt*2 .or. bw_waveperiod*cphaseRef < averageCellDistance) then
+    print *
+    print *,'Warning: sampling is very low compared to wave period or wave length!'
+    print *,'         time sampling rate is ',dt
+    print *,'         average cell distance is ',averageCellDistance
+    print *
+    !call stopProgram('abort initializeWorld() - sampling too low   ')
   endif
 
   ! adjoint method has one forward and one backward simulation,
@@ -548,9 +561,12 @@
   implicit none
   ! local parameters
   integer:: vertex,timestep,index,i,n,ier,jrec
-  character(len=9)::vertexstr
-  real(WP)::seismo(2,numofTimeSteps)
-  real(WP)::min,max,originalT,originalf
+  character(len=9):: vertexstr
+  real(WP):: seismo(2,numofTimeSteps)
+  real(WP):: originalT,originalf
+  real(WP)::amp_min,amp_max,amp_min_all,amp_max_all,amp_min_all_filtered,amp_max_all_filtered
+  ! amplitude threshold to determine whether source is zero or gets filtered
+  real(WP),parameter :: THRESHOLD_SOURCE_AMPLITUDE = 1e-4
 
   ! checks if anything to do
   if (.not. FILTER_INITIALSOURCE) return
@@ -570,11 +586,12 @@
     endif
   endif
 
-  !console output
+  ! console output
   if (MAIN_PROCESS .and. VERBOSE) then
     print *,'  filtering source...'
     if (FILTER_AT_NEWPERIOD) then
       print *,'    using filter at new period'
+      print *,'    period              : ',bw_waveperiod
     endif
     if (BW_FIXFREQUENCY) then
       print *,'    using fixed halfband-frequency'
@@ -583,6 +600,7 @@
       print *,'    filter center period: ',bw_waveperiod
     endif
     print *,'    filter frequency    : ',bw_frequency
+    print *,'           as period    : ',1.0/bw_frequency
   endif
 
   ! initialize forces time
@@ -591,6 +609,12 @@
     index = index+1
     seismo(1,index) = timestep*dt
   enddo
+
+  ! stats
+  amp_max_all = 0.0_WP
+  amp_min_all = 0.0_WP
+  amp_max_all_filtered = 0.0_WP
+  amp_min_all_filtered = 0.0_WP
 
   ! filter initial source
   do n = 1,numDomainVertices
@@ -612,9 +636,9 @@
     endif
 
     ! file output for sourceVertex
-    if (vertex == sourceVertex .and. beVerbose .and. .not. sourceOnFile) then
+    if (vertex == sourceVertex .and. fileOutput .and. .not. sourceOnFile) then
       write(vertexstr,'(i9.9)') vertex
-      print *,'    writing to file: ',trim(datadirectory)//'source2Prescribed.'//vertexstr//'.dat'
+      print *,'  writing to file: ',trim(datadirectory)//'source2Prescribed.'//vertexstr//'.dat'
       open(IOUT,file=trim(datadirectory)//'source2Prescribed.'//vertexstr//'.dat',iostat=ier)
       if (ier /= 0) &
         call stopProgram('error opening file: '//trim(datadirectory)//'source2Prescribed.'//vertexstr//'.dat   ')
@@ -624,12 +648,19 @@
       close(IOUT)
     endif
 
+    ! stats
+    ! get +/- amplitudes
+    amp_min = minval(seismo(2,:))
+    amp_max = maxval(seismo(2,:))
+    if (amp_min < amp_min_all) amp_min_all = amp_min
+    if (amp_max > amp_max_all) amp_max_all = amp_max
+
     ! filter only when there is some displacement in the trace
-    min = minval(seismo(2,:))
-    max = maxval(seismo(2,:))
-    if ( (abs(max)+abs(min)) > 1e-4) then
+    if ( (abs(amp_max)+abs(amp_min)) > THRESHOLD_SOURCE_AMPLITUDE) then
       !print *,'    filter',myrank,vertex,max,min
       call dofilterSeismogram(seismo,numofTimeSteps)
+      ! apply hanning window to smooth ends
+      call taperSeismogram(seismo,numofTimeSteps,numofTimeSteps,beVerbose)
     endif
 
     ! start source at zero time for adjoint methods
@@ -652,10 +683,17 @@
       enddo
     endif
 
+    ! stats for filtered source
+    ! get +/- amplitudes
+    amp_min = minval(seismo(2,:))
+    amp_max = maxval(seismo(2,:))
+    if (amp_min < amp_min_all_filtered) amp_min_all_filtered = amp_min
+    if (amp_max > amp_max_all_filtered) amp_max_all_filtered = amp_max
 
     ! file output
-    if (vertex == sourceVertex .and. beVerbose .and. .not. sourceOnFile) then
+    if (vertex == sourceVertex .and. fileOutput .and. .not. sourceOnFile) then
       write(vertexstr,'(i9.9)') vertex
+      print *,'  writing to file: ',trim(datadirectory)//'source2Prescribed.filtered.'//vertexstr//'.dat'
       open(IOUT,file=trim(datadirectory)//'source2Prescribed.filtered.'//vertexstr//'.dat',iostat=ier)
       if (ier /= 0) &
         call stopProgram('error opening file: '//trim(datadirectory)//'source2Prescribed.filtered'//vertexstr//'.dat   ')
@@ -665,6 +703,18 @@
       close(IOUT)
     endif
   enddo
+
+  ! get minimum/maximum over all processes
+  call syncMin(amp_min_all)
+  call syncMax(amp_max_all)
+  call syncMin(amp_min_all_filtered)
+  call syncMax(amp_max_all_filtered)
+
+  ! console output
+  if (MAIN_PROCESS .and. VERBOSE) then
+    print *,'    original source amplitude min/max : ',amp_min_all,'/',amp_max_all
+    print *,'    filtered source amplitude min/max : ',amp_min_all_filtered,'/',amp_max_all_filtered
+  endif
 
   ! filter around a specified (different) period
   if (FILTER_AT_NEWPERIOD) then
@@ -784,14 +834,14 @@
   endif
 
   ! next process gets higher delta latitude
-  deltaLat = deltaLat+myrank*deltaMoveIncrement
+  deltaLat = deltaLat + myrank * deltaMoveIncrement
 
   ! get nearest vertex for new delta location
   call findVertex(deltaLat,deltaLon,deltaVertex)
 
   ! for 2 delta scatterers
   if (SECONDDELTA) call placeSecondDelta(deltaLat,deltaLon,deltaSecondLat, &
-                    deltaSecondLon,deltaSecondVertex,deltaSecondDistance)
+                                         deltaSecondLon,deltaSecondVertex,deltaSecondDistance)
 
   end subroutine
 
@@ -1392,7 +1442,7 @@
 !
 ! input:
 !   distance - epicentral distance between source & receiver (can be higher orbit)
-!   iorbit      - orbit number
+!   iorbit   - orbit number
 !
 ! returns: LASTTIME is set accordingly
   use propagationStartup; use parallel; use verbosity
@@ -1410,7 +1460,7 @@
     ! uses overtime percent instead of antipodal time
     LASTTIME = arrivalTime + OVERTIME_PERCENT*arrivalTime
     if (LASTTIME > antipodeTime) LASTTIME = antipodetime
-  else if (WINDOWEDINTEGRATION) then
+  else if (WINDOWED_INTEGRATION) then
     if (MAIN_PROCESS .and. VERBOSE) then
       print *,'    orbit: ',iorbit
     endif
@@ -1529,37 +1579,28 @@
   ! calculates width parameter (see Carl Tape Thesis , eq. 3.21 )
   if (.not. FIXED_SOURCEPARAMETER) then
     !WidthParameterMu=FACTOR_WIDTH*averageCellDistance/(EARTHRADIUS*2.0*sqrt(-2.0*log(0.05)))
-    theta_radian = THETA_WID*PI/180.0
-    WidthParameterMu = theta_radian/(2.0*sqrt(-2.0*log(0.05)))
+    theta_radian = THETA_WIDTH * PI/180.0
+    WidthParameterMu = theta_radian / (2.0*sqrt(-2.0*log(0.05)))
   endif
   muSquare = WidthParameterMu * WidthParameterMu
   muTwo    = muSquare + muSquare
 
-  ! checks width parameter
-  if (subdivisions <= 6 .and. WidthParameterMu < 0.008) then
-    print *,'  minimum period: ',20.+WidthParameterMu*7000.
-    !call stopProgram("source not optimal ")
-  endif
-  if (subdivisions <= 7 .and. WidthParameterMu < 0.004) then
-    print *,'  minimum period: ',20.+WidthParameterMu*7000.
-    !call stopProgram("source not optimal ")
-  endif
-
   ! empirical formula to obtain a maximum at the reference period
   if (ADAPT_SOURCE) then
     if ( (20.+WidthParameterMu*7000.) > bw_waveperiod) then
-      print *,'Error: minimum period possible: ',20.+WidthParameterMu*7000.
-      print *,'       width parameter mu:',WidthParameterMu
+      print *,'Error: estimated minimum period possible: ',20.+WidthParameterMu*7000.
+      print *,'                     width parameter mu : ',WidthParameterMu
+      print *,'       minimum period should be smaller than bandwidth wave period ',bw_waveperiod
       call stopProgram("source not possible    ")
     endif
-    tmp = 1.0-8.0/3.0*(20.+WidthParameterMu*7000.-bw_waveperiod)
+    tmp = 1.0 - 8.0/3.0 * (20.+WidthParameterMu*7000.-bw_waveperiod)
     if (tmp < 0.0) then
       call stopProgram("source parameter sigma not defined    ")
     endif
-    TimeParameterSigma = 0.75 + 0.75*sqrt( tmp )
+    TimeParameterSigma = 0.75 + 0.75 * sqrt( tmp )
   endif
 
-  tmp = 2./3.*TimeParameterSigma**2-TimeParameterSigma+20.+7000.*WidthParameterMu
+  tmp = 2./3. * TimeParameterSigma**2 - TimeParameterSigma + 20. + 7000. * WidthParameterMu
   ! console output
   if (MAIN_PROCESS .and. VERBOSE) then
     print *,'  source parameters:'
@@ -1567,6 +1608,17 @@
     print *,'    width parameter mu    :',WidthParameterMu
     print *,'    empirical spectral maximum around period:',tmp
     print *
+  endif
+
+  ! checks width parameter
+  if (subdivisions <= 6 .and. WidthParameterMu < 0.008) then
+    print *,'    estimated minimum period possible: ',20. + WidthParameterMu*7000.
+    print *
+    !call stopProgram("source not optimal ")
+  else if (subdivisions <= 7 .and. WidthParameterMu < 0.004) then
+    print *,'    estimated minimum period possible: ',20. + WidthParameterMu*7000.
+    print *
+    !call stopProgram("source not optimal ")
   endif
 
   end subroutine

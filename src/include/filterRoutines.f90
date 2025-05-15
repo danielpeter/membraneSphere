@@ -61,6 +61,8 @@
     bw_waveperiod = WAVEPERIOD_R60
   case ('R75')
     bw_waveperiod = WAVEPERIOD_R75
+  case ('R80')
+    bw_waveperiod = WAVEPERIOD_R80
   case ('R100')
     bw_waveperiod = WAVEPERIOD_R100
   case ('R150')
@@ -87,6 +89,8 @@
     bw_waveperiod = WAVEPERIOD_L60
   case ('L75')
     bw_waveperiod = WAVEPERIOD_L75
+  case ('L80')
+    bw_waveperiod = WAVEPERIOD_L80
   case ('L100')
     bw_waveperiod = WAVEPERIOD_L100
   case ('L150')
@@ -128,6 +132,7 @@
   ! local parameters
   integer:: entries,centerfrequencyindex,i,xcorrlength
   real(WP):: startingTime,endtime,samplingFreq
+  real(WP):: freqCenter,freqBandHalf,freqBandLow,freqBandHi
   real(WP):: seismoTmp(2,WindowSIZE)
   real(WP):: traceTmp(WindowSIZE)
 
@@ -159,7 +164,7 @@
     print *,'      last time readin    : ',seismoTmp(1,entries) !,'seismo:',endtime
   endif
 
-  ! apply hanning window  to smooth seismograms ends
+  ! apply hanning window to smooth seismograms ends
   call taperSeismogram(seismoTmp,xcorrlength,entries,beVerbose)
 
   ! smallest sampled frequency
@@ -170,8 +175,16 @@
 
   ! determine bandwidth integer depending on windowsize and requested bandwidth-frequency
   ! integer is a factor of 2 to have same number of frequencies filtered around the center frequency to the left and the right
-  bw_width = 2*nint(bw_frequency*dt*xcorrlength)
+  bw_width = 2 * nint(bw_frequency*dt*xcorrlength)
   !bw_width = 2*abs(centerfrequencyIndex-nint(bw_frequency*dt*xcorrlength))
+
+  ! center frequency
+  freqCenter = 1.0_WP/(bw_waveperiod+MEMBRANECORRECTION)
+
+  ! frequency bandwidth low/high
+  freqBandHalf = (bw_width/2) * samplingFreq
+  freqBandLow  = freqCenter - freqBandHalf
+  freqBandHi   = freqCenter + freqBandHalf
 
   ! console output
   if (beVerbose) then
@@ -181,11 +194,15 @@
     print *,'    wave period           : ',bw_waveperiod+MEMBRANECORRECTION
     print *,'      initial period      : ',bw_waveperiod
     print *,'      membrane correction : ',MEMBRANECORRECTION
-    print *,'    center frequency      : ',1.0_WP/(bw_waveperiod+MEMBRANECORRECTION)
+    print *,'    center frequency      : ',freqCenter
     print *,'      index               : ',centerfrequencyIndex
     print *,'    bandwidth (full/half) : ',bw_width,bw_width/2
-    print *,'        as frequency      : ',bw_width*samplingFreq,bw_width/2*samplingFreq
-    if (BUTTERWORTHFILTER) print *,'    power                 : ',BUTTERWORTH_POWER
+    print *,'        as frequency      : ',2*freqBandHalf,freqBandHalf
+    print *,'        period band       : ',1.0/freqBandHi,1.0/freqBandLow
+    if (BUTTERWORTHFILTER) then
+      print *,'    Butterworth filter    : ',BUTTERWORTHFILTER
+      print *,'      power               : ',BUTTERWORTH_POWER
+    endif
     print *,'    windowsize            : ',xcorrlength
   endif
 
@@ -196,8 +213,8 @@
   endif
 
   ! debug output
-  if (fileOutput .and. MAIN_PROCESS .and. beVerbose) then
-    print *,'printing to file: ',trim(datadirectory)//'Filter_input.dat'
+  if (MAIN_PROCESS .and. fileOutput .and. beVerbose) then
+    print *,'  printing to file: ',trim(datadirectory)//'Filter_input.dat'
     open(IOUT,file=trim(datadirectory)//'Filter_input.dat')
     do i = 1,xcorrlength
       write(IOUT,*) seismoTmp(1,i),seismoTmp(2,i)
@@ -217,12 +234,12 @@
     seismo(2,i) = traceTmp(i)
   enddo
 
-  ! apply hanning window  to smooth seismograms ends again
+  ! apply hanning window to smooth seismograms ends again
   !call taperSeismogram(seismo,seismoLength,seismoLength,beVerbose)
 
   ! debug output
-  if (fileOutput .and. MAIN_PROCESS .and. beVerbose) then
-    print *,'printing to file: ',trim(datadirectory)//'Filter_output.dat'
+  if (MAIN_PROCESS .and. fileOutput .and. beVerbose) then
+    print *,'  printing to file: ',trim(datadirectory)//'Filter_output.dat'
     open(IOUT,file=trim(datadirectory)//'Filter_output.dat')
     do i = 1,seismoLength
       write(IOUT,*) seismo(1,i),seismo(2,i)
@@ -470,7 +487,7 @@
   integer:: ileft,iright,hannwindow,i
   real(WP):: hannA,hannfactor
 
-  ! apply hanning window  to smooth seismograms ends
+  ! apply hanning window to smooth seismograms ends
   ! (info: http://www.teemach.com/FFTProp/FFTProperties/FFTProperties.htm )
   ileft = 0
   iright = entries+1

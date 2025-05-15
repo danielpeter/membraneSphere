@@ -21,14 +21,14 @@ VERBOSITY                        = .true.
 REFERENCE FILE                   = OUTPUT/seismo.hom.dat
 PERTURBED FILE                   = OUTPUT/seismo.het.dat
 
-! filter 
+! filter
 ! (just in case of filtering: around which wave period one wants to filter)
 ! ----------------------------------------------------------------
 ! homogeneous phase velocity: for love wave 35s use "L35","L50","L75","L150","L300/rayleigh 40s "R40"
 CPHASE                           = L150
 
 
-! starting time  
+! starting time
 ! (the seismograms will be truncated to take only parts after this time
 !  for the calculation of the time lag)
 ! for seismograms e.g. -1000.0 seconds
@@ -38,5 +38,5 @@ ENDING TIME                      =  5000.0
 
 ! file output
 ! ----------------------------------------------------------------
-! data directory for output files 
-DATADIRECTORY                    = 'OUTPUT/' 
+! data directory for output files
+DATADIRECTORY                    = 'OUTPUT/'

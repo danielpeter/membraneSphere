@@ -208,7 +208,7 @@
 
   ! for 2 delta scatterers
   if (SECONDDELTA) call placeSecondDelta(deltaLat,deltaLon,deltaSecondLat, &
-                                          deltaSecondLon,deltaSecondVertex,deltaSecondDistance)
+                                         deltaSecondLon,deltaSecondVertex,deltaSecondDistance)
 
   ! stop iteration for high longitude
   if (deltaLon > (longitudeEnd + deltaMoveIncrement/2)) move = .false.
@@ -285,11 +285,11 @@
 
     ! for 2 delta scatterers
     if (SECONDDELTA) call placeSecondDelta(deltaLat,newlon,deltaSecondLat, &
-                                            deltaSecondLon,deltaSecondVertex,deltaSecondDistance)
+                                           deltaSecondLon,deltaSecondVertex,deltaSecondDistance)
   else
     ! for 2 delta scatterers
     if (SECONDDELTA) call placeSecondDelta(deltaLat,deltaLon,deltaSecondLat, &
-                                            deltaSecondLon,deltaSecondVertex,deltaSecondDistance)
+                                           deltaSecondLon,deltaSecondVertex,deltaSecondDistance)
   endif
 
   end subroutine
@@ -397,11 +397,11 @@
     vectorV(:) = vertices(n,:)
     vectorS(:) = vertices(deltaVertex,:)
     call greatCircleDistance(vectorS,vectorV,distance)
-    distance = EARTHRADIUS*distance
+    distance = EARTHRADIUS * distance
     if (SECONDDELTA) then
       vectorSnd(:) = vertices(deltaSecondVertex,:)
       call greatCircleDistance(vectorSnd,vectorV,distanceSnd)
-      distanceSnd = EARTHRADIUS*distanceSnd
+      distanceSnd = EARTHRADIUS * distanceSnd
     endif
 
     ! determine which phase velocity to apply for first scatterer

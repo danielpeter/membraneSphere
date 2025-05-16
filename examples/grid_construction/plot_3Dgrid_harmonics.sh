@@ -10,11 +10,16 @@ fi
 
 echo
 echo "***********************************************"
-echo "plotting grid cellFractionAverages ..."
+echo "plotting spherical harmonics ..."
 echo "***********************************************"
 echo
 
-./plot_3Dgrid.py OUTPUT/Dvvert${level}.dat OUTPUT/Dvface${level}.dat OUTPUT/cellFractionAverage.${level}.dat
+./plot_3Dgrid.py data/griddata/Dtvert${level}.dat data/griddata/Dtface${level}.dat OUTPUT/harmonics${level}.L6M1.dat stretch=0.5
+
+# checks exit code
+if [[ $? -ne 0 ]]; then exit 1; fi
+
+mv -v out.jpg OUTPUT/harmonics${level}.L6M1.dat.jpg
 
 echo
 echo "done"

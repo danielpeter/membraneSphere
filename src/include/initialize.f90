@@ -1623,29 +1623,3 @@
 
   end subroutine
 
-
-!-----------------------------------------------------------------------
-  subroutine stopProgram(textline)
-!-----------------------------------------------------------------------
-  use parallel
-  implicit none
-  character(len=*),intent(in):: textline
-  ! local parameters
-  integer:: endindex
-
-  ! console output
-  endindex = index(textline,"  ")
-  if (endindex < 1) endindex = 128
-  print *,textline(1:endindex)
-
-  ! on linux machines : i/o unit 6 is the stdout , on SGI 101
-  flush(6)
-
-  ! stop MPI
-  call syncAbortMPI()
-
-  ! stop process
-  stop 'Abort - program'
-
-  end subroutine
-

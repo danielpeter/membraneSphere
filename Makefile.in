@@ -95,6 +95,7 @@ S_TOP = @top_srcdir@
 
 # code subdirectories
 SUBDIRS = \
+	auxiliaries \
 	grid \
 	include \
 	propagation \
@@ -106,6 +107,7 @@ DEFAULT = \
 	propagation \
 	timelag \
 	grid \
+	auxiliaries \
 	$(EMPTY_MACRO)
 
 default: $(DEFAULT)
@@ -131,6 +133,9 @@ help:
 	@echo "grid tools: [make grid]"
 	@echo "    gridConstruction"
 	@echo "    gridAreaStatistics"
+	@echo ""
+	@echo "auxiliaries: [make auxiliaries]"
+	@echo "    sphericalLaplacian"
 	@echo ""
 
 .PHONY: all default clean help

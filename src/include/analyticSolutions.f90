@@ -38,11 +38,11 @@ end module
   integer,intent(in):: ACCURACY
   real(WP):: u_shape
   ! local parameters
+  integer:: l
   real(WP):: eigenfrequency
   real(WP):: imu
+  real(WP):: dummy
   double precision,external:: legendrePolynomial
-  real(WP):: fromA,toB
-  integer:: l
   real(WP),external:: integrand
 
   !print *,"u_shape: ", colatitude, longitude,time
@@ -55,13 +55,16 @@ end module
     !print *,"eigenfrequency = ",eigenfrequency
 
     !get integral value
-    call simpsons_integral_degree(integrand,l,0.0d0,PI,imu,mu)
+    call simpsons_integral_degree(integrand,l,0.0_WP,PI,imu,mu)
 
     !calculate displacement
     u_shape = u_shape + &
-             (l+0.5)*imu*cos(eigenfrequency*time) &
-             *legendrePolynomial(l,dcos(dble(colatitude)) )
+             (l+0.5) * imu * cos(eigenfrequency*time) &
+             * legendrePolynomial(l,dcos(dble(colatitude)) )
   enddo
+
+  ! to avoid compiler warnings
+  dummy = longitude
 
   return
   end function
@@ -83,7 +86,7 @@ end module
 !
 ! returns: displacement u_f2
   use precisions
-  use filterType, only: bw_waveperiod
+  !use filterType, only: bw_waveperiod
   implicit none
   real(WP),intent(in):: epiDelta,time,cphase,sigma,mu
   integer,intent(in):: ACCURACY
@@ -95,8 +98,9 @@ end module
   real(WP):: termSigma,termIntegral,termSpreading
   real(WP),external:: integrand
   double precision,external:: legendrePolynomial
-  integer:: cpustart,cpuend,cpurate,cpumax
-  real:: cputime
+  ! timing
+  !integer:: cpustart,cpuend,cpurate,cpumax
+  !real:: cputime
 
   ! check to have double precision
   sigma2 = sigma*sigma
@@ -154,14 +158,14 @@ end module
     eigenfrequency = cphase*sqrt(l*(l+1.0d0))*reciEarthradius
 
     !get integral value with integral boundaries [0,PI]
-    call simpsons_integral_degree(integrand,l,0.0,PI,integralvalue,mu)
+    call simpsons_integral_degree(integrand,l,0.0_WP,PI,integralvalue,mu)
 
     !calculate displacement (sum of Tape, 2003: eq. 3.34)
     termSigma = exp(-sigma2*(eigenfrequency**2)*0.5d0)
     termIntegral = cphaseSquare*(l+0.5d0)*integralvalue
     termSpreading = legendrePolynomial(l,dcos(dble(epiDelta)) )
 
-    result= termIntegral*termSigma*termSpreading*cos(eigenfrequency*time)
+    result = termIntegral*termSigma*termSpreading*cos(eigenfrequency*time)
     u_f2 = u_f2 + result
 
     ! skip if accuracy enough
@@ -201,8 +205,8 @@ end module
   real(WP),intent(in):: theta,mu
   real(WP):: integrand
   ! local parameters
-  double precision,external:: legendrePolynomial
   real(WP):: mu2
+  double precision,external:: legendrePolynomial
 
   mu2 = mu*mu
   integrand = legendrePolynomial(degree,dcos(dble(theta)) ) &
@@ -241,11 +245,12 @@ end module
   real(WP):: phase_t,phase_k,PI2,PIby4,cphaseSquare,lplus
   real(WP):: freq_min,freq_max,center_freq,result
   real(WP),external:: integrand,integrand_asymptotic
+  ! timing
   integer:: cpustart,cpuend,cpurate,cpumax
   real:: cputime
   ! parameters
-  logical,parameter:: ONLY_FREQUENCY_RANGE         = .false.
-  real(WP), parameter :: MACHINE_PRECISION        = 1.e-8
+  logical,parameter:: ONLY_FREQUENCY_RANGE = .false.
+  real(WP),parameter:: MACHINE_PRECISION = 1.e-8
 
   ! check to have double precision
   sigma2 = sigma*sigma
@@ -279,20 +284,19 @@ end module
   !  l = ACCURACY
   !  freq_max = cphase*sqrt(l*(l+1.0d0))*reciEarthradius
     print *,'asymptotic solution f2:'
-    print *,'    angular degrees min/max:',l_min,l_max
-    print *,'    desired frequency range min/max:',sngl(freq_min),sngl(freq_max)
-    print *,'         period range min/max:',sngl(2*PI/freq_min),sngl(2*PI/freq_max)
+    print *,'    angular degrees min/max        :',l_min,'/',l_max
+    print *,'    desired frequency range min/max:',freq_min,'/',freq_max
+    print *,'               period range min/max:',sngl(2.d0*PI/freq_min),'/',sngl(2.d0*PI/freq_max)
 
     ! check
     print *,'    actual frequency range min/max:', &
-            sngl(cphase*sqrt(l_min*(l_min+1.0d0))/EARTHRADIUS), &
+            sngl(cphase*sqrt(l_min*(l_min+1.0d0))/EARTHRADIUS),'/', &
             sngl(cphase*sqrt(l_max*(l_max+1.0d0))/EARTHRADIUS)
     print *,'         period range min/max:', &
-            sngl(2*PI/(cphase*sqrt(l_min*(l_min+1.0d0))/EARTHRADIUS)), &
+            sngl(2*PI/(cphase*sqrt(l_min*(l_min+1.0d0))/EARTHRADIUS)),'/', &
             sngl(2*PI/(cphase*sqrt(l_max*(l_max+1.0d0))/EARTHRADIUS))
     if (l_min > 0) then
-      print *,'    center frequency/period:',sngl(center_freq), &
-                  sngl(2*PI/center_freq)
+      print *,'    center frequency/period:',center_freq,sngl(2.d0*PI/center_freq)
     endif
   endif
 
@@ -310,11 +314,11 @@ end module
     eigenfrequency = cphase*sqrt(l*(l+1.0d0))*reciEarthradius
 
     !get integral value with integral boundaries [0,PI]
-    call simpsons_integral_degree(integrand,l,0.0,PI,integralvalue,mu)
+    call simpsons_integral_degree(integrand,l,0.0_WP,PI,integralvalue,mu)
 
     ! get asymptotic integral value
     ! does not work, gives NaN
-    !call simpsons_integral_degree(integrand_asymptotic,l,0.0d0,PI,integralvalue,mu)
+    !call simpsons_integral_degree(integrand_asymptotic,l,0.0_WP,PI,integralvalue,mu)
 
     ! coefficients A
     lplus = l+0.5d0
@@ -405,9 +409,9 @@ end module
   mu2 = mu*mu
   l = degree
 
-  integrand_asymptotic =  sqrt(2/(PI*(l+0.5)*sin(theta))) &
-              *cos( (l+0.5)*theta - PI/4.0 ) &
-              *sin(theta)*exp(-theta**2/(2.0d0*mu2))/mu2
+  integrand_asymptotic =  sqrt(2.d0/(PI*(l+0.5) * sin(theta))) &
+                             * cos( (l+0.5)*theta - PI/4.d0 ) &
+                             * sin(theta)*exp(-theta**2/(2.d0*mu2))/mu2
 
   return
   end function
@@ -441,27 +445,32 @@ end module
   real(WP):: u_f2_orbit
   ! local parameters
   integer:: ier,length,i,icount
-  real(WP):: degreel,l_min,l_max
+  integer:: l,l_min,l_max
+  double precision:: degreel
   real(WP):: integralvalue
   real(WP):: freq_min,freq_max,center_freq,result
   real(WP),external:: u_f2_asymptoticdisplacement
   real(WP),external:: integrand
   double precision,external:: cubicspline_eval
 
-  real(WP):: lambda,deltal,omega_k
-  integer:: cpustart,cpuend,cpurate,cpumax
-  real:: cputime
+  real(WP):: lambda,omega_k
+  real(WP):: dummy
+  double precision:: deltal
+  ! timing
+  !integer:: cpustart,cpuend,cpurate,cpumax
+  !real:: cputime
+
   logical:: do_file_out
 
   real(WP),external:: romberg_integral
   real(WP),external:: simpsons_integral
   ! filter in frequency range
-  logical,parameter:: ONLY_FREQUENCY_RANGE        = .false.
-  real(WP),parameter:: DEGREE_SHIFT              = 0.0
-  logical,parameter:: DO_BY_SUMMATION             = .false.
+  logical,parameter:: ONLY_FREQUENCY_RANGE = .false.
+  integer,parameter:: DEGREE_SHIFT = 0
+  logical,parameter:: DO_BY_SUMMATION = .false.
 
   ! angular degree
-  l_min = 0.0
+  l_min = 0
   l_max = ACCURACY
 
   ! set parameters
@@ -478,7 +487,7 @@ end module
     ! quadratic equation: l**2 + l - (w_l * r_earth / c )**2
     !     -> l+ = -1/2 + 1/2*sqrt( 1+4( w_l * r_earth/c )**2
     ! ( +0.5 for rounding up to integer)
-    l_min = int( -0.5 + 0.5*sqrt(1.0 + 4.0*(freq_min*EARTHRADIUS/cphase)**2) + 0.5)
+    l_min = int(-0.5 + 0.5*sqrt(1.0 + 4.0*(freq_min*EARTHRADIUS/cphase)**2) + 0.5)
     l_max = int(-0.5 + 0.5*sqrt(1.0 + 4.0*(freq_max*EARTHRADIUS/cphase)**2) + 0.5)
   endif
 
@@ -489,14 +498,14 @@ end module
     freq_max = cphase*sqrt(l_max*(l_max+1.0d0))/EARTHRADIUS !huge(freq_max)
 
     print *,'  asymptotic solution f2 for R1:'
-    print *,'    angular degrees min/max:',l_min,l_max
-    print *,'    frequency min/max :',sngl(freq_min),sngl(freq_max)
-    print *,'    period min/max    :',sngl(2*PI/freq_min),sngl(2*PI/freq_max)
+    print *,'    angular degrees min/max:',l_min,'/',l_max
+    print *,'    frequency min/max      :',freq_min,'/',freq_max
+    print *,'       period min/max      :',sngl(2.d0*PI/freq_min),sngl(2.d0*PI/freq_max)
   endif
 
   if (.not. allocated(X)) then
     ! for spline representation
-    length = l_max-l_min+1
+    length = l_max - l_min + 1
 
     ! initialize
     i1 = 1
@@ -509,13 +518,14 @@ end module
     open(IOUT,file='OUTPUT/integrals_discretel.dat')
     write(IOUT,*) '#format: degree_l integralvalue'
     do_file_out = .true.
+
     do i = l_min,l_max
       ! starting degrees from 0 to degreeaccuracy, but array indices from 1 to length
       icount = icount + 1
       X(icount) = dble(i)
 
       ! get integral value with integral boundaries [0,PI]
-      call simpsons_integral_degree(integrand,i,0.0,PI,integralvalue,mu)
+      call simpsons_integral_degree(integrand,i,0.0_WP,PI,integralvalue,mu)
       Y(icount) = dble(integralvalue)
 
       if (do_file_out) write(IOUT,*) i,Y(icount)
@@ -528,9 +538,14 @@ end module
     ! test
     open(IOUT,file='OUTPUT/integrals_nonintegerl.test.dat')
     write(IOUT,*) '#format: degree_l integralvalue'
-    do degreel = l_min,l_max,0.2d0
-      integralvalue = cubicspline_eval(dble(degreel))
-      write(IOUT,*) degreel,integralvalue
+
+    ! old style
+    !do degreel = l_min,l_max,0.2d0
+    ! new style with loop over integers
+    do l = int(l_min/0.2d0),int(l_max/0.2d0)
+      degreel = l * 0.2d0
+      integralvalue = cubicspline_eval(degreel)
+      write(IOUT,*) sngl(degreel),integralvalue
     enddo
     close(IOUT)
 
@@ -549,10 +564,14 @@ end module
     ! summation
     deltal = 0.5d0
     u_f2_orbit = 0.0d0
-    do degreel = l_min,l_max,deltal
+    ! old style
+    !do degreel = l_min,l_max,deltal
+    ! new style with loop over integers
+    do l = int(l_min/deltal),int(l_max/deltal)
+      degreel = l * deltal
       ! determines frequency
       lambda = degreel + 0.5d0
-      omega_k= cphase * sqrt(lambda**2 - 0.25d0) / EARTHRADIUS
+      omega_k = cphase * sqrt(lambda**2 - 0.25d0) / EARTHRADIUS
 
       ! calculates solution
       result = u_f2_asymptoticdisplacement(omega_k)
@@ -571,7 +590,6 @@ end module
     u_f2_orbit = simpsons_integral(u_f2_asymptoticdisplacement,dble(freq_min),dble(freq_max))
     ! qromb integration
     !u_f2_orbit = romberg_integral(u_f2_asymptoticdisplacement,dble(freq_min),dble(freq_max))
-
 
     u_f2_orbit = u_f2_orbit*EARTHRADIUS/cphase
 
@@ -598,6 +616,10 @@ end module
   !print *,'    epicentral distance = ',epiDelta
   !print *,'    time = ',time
 
+  ! to avoid compiler warnings
+  dummy = epiDelta
+  dummy = sigma
+
   return
   end function
 
@@ -611,10 +633,11 @@ end module
   real(WP),intent(in):: omega
   real(WP):: u_f2_asymptoticdisplacement
   ! local parameters
-  integer:: orbit,iorb,length
-  real(WP):: cphase,epiDelta,time,omegaSquare,sineDelta,radiusbycSquared
-  real(WP):: sigma2half,integralvalue,lambda,degreel,termSigma, &
+  integer:: orbit,iorb
+  real(WP):: epiDelta,time,omegaSquare,sineDelta,radiusbycSquared
+  real(WP):: sigma2half,integralvalue,lambda,termSigma, &
             termSpreading,termIntegral,cphaseSquare,twoPI,PIby4
+  double precision:: degreel
   complex(WP) :: A_lplus,A_lminus,A_even,A_odd,A_l
   double precision,external:: cubicspline_eval
 
@@ -638,10 +661,10 @@ end module
   ! get corresponding lambda and degree
   omegaSquare = omega**2
   lambda = sqrt(omegaSquare*radiusbycSquared + 0.25)
-  degreel = lambda - 0.5
+  degreel = lambda - 0.5d0
 
   ! get integral value with integral boundaries [0,PI]
-  integralvalue = cubicspline_eval(dble(degreel))
+  integralvalue = cubicspline_eval(degreel)
 
   ! coefficients A
   termSigma = exp(-omegaSquare*sigma2half)
@@ -734,8 +757,8 @@ end module
   real(WP):: integralvalue
   real(WP):: eigenfrequency,sigma2,reciEarthradius
   real(WP):: freq_min,freq_max,center_freq, A_l
-  logical,parameter:: ONLY_FREQUENCY_RANGE = .false.
   real(WP),external:: integrand,integrand_asymptotic
+  logical,parameter:: ONLY_FREQUENCY_RANGE = .false.
 
   ! check to have double precision
   sigma2 = sigma*sigma
@@ -766,23 +789,21 @@ end module
   !  l = DEGREEACCURACY
   !  freq_max = cphase*sqrt(l*(l+1.0d0))*reciEarthradius
     print *,'asymptotic solution f2 for R2:'
-    print *,'    angular degrees min/max:',l_min,l_max
-    print *,'    desired frequency range min/max:',sngl(freq_min),sngl(freq_max)
-    print *,'         period range min/max:',sngl(2*PI/freq_min),sngl(2*PI/freq_max)
+    print *,'    angular degrees min/max        :',l_min,'/',l_max
+    print *,'    desired frequency range min/max:',freq_min,'/',freq_max
+    print *,'               period range min/max:',sngl(2.d0*PI/freq_min),'/',sngl(2.d0*PI/freq_max)
 
     ! check
     print *,'    actual frequency range min/max:', &
-            sngl(cphase*sqrt(l_min*(l_min+1.0d0))/EARTHRADIUS), &
+            sngl(cphase*sqrt(l_min*(l_min+1.0d0))/EARTHRADIUS),'/', &
             sngl(cphase*sqrt(l_max*(l_max+1.0d0))/EARTHRADIUS)
     print *,'         period range min/max:', &
-            sngl(2*PI/(cphase*sqrt(l_min*(l_min+1.0d0))/EARTHRADIUS)), &
+            sngl(2*PI/(cphase*sqrt(l_min*(l_min+1.0d0))/EARTHRADIUS)),'/', &
             sngl(2*PI/(cphase*sqrt(l_max*(l_max+1.0d0))/EARTHRADIUS))
     if (l_min > 0) then
-      print *,'    center frequency/period:',sngl(center_freq), &
-                  sngl(2*PI/center_freq)
+      print *,'    center frequency/period:',center_freq,sngl(2.d0*PI/center_freq)
     endif
   endif
-
 
   u_f2_R2 = 0.0d0
   do l = l_min,l_max
@@ -790,10 +811,10 @@ end module
     eigenfrequency = cphase*sqrt(l*(l+1.0d0))*reciEarthradius
 
     !get integral value with integral boundaries [0,PI]
-    call simpsons_integral_degree(integrand,l,0.0,PI,integralvalue,mu)
+    call simpsons_integral_degree(integrand,l,0.0_WP,PI,integralvalue,mu)
 
     ! asymptotic gives NaN
-    !call simpsons_integral_degree(integrand_asymptotic,l,0.0d0,PI,integralvalue,mu)
+    !call simpsons_integral_degree(integrand_asymptotic,l,0.0_WP,PI,integralvalue,mu)
 
     !calculate displacement (sum of Tape, 2003: eq. 3.34, see notes)
     ! coefficients A
@@ -876,23 +897,21 @@ end module
   !  l = DEGREEACCURACY
   !  freq_max = cphase*sqrt(l*(l+1.0d0))*reciEarthradius
     print *,'asymptotic solution f2 for R3:'
-    print *,'    angular degrees min/max:',l_min,l_max
-    print *,'    desired frequency range min/max:',sngl(freq_min),sngl(freq_max)
-    print *,'         period range min/max:',sngl(2*PI/freq_min),sngl(2*PI/freq_max)
+    print *,'    angular degrees min/max        :',l_min,'/',l_max
+    print *,'    desired frequency range min/max:',freq_min,'/',freq_max
+    print *,'               period range min/max:',sngl(2.d0*PI/freq_min),'/',sngl(2.d0*PI/freq_max)
 
     ! check
     print *,'    actual frequency range min/max:', &
-            sngl(cphase*sqrt(l_min*(l_min+1.0d0))/EARTHRADIUS), &
+            sngl(cphase*sqrt(l_min*(l_min+1.0d0))/EARTHRADIUS),'/', &
             sngl(cphase*sqrt(l_max*(l_max+1.0d0))/EARTHRADIUS)
     print *,'         period range min/max:', &
-            sngl(2*PI/(cphase*sqrt(l_min*(l_min+1.0d0))/EARTHRADIUS)), &
+            sngl(2*PI/(cphase*sqrt(l_min*(l_min+1.0d0))/EARTHRADIUS)),'/', &
             sngl(2*PI/(cphase*sqrt(l_max*(l_max+1.0d0))/EARTHRADIUS))
     if (l_min > 0) then
-      print *,'    center frequency/period:',sngl(center_freq), &
-                  sngl(2*PI/center_freq)
+      print *,'    center frequency/period:',center_freq,sngl(2.d0*PI/center_freq)
     endif
   endif
-
 
   u_f2_R3 = 0.0d0
   do l = l_min,l_max
@@ -900,10 +919,10 @@ end module
     eigenfrequency = cphase*sqrt(l*(l+1.0d0))*reciEarthradius
 
     !get integral value with integral boundaries [0,PI]
-    call simpsons_integral_degree(integrand,l,0.0,PI,integralvalue,mu)
+    call simpsons_integral_degree(integrand,l,0.0_WP,PI,integralvalue,mu)
 
     ! asymptotic gives NaN
-    !call simpsons_integral_degree(integrand_asymptotic,l,0.0d0,PI,integralvalue,mu)
+    !call simpsons_integral_degree(integrand_asymptotic,l,0.0_WP,PI,integralvalue,mu)
 
     !calculate displacement (sum of Tape, 2003: eq. 3.34, see notes)
     ! coefficients A
@@ -954,8 +973,8 @@ end module
   real(WP):: integralvalue
   real(WP):: eigenfrequency,sigma2,reciEarthradius
   real(WP):: freq_min,freq_max,center_freq, A_l
-  logical,parameter:: ONLY_FREQUENCY_RANGE = .false.
   real(WP),external:: integrand,integrand_asymptotic
+  logical,parameter:: ONLY_FREQUENCY_RANGE = .false.
 
   ! check to have double precision
   sigma2 = sigma*sigma
@@ -987,23 +1006,21 @@ end module
   !  l = ACCURACY
   !  freq_max = cphase*sqrt(l*(l+1.0d0))*reciEarthradius
     print *,'asymptotic solution f2 for R4:'
-    print *,'    angular degrees min/max:',l_min,l_max
-    print *,'    desired frequency range min/max:',sngl(freq_min),sngl(freq_max)
-    print *,'         period range min/max:',sngl(2*PI/freq_min),sngl(2*PI/freq_max)
+    print *,'    angular degrees min/max        :',l_min,'/',l_max
+    print *,'    desired frequency range min/max:',freq_min,'/',freq_max
+    print *,'               period range min/max:',sngl(2.d0*PI/freq_min),'/',sngl(2.d0*PI/freq_max)
 
     ! check
     print *,'    actual frequency range min/max:', &
-            sngl(cphase*sqrt(l_min*(l_min+1.0d0))/EARTHRADIUS), &
+            sngl(cphase*sqrt(l_min*(l_min+1.0d0))/EARTHRADIUS),'/', &
             sngl(cphase*sqrt(l_max*(l_max+1.0d0))/EARTHRADIUS)
     print *,'         period range min/max:', &
-            sngl(2*PI/(cphase*sqrt(l_min*(l_min+1.0d0))/EARTHRADIUS)), &
+            sngl(2*PI/(cphase*sqrt(l_min*(l_min+1.0d0))/EARTHRADIUS)),'/', &
             sngl(2*PI/(cphase*sqrt(l_max*(l_max+1.0d0))/EARTHRADIUS))
     if (l_min > 0) then
-      print *,'    center frequency/period:',sngl(center_freq), &
-                  sngl(2*PI/center_freq)
+      print *,'    center frequency/period:',center_freq,sngl(2.d0*PI/center_freq)
     endif
   endif
-
 
   u_f2_R4 = 0.0d0
   do l = l_min,l_max
@@ -1011,10 +1028,10 @@ end module
     eigenfrequency = cphase*sqrt(l*(l+1.0d0))*reciEarthradius
 
     !get integral value with integral boundaries [0,PI]
-    call simpsons_integral_degree(integrand,l,0.0,PI,integralvalue,mu)
+    call simpsons_integral_degree(integrand,l,0.0_WP,PI,integralvalue,mu)
 
     ! asymptotic gives NaN
-    !call simpsons_integral_degree(integrand_asymptotic,l,0.0d0,PI,integralvalue,mu)
+    !call simpsons_integral_degree(integrand_asymptotic,l,0.0_WP,PI,integralvalue,mu)
 
     !calculate displacement (sum of Tape, 2003: eq. 3.34, see notes)
     ! coefficients A

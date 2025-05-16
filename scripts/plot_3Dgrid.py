@@ -16,10 +16,10 @@ from mpl_toolkits.mplot3d import Axes3D
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 # coloring
 from matplotlib import cm
-from matplotlib.colors import Normalize,LightSource
+from matplotlib.colors import Normalize,LightSource,LinearSegmentedColormap
 
 
-def plot_grid(Dvvert_file,Dvface_file,cell_file):
+def plot_grid(Dvvert_file,Dvface_file,cell_file=None,stretch_factor=None):
     """
     plots spherical grid
     """
@@ -61,8 +61,28 @@ def plot_grid(Dvvert_file,Dvface_file,cell_file):
     # Adjust Dvface to be 0-based indexing
     Dvface = Dvface - 1
 
-    print("vertices : ",len(Dvvert[:,0]))
-    print("faces    : ",len(Dvface[:,0]))
+    numVertices = len(Dvvert[:,0])
+    numFaces = len(Dvface[:,0])
+
+    print("vertices : ",numVertices)
+    print("faces    : ",numFaces)
+    print("")
+
+    # determine if voroni cells or triangles grid
+    is_trianglular_grid = False
+    if "Dvvert" in Dvvert_file and "Dvface" in Dvface_file:
+        # voronoi cells
+        is_trianglular_grid = False
+    elif "Dtvert" in Dvvert_file and "Dtface" in Dvface_file:
+        # triangles
+        # double check
+        if len(Dvface.shape) > 1:
+            if Dvface.shape[1] == 3:
+                is_trianglular_grid = True
+    if is_trianglular_grid:
+        print("using triangular grid format")
+    else:
+        print("using voronoi grid format")
     print("")
 
     # cell data
@@ -70,29 +90,66 @@ def plot_grid(Dvvert_file,Dvface_file,cell_file):
         # format: #val
         cellData = np.loadtxt(cell_file, dtype=np.float64)
 
+        print("cell data:")
+        print(f"  length   : {len(cellData)}")
+
+        # data info
+        shape = cellData.shape
+        if len(shape) > 1:
+            # multi-column file
+            print( "  extracting last data column as coloring data")
+            print(f"  shape    : {shape}")
+            # number of columns
+            num_columns = shape[1]
+            print(f"  columns  : {num_columns}")
+            # extract data to take only last data columns for cell/vertex coloring
+            cellData = cellData[:,-1]
+
         # cell data filename as label
         # Extract the basename (removes directory path)
         basename = os.path.basename(cell_file)  # Gets 'cellFractionAverage.dat'
         # Remove the extension
         cellDataName = os.path.splitext(basename)[0]  # Gets 'cellFractionAverage'
 
-        print("cell data:")
-        print(f"  length   : {len(cellData)}")
         print(f"  min/max  : {cellData.min()} / {cellData.max()}")
         print(f"  data name: {cellDataName}")
         print("")
 
         # check data length
-        if len(cellData) != len(Dvface[:,0]):
-            print(f"Error: mismatch in cell data length - should be same as number of faces {len(Dvface[:,0])}")
-            print( "       Please check, exiting...")
-            sys.exit(1)
+        if is_trianglular_grid:
+            # triangular grid
+            # cell data should match number of vertices
+            if len(cellData) != numVertices:
+                print(f"Error: mismatch in cell data length - should be same as number of vertices {numVertices} for triangular grid")
+                print( "       Please check, exiting...")
+                sys.exit(1)
+        else:
+            # voronoi grid
+            # cell data should match number of faces
+            if len(cellData) != numFaces:
+                print(f"Error: mismatch in cell data length - should be same as number of faces {numFaces} for voronoi grid")
+                print( "       Please check, exiting...")
+                sys.exit(1)
 
         # Choose a colormap (you can select from matplotlib.cm)
         cmap = cm.viridis
 
         # Normalize the data to the range [0, 1] for the colormap
         norm = Normalize(vmin=cellData.min(), vmax=cellData.max())
+
+        # apply an elevation to vertice coordinates for triangular grid
+        if is_trianglular_grid and stretch_factor:
+            print("  applying elevation stretching to vertex positions")
+            print(f"  stretch factor: {stretch_factor}\n")
+            for i,vertex in enumerate(Dvvert):
+                # normalized data value
+                cvalue = cellData[i]
+                nval = norm(cvalue)
+                # stretch factor
+                fac = 1.0 + stretch_factor * nval
+                # new vertex position
+                newposition = fac * vertex
+                Dvvert[i] = newposition
 
     # labelling infos
     # Extract the basename from Dvvert file
@@ -119,10 +176,20 @@ def plot_grid(Dvvert_file,Dvface_file,cell_file):
         color = 'lightblue'
         # cell data coloring
         if use_cell_data:
-            # Get the data value for the current face
-            cvalue = cellData[i]
-            # Map the data value to a color using the colormap and normalization
-            color = cmap(norm(cvalue))
+            # determine face color
+            if is_trianglular_grid:
+                # triangular grid: cell data provided for each vertex
+                # Create a custom colormap that transitions between the vertex colors
+                vertex_colors = [cmap(norm(cellData[idx])) for idx in face]
+                face_cmap = LinearSegmentedColormap.from_list('face_cmap', vertex_colors)
+                # Use the middle of the range for the face color
+                color = face_cmap(0.5)
+            else:
+                # voronoi grid - cell data provided for each face
+                # Get the data value for the current face
+                cvalue = cellData[i]
+                # Map the data value to a color using the colormap and normalization
+                color = cmap(norm(cvalue))
         face_colors.append(color)
 
     face_vertices = np.array(face_vertices)
@@ -182,22 +249,27 @@ def plot_grid(Dvvert_file,Dvface_file,cell_file):
 
 
 def usage():
-    print("usage: ./plot_3Dgrid.py DvvertN.dat DvfaceN.dat [cell.dat]")
+    print("usage: ./plot_3Dgrid.py DvvertN.dat DvfaceN.dat [cell.dat] [stretch=val]")
     print("  with")
     print("     DvvertN.dat - vertex file, e.g. griddata/Dvvert4.dat")
     print("     DvfaceN.dat - face file, e.g. griddata/Dvface4.dat")
     print("     cell.dat    - (optional) corresponding cell data, e.g. OUTPUT/cellFractionAverage.dat")
+    print("     stretch     - (optional) applies elevation stretching using cell data with a stretch factor [val] for triangular grids")
     sys.exit(1)
 
 if __name__ == '__main__':
     # input
     cell_file = None
+    stretch_factor = None
     if len(sys.argv) < 3: usage()
 
     # gets arguments
     Dvvert_file = sys.argv[1]
     Dvface_file = sys.argv[2]
     if len(sys.argv) >= 4: cell_file = sys.argv[3]
+    if len(sys.argv) >= 5:
+        if "stretch" in sys.argv[4]:
+            stretch_factor = float(sys.argv[4].split('=')[1])
 
-    plot_grid(Dvvert_file,Dvface_file,cell_file)
+    plot_grid(Dvvert_file,Dvface_file,cell_file,stretch_factor)
 
